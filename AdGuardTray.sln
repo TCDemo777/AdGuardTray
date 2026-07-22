@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.37516.0 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AdGuardTray", "AdGuardTray\AdGuardTray.csproj", "{9C8EEFDE-B1C6-49A9-93A4-7ECA7740DDD9}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9C8EEFDE-B1C6-49A9-93A4-7ECA7740DDD9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9C8EEFDE-B1C6-49A9-93A4-7ECA7740DDD9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9C8EEFDE-B1C6-49A9-93A4-7ECA7740DDD9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9C8EEFDE-B1C6-49A9-93A4-7ECA7740DDD9}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7D922E76-4C10-47E7-BB4E-97190A2580A5}
+	EndGlobalSection
+EndGlobal
