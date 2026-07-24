@@ -2,12 +2,13 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="AdGuard Tray Settings"
-        Height="500"
+        Height="390"
         Width="450"
         ResizeMode="NoResize"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen"
+        Background="#F3F5F7">
 
-    <Grid Margin="20">
+    <Grid Margin="25">
 
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -20,107 +21,100 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
+
+        <!-- Title -->
+
         <TextBlock
+            Text="GL.iNet Connection Settings"
+            FontSize="24"
+            FontWeight="Bold"
+            Margin="0,0,0,25"/>
+
+
+        <!-- Router IP -->
+
+        <TextBlock
+            Grid.Row="1"
             Text="Router IP"
             FontWeight="Bold"/>
 
         <TextBox
             x:Name="RouterIpBox"
-            Grid.Row="1"
-            Margin="0,5,0,15"
-            Height="28"/>
+            Grid.Row="2"
+            Height="30"
+            Margin="0,5,0,15"/>
+
+
+        <!-- Username -->
 
         <TextBlock
-            Grid.Row="2"
+            Grid.Row="3"
             Text="Username"
             FontWeight="Bold"/>
 
         <TextBox
             x:Name="UsernameBox"
-            Grid.Row="3"
-            Margin="0,5,0,15"
-            Height="28"/>
+            Grid.Row="4"
+            Height="30"
+            Margin="0,5,0,15"/>
+
+
+        <!-- Password -->
 
         <TextBlock
-            Grid.Row="4"
+            Grid.Row="5"
             Text="Password"
             FontWeight="Bold"/>
 
         <PasswordBox
             x:Name="PasswordBox"
-            Grid.Row="5"
-            Margin="0,5,0,15"
-            Height="28"/>
-
-
-        <StackPanel Grid.Row="6">
-
-            <CheckBox
-                x:Name="RememberPasswordCheck"
-                Margin="0,0,0,10"
-                Content="Remember password"
-                IsChecked="True"/>
-
-            <CheckBox
-                x:Name="StartWithWindowsCheck"
-                Margin="0,0,0,15"
-                Content="Start with Windows"/>
-
-
-            <Button
-                x:Name="TestAdGuardButton"
-                Width="220"
-                Height="32"
-                HorizontalAlignment="Left"
-                Margin="0,0,0,10"
-                Content="Test AdGuard Connection"
-                Click="TestAdGuardButton_Click"/>
-
-
-            <Button
-                x:Name="GetStatusButton"
-                Width="220"
-                Height="32"
-                HorizontalAlignment="Left"
-                Margin="0,0,0,15"
-                Content="Get AdGuard Status"
-                Click="GetStatusButton_Click"/>
-
-
-            <TextBlock
-                x:Name="StatusText"
-                Text="Status: Not tested"
-                FontWeight="Bold"/>
-
-        </StackPanel>
+            Grid.Row="6"
+            Height="30"
+            Margin="0,5,0,15"/>
 
 
         <StackPanel
-            Grid.Row="7"
-            Orientation="Horizontal"
-            HorizontalAlignment="Right">
+            Grid.Row="7">
 
-            <Button
-                x:Name="TestButton"
-                Width="120"
-                Height="32"
-                Margin="0,0,10,0"
-                Content="Test Connection"/>
 
-            <Button
-                x:Name="SaveButton"
-                Width="80"
-                Height="32"
-                Margin="0,0,10,0"
-                Content="Save"/>
+            <CheckBox
+                x:Name="RememberPasswordCheck"
+                Content="Remember password"
+                Margin="0,0,0,10"/>
 
-            <Button
-                Width="80"
-                Height="32"
-                Content="Cancel"
-                Click="Cancel_Click"/>
+
+            <CheckBox
+                x:Name="StartWithWindowsCheck"
+                Content="Start with Windows"
+                Margin="0,0,0,20"/>
+
+
+            <StackPanel
+                Orientation="Horizontal"
+                HorizontalAlignment="Right">
+
+
+                <Button
+                    x:Name="SaveButton"
+                    Width="90"
+                    Height="32"
+                    Margin="0,0,10,0"
+                    Content="Save"
+                    Click="SaveButton_Click"/>
+
+
+                <Button
+                    Width="90"
+                    Height="32"
+                    Content="Cancel"
+                    Click="Cancel_Click"/>
+
+
+            </StackPanel>
+
 
         </StackPanel>
+
 
     </Grid>
 

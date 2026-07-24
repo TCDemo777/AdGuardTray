@@ -23,32 +23,83 @@ namespace AdGuardTray.Services
 
 
 
+
+
         public Task<string> RunCommandAsync(
             string command)
         {
             return Task.Run(() =>
             {
-                using var ssh =
-                    new SshClient(
-                        _ip,
-                        _username,
-                        _password);
+                try
+                {
+                    using var ssh =
+                        new SshClient(
+                            _ip,
+                            _username,
+                            _password);
 
 
-                ssh.Connect();
+                    // Prevent long hangs
+                    ssh.ConnectionInfo.Timeout =
+                        TimeSpan.FromSeconds(5);
 
 
-                var result =
-                    ssh.RunCommand(command);
+
+                    ssh.Connect();
 
 
-                ssh.Disconnect();
+
+                    if (!ssh.IsConnected)
+                    {
+                        return
+                            "SSH connection failed.";
+                    }
 
 
-                return
-                    result.Result +
-                    Environment.NewLine +
-                    result.Error;
+
+                    var result =
+                        ssh.RunCommand(command);
+
+
+
+                    ssh.Disconnect();
+
+
+
+                    return
+                        result.Result +
+                        Environment.NewLine +
+                        result.Error;
+                }
+
+
+                catch (Renci.SshNet.Common.SshAuthenticationException)
+                {
+                    return
+                        "SSH_AUTH_FAILED";
+                }
+
+
+                catch (Renci.SshNet.Common.SshConnectionException)
+                {
+                    return
+                        "SSH_CONNECTION_FAILED";
+                }
+
+
+                catch (System.Net.Sockets.SocketException)
+                {
+                    return
+                        "SSH_NETWORK_FAILED";
+                }
+
+
+                catch (Exception ex)
+                {
+                    return
+                        "SSH_ERROR: " +
+                        ex.Message;
+                }
             });
         }
     }
