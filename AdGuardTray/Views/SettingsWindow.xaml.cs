@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System;
+using System.Windows;
 using AdGuardTray.Models;
 using AdGuardTray.Services;
 
@@ -55,6 +56,80 @@ namespace AdGuardTray.Views
         }
 
 
+        private async void GetStatusButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                StatusText.Text = "Status: Creating router session...";
+
+                var router = new GLInetRouterService();
+
+                StatusText.Text = "Status: Logging into GL.iNet...";
+
+                string result =
+                    await router.LoginAsync(
+                        "root",
+                        PasswordBox.Password);
+
+
+                StatusText.Text =
+                    "Status: Login complete.";
+
+                ShowOutput(
+                    "GL.iNet Login Result",
+                    result);
+            }
+            catch (Exception ex)
+            {
+                StatusText.Text =
+                    "Status: Login failed.";
+
+                ShowOutput(
+                    "GL.iNet Login Error",
+                    ex.ToString());
+            }
+        }
+
+
+        private void ShowOutput(
+            string title,
+            string text)
+        {
+            var outputWindow = new Window
+            {
+                Title = title,
+                Width = 800,
+                Height = 500,
+                WindowStartupLocation =
+                    WindowStartupLocation.CenterScreen
+            };
+
+
+            var textBox =
+                new System.Windows.Controls.TextBox
+                {
+                    Text = text,
+                    IsReadOnly = true,
+                    AcceptsReturn = true,
+                    AcceptsTab = true,
+
+                    TextWrapping =
+                        System.Windows.TextWrapping.NoWrap,
+
+                    VerticalScrollBarVisibility =
+                        System.Windows.Controls.ScrollBarVisibility.Auto,
+
+                    HorizontalScrollBarVisibility =
+                        System.Windows.Controls.ScrollBarVisibility.Auto
+                };
+
+
+            outputWindow.Content = textBox;
+
+            outputWindow.ShowDialog();
+        }
+
+
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
             var settings = new AppSettings
@@ -63,10 +138,13 @@ namespace AdGuardTray.Views
 
                 Username = UsernameBox.Text.Trim(),
 
-                RememberPassword = RememberPasswordCheck.IsChecked == true,
+                RememberPassword =
+                    RememberPasswordCheck.IsChecked == true,
 
-                StartWithWindows = StartWithWindowsCheck.IsChecked == true
+                StartWithWindows =
+                    StartWithWindowsCheck.IsChecked == true
             };
+
 
             if (settings.RememberPassword)
             {
@@ -79,9 +157,11 @@ namespace AdGuardTray.Views
                 settings.EncryptedPassword = "";
             }
 
+
             _settingsService.Save(settings);
 
-            StatusText.Text = "Status: Settings saved.";
+            StatusText.Text =
+                "Status: Settings saved.";
 
             DialogResult = true;
 
