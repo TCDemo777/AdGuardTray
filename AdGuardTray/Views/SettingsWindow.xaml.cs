@@ -13,24 +13,28 @@ namespace AdGuardTray.Views
         {
             InitializeComponent();
 
-            _settingsService = new SettingsService();
+            _settingsService =
+                new SettingsService();
 
             LoadSettings();
 
             SaveButton.Click += SaveButton_Click;
         }
 
-
         private void LoadSettings()
         {
-            AppSettings settings = _settingsService.Load();
+            AppSettings settings =
+                _settingsService.Load();
 
-            RouterIpBox.Text = settings.RouterIp;
+            RouterIpBox.Text =
+                settings.RouterIp;
 
-            UsernameBox.Text = settings.Username;
+            UsernameBox.Text =
+                settings.Username;
 
             PasswordBox.Password =
-                _settingsService.DecryptPassword(settings.EncryptedPassword);
+                _settingsService.DecryptPassword(
+                    settings.EncryptedPassword);
 
             RememberPasswordCheck.IsChecked =
                 settings.RememberPassword;
@@ -38,72 +42,114 @@ namespace AdGuardTray.Views
             StartWithWindowsCheck.IsChecked =
                 settings.StartWithWindows;
 
-            StatusText.Text = "Status: Ready";
+            StatusText.Text =
+                "Status: Ready";
         }
 
-
-        private async void TestAdGuardButton_Click(object sender, RoutedEventArgs e)
+        private async void TestAdGuardButton_Click(
+            object sender,
+            RoutedEventArgs e)
         {
-            StatusText.Text = "Status: Testing AdGuard...";
+            StatusText.Text =
+                "Status: Testing AdGuard...";
 
-            bool connected = await App.AdGuard.IsAvailableAsync(
-                "http://192.168.1.1:3000/"
-            );
+            bool connected =
+                await App.AdGuard.IsAvailableAsync(
+                    "http://192.168.1.1:3000/");
 
-            StatusText.Text = connected
+            StatusText.Text =
+                connected
                 ? "Status: AdGuard Home reachable."
                 : "Status: Cannot reach AdGuard Home.";
         }
 
-
-        private async void GetStatusButton_Click(object sender, RoutedEventArgs e)
+        private async void GetStatusButton_Click(
+            object sender,
+            RoutedEventArgs e)
         {
             try
             {
-                StatusText.Text = "Status: Creating router session...";
+                StatusText.Text =
+                    "Status: Connecting via SSH...";
 
-                var router = new GLInetRouterService();
-
-                StatusText.Text = "Status: Logging into GL.iNet...";
-
-                string result =
-                    await router.LoginAsync(
-                        "root",
+                var ssh =
+                    new GLInetSshService(
+                        RouterIpBox.Text.Trim(),
+                        UsernameBox.Text.Trim(),
                         PasswordBox.Password);
 
-
                 StatusText.Text =
-                    "Status: Login complete.";
+                    "Status: Checking AdGuard Home...";
+
+                string serviceStatus =
+                    await ssh.RunCommandAsync(
+                        "/etc/init.d/adguardhome status");
+
+                string processInfo =
+                    await ssh.RunCommandAsync(
+                        "pgrep -a AdGuardHome");
+
+                string version =
+                    await ssh.RunCommandAsync(
+                        "/usr/bin/AdGuardHome --version");
+
+                string output =
+                    "GL.iNet AdGuard Home Status\r\n" +
+                    "===========================\r\n\r\n" +
+
+                    "Router\r\n" +
+                    "------\r\n" +
+                    RouterIpBox.Text.Trim() +
+
+                    "\r\n\r\nUsername\r\n" +
+                    "--------\r\n" +
+                    UsernameBox.Text.Trim() +
+
+                    "\r\n\r\nService Status\r\n" +
+                    "--------------\r\n" +
+                    serviceStatus.Trim() +
+
+                    "\r\n\r\nRunning Process\r\n" +
+                    "---------------\r\n" +
+                    (string.IsNullOrWhiteSpace(processInfo)
+                        ? "Not Running"
+                        : processInfo.Trim()) +
+
+                    "\r\n\r\nVersion\r\n" +
+                    "-------\r\n" +
+                    version.Trim();
 
                 ShowOutput(
-                    "GL.iNet Login Result",
-                    result);
+                    "AdGuard Home Status",
+                    output);
+
+                StatusText.Text =
+                    "Status: Complete.";
             }
             catch (Exception ex)
             {
                 StatusText.Text =
-                    "Status: Login failed.";
+                    "Status: SSH failed.";
 
                 ShowOutput(
-                    "GL.iNet Login Error",
+                    "SSH Error",
                     ex.ToString());
             }
         }
-
 
         private void ShowOutput(
             string title,
             string text)
         {
-            var outputWindow = new Window
-            {
-                Title = title,
-                Width = 800,
-                Height = 500,
-                WindowStartupLocation =
-                    WindowStartupLocation.CenterScreen
-            };
-
+            var outputWindow =
+                new Window
+                {
+                    Title = title,
+                    Width = 800,
+                    Height = 500,
+                    WindowStartupLocation =
+                        WindowStartupLocation.CenterScreen
+                };
 
             var textBox =
                 new System.Windows.Controls.TextBox
@@ -112,39 +158,39 @@ namespace AdGuardTray.Views
                     IsReadOnly = true,
                     AcceptsReturn = true,
                     AcceptsTab = true,
-
                     TextWrapping =
                         System.Windows.TextWrapping.NoWrap,
-
                     VerticalScrollBarVisibility =
                         System.Windows.Controls.ScrollBarVisibility.Auto,
-
                     HorizontalScrollBarVisibility =
                         System.Windows.Controls.ScrollBarVisibility.Auto
                 };
 
-
-            outputWindow.Content = textBox;
+            outputWindow.Content =
+                textBox;
 
             outputWindow.ShowDialog();
         }
 
-
-        private void SaveButton_Click(object sender, RoutedEventArgs e)
+        private void SaveButton_Click(
+            object sender,
+            RoutedEventArgs e)
         {
-            var settings = new AppSettings
-            {
-                RouterIp = RouterIpBox.Text.Trim(),
+            var settings =
+                new AppSettings
+                {
+                    RouterIp =
+                        RouterIpBox.Text.Trim(),
 
-                Username = UsernameBox.Text.Trim(),
+                    Username =
+                        UsernameBox.Text.Trim(),
 
-                RememberPassword =
-                    RememberPasswordCheck.IsChecked == true,
+                    RememberPassword =
+                        RememberPasswordCheck.IsChecked == true,
 
-                StartWithWindows =
-                    StartWithWindowsCheck.IsChecked == true
-            };
-
+                    StartWithWindows =
+                        StartWithWindowsCheck.IsChecked == true
+                };
 
             if (settings.RememberPassword)
             {
@@ -157,7 +203,6 @@ namespace AdGuardTray.Views
                 settings.EncryptedPassword = "";
             }
 
-
             _settingsService.Save(settings);
 
             StatusText.Text =
@@ -168,8 +213,9 @@ namespace AdGuardTray.Views
             Close();
         }
 
-
-        private void Cancel_Click(object sender, RoutedEventArgs e)
+        private void Cancel_Click(
+            object sender,
+            RoutedEventArgs e)
         {
             Close();
         }
