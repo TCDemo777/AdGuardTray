@@ -1,18 +1,21 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using CommunityToolkit.Mvvm.ComponentModel;
-using AdGuardTray.Models;
 using System.Linq;
+using AdGuardTray.Models;
+using CommunityToolkit.Mvvm.ComponentModel;
+using LiveChartsCore;
+using LiveChartsCore.SkiaSharpView;
 
 namespace AdGuardTray.ViewModels
 {
     public partial class DashboardViewModel : ObservableObject
     {
-//
-// Router
-//
+        //
+        // Router
+        //
 
-    [ObservableProperty]
+        [ObservableProperty]
         private bool routerConnected;
 
         [ObservableProperty]
@@ -81,23 +84,36 @@ namespace AdGuardTray.ViewModels
 
         public ObservableCollection<AdGuardTimePoint>
             AdGuardQueryHistory
-        { get; } =
-                new();
+        {
+            get;
+        } = new();
+
+        public ISeries[] QueryHistorySeries
+        {
+            get;
+        } =
+        {
+            new LineSeries<double>()
+        };
 
         public ObservableCollection<AdGuardRankedItem>
             TopClients
-        { get; } =
-                new();
+        {
+            get;
+        } = new();
 
         public ObservableCollection<AdGuardRankedItem>
             TopQueriedDomains
-        { get; } =
-                new();
+        {
+            get;
+        } = new();
 
         public ObservableCollection<AdGuardRankedItem>
             TopBlockedDomains
-        { get; } =
-                new();
+        {
+            get;
+        } = new();
+
 
         //
         // Internet
@@ -169,7 +185,7 @@ namespace AdGuardTray.ViewModels
         //
 
         public void UpdateAdGuardStatistics(
-    AdGuardStatistics statistics)
+            AdGuardStatistics statistics)
         {
             AdGuardProtectionEnabled =
                 statistics.ProtectionEnabled;
@@ -177,6 +193,11 @@ namespace AdGuardTray.ViewModels
             ReplaceCollection(
                 AdGuardQueryHistory,
                 statistics.QueryHistory);
+
+            ((LineSeries<double>)QueryHistorySeries[0]).Values =
+                statistics.QueryHistory
+                    .Select(point => (double)point.Queries)
+                    .ToArray();
 
             AdGuardQueryGraphMaximum =
                 statistics.QueryHistory.Count == 0
@@ -205,6 +226,9 @@ namespace AdGuardTray.ViewModels
             TopClients.Clear();
             TopQueriedDomains.Clear();
             TopBlockedDomains.Clear();
+
+            ((LineSeries<double>)QueryHistorySeries[0]).Values =
+                Array.Empty<double>();
 
             AdGuardProtectionEnabled = false;
             AdGuardQueryGraphMaximum = 1;
@@ -315,6 +339,4 @@ namespace AdGuardTray.ViewModels
                 nameof(InternetStatusText));
         }
     }
-
-
 }
