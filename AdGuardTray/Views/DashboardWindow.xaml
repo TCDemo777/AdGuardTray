@@ -1,4 +1,7 @@
 <Window x:Class="AdGuardTray.Views.DashboardWindow"
+
+xmlns:lvc="http://schemas.livecharts.com/2.0/wpf"
+xmlns:skia="clr-namespace:SkiaSharp.Views.WPF;assembly=SkiaSharp.Views.WPF"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="GL.iNet Router Manager"
@@ -322,6 +325,38 @@
             </WrapPanel>
 
         </GroupBox>
+
+        <!-- DNS Query History -->
+
+        <Border
+            Grid.Row="5"
+            Margin="8"
+            Padding="15"
+            Background="White"
+            CornerRadius="10"
+            BorderBrush="#DDDDDD"
+            BorderThickness="1">
+
+            <Grid>
+
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="240"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock
+                    Grid.Row="0"
+                    Margin="0,0,0,12"
+                    FontSize="18"
+                    FontWeight="Bold"
+                    Text="DNS Query History"/>
+
+                <lvc:CartesianChart
+                    Grid.Row="1"/>
+
+            </Grid>
+
+        </Border>
 
         <!-- Status -->
 
