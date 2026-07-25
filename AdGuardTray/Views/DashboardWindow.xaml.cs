@@ -1,8 +1,11 @@
-﻿using System;
+﻿using System.Windows.Threading;
+using System;
 using System.Threading.Tasks;
 using System.Windows;
+using AdGuardTray.Models;
 using AdGuardTray.Services;
 using AdGuardTray.ViewModels;
+using Renci.SshNet.Common;
 
 namespace AdGuardTray.Views
 {
@@ -10,41 +13,46 @@ namespace AdGuardTray.Views
     {
         private readonly DashboardViewModel _viewModel;
         private readonly SettingsService _settingsService;
-
+        private readonly DispatcherTimer _refreshTimer;
 
         public DashboardWindow()
         {
             InitializeComponent();
 
+            _viewModel = new DashboardViewModel();
 
-            _viewModel =
-                new DashboardViewModel();
-
-
-            DataContext =
-                _viewModel;
-
+            DataContext = _viewModel;
 
             _settingsService =
                 new SettingsService();
 
 
             Loaded += DashboardWindow_Loaded;
+
+
+            _refreshTimer =
+                new DispatcherTimer();
+
+
+            _refreshTimer.Interval =
+                TimeSpan.FromSeconds(30);
+
+
+            _refreshTimer.Tick += async (s, e) =>
+            {
+                await RefreshDashboard();
+            };
         }
-
-
-
 
 
         private async void DashboardWindow_Loaded(
-            object sender,
-            RoutedEventArgs e)
+     object sender,
+     RoutedEventArgs e)
         {
             await RefreshDashboard();
+
+            _refreshTimer.Start();
         }
-
-
-
 
 
         private async Task RefreshDashboard()
@@ -53,7 +61,6 @@ namespace AdGuardTray.Views
             {
                 var settings =
                     _settingsService.Load();
-
 
 
                 if (string.IsNullOrWhiteSpace(settings.RouterIp) ||
@@ -66,11 +73,9 @@ namespace AdGuardTray.Views
                 }
 
 
-
                 string password =
                     _settingsService.DecryptPassword(
                         settings.EncryptedPassword);
-
 
 
                 var router =
@@ -81,20 +86,48 @@ namespace AdGuardTray.Views
 
 
 
-                AdGuardTray.Models.AdGuardStatus adGuard =
+                //
+                // Router Information
+                //
+
+                RouterInfo info =
+                    await router.GetRouterInfoAsync();
+
+
+                _viewModel.RouterConnected = true;
+
+                _viewModel.RouterModel =
+                    info.Model;
+
+                _viewModel.Hostname =
+                    info.Hostname;
+
+                _viewModel.FirmwareVersion =
+                    info.Firmware;
+
+                _viewModel.Uptime =
+                    info.Uptime;
+
+                _viewModel.CpuUsage =
+                    info.CpuUsage;
+
+                _viewModel.MemoryUsage =
+                    info.MemoryUsage;
+
+                _viewModel.StorageUsage =
+                    info.StorageUsage;
+
+
+
+                //
+                // AdGuard
+                //
+
+                AdGuardStatus adGuard =
                     await router.GetAdGuardStatusAsync();
 
 
-
-
-
-                //
-                // Check SSH failure returned by RouterManager
-                //
-
-                if (adGuard.ServiceStatus.Contains(
-                        "SSH",
-                        StringComparison.OrdinalIgnoreCase))
+                if (adGuard.ServiceStatus.StartsWith("SSH_"))
                 {
                     ShowConnectionError(
                         adGuard.ServiceStatus);
@@ -103,133 +136,168 @@ namespace AdGuardTray.Views
                 }
 
 
-
-
-
-                //
-                // Router Connected
-                //
-
-                _viewModel.RouterConnected = true;
-
-
-                _viewModel.RouterModel =
-                    settings.RouterIp;
-
-
-                _viewModel.FirmwareVersion =
-                    "Connected";
-
-
-                _viewModel.Uptime =
-                    DateTime.Now.ToString(
-                        "dd MMM yyyy HH:mm:ss");
-
-
-
-
-
-                //
-                // AdGuard Status
-                //
-
                 _viewModel.AdGuardRunning =
                     adGuard.IsRunning;
-
 
                 _viewModel.AdGuardVersion =
                     adGuard.Version;
 
-
                 _viewModel.AdGuardProcess =
                     adGuard.Process;
 
-
                 _viewModel.AdGuardService =
                     adGuard.ServiceStatus;
+
+                //
+                // AdGuard Statistics
+                //
+
+                AdGuardStatistics statistics =
+                    await router.GetAdGuardStatisticsAsync();
+
+
+                _viewModel.AdGuardQueries =
+                    statistics.TotalQueries.ToString("N0");
+
+
+                _viewModel.AdGuardBlocked =
+                    statistics.BlockedQueries.ToString("N0");
+
+
+                _viewModel.AdGuardBlockRate =
+                    statistics.BlockPercentage
+                        .ToString("0.0") + "%";
+
+                //
+                // Internet / Network
+                //
+
+                NetworkInfo network =
+                    await router.GetNetworkInfoAsync();
+
+
+                _viewModel.InternetConnected =
+                    network.Connected;
+
+
+                _viewModel.WanIp =
+                    network.WanIp;
+
+
+                _viewModel.Gateway =
+                    network.Gateway;
+
+
+                _viewModel.ExternalDns =
+                    network.ExternalDns;
+
+
+                _viewModel.AdvertisedDns =
+                    network.AdvertisedDns;
+
+
+                _viewModel.Latency =
+                    network.Latency;
+
+
+
+                //
+                // Dashboard status
+                //
+
+                _viewModel.StatusMessage =
+                    "Connected";
+                _viewModel.RefreshStatusIndicators();
+
+
+                _viewModel.LastRefresh =
+                    "Last refresh: " +
+                    DateTime.Now.ToString(
+                        "dd MMM yyyy HH:mm:ss");
             }
-
-
-
-
-
-            catch (Renci.SshNet.Common.SshAuthenticationException)
+            catch (SshAuthenticationException)
             {
                 ShowConnectionError(
-                    "SSH authentication failed.\r\n\r\n" +
-                    "Please check your username and password.");
+                    "SSH authentication failed.");
             }
-
-
-
-
-
-            catch (Renci.SshNet.Common.SshConnectionException)
+            catch (SshConnectionException)
             {
                 ShowConnectionError(
                     "Unable to connect to router.");
             }
-
-
-
-
-
             catch (Exception ex)
             {
                 ShowConnectionError(
-                    "Unexpected error:\r\n\r\n" +
                     ex.Message);
             }
         }
 
 
 
-
-
-
         private void ShowConnectionError(
             string message)
         {
-            _viewModel.RouterConnected =
-                false;
+            _viewModel.RouterConnected = false;
 
+            _viewModel.InternetConnected = false;
+
+            _viewModel.AdGuardRunning = false;
 
 
             _viewModel.RouterModel =
                 "Connection Failed";
 
-
+            _viewModel.Hostname =
+                "-";
 
             _viewModel.FirmwareVersion =
-                message;
-
-
+                "-";
 
             _viewModel.Uptime =
-                "";
+                "-";
 
+            _viewModel.CpuUsage =
+                "-";
 
+            _viewModel.MemoryUsage =
+                "-";
 
-            _viewModel.AdGuardRunning =
-                false;
-
+            _viewModel.StorageUsage =
+                "-";
 
 
             _viewModel.AdGuardVersion =
-                "";
-
-
+                "-";
 
             _viewModel.AdGuardProcess =
-                "";
-
-
+                "-";
 
             _viewModel.AdGuardService =
+                "-";
+
+
+            _viewModel.WanIp =
+                "-";
+
+            _viewModel.Gateway =
+                "-";
+
+            _viewModel.ExternalDns = "-";
+
+            _viewModel.AdvertisedDns = "-";
+
+            _viewModel.Latency =
+                "-";
+
+
+            _viewModel.StatusMessage =
                 message;
+
+
+            _viewModel.LastRefresh =
+                DateTime.Now.ToString(
+                    "dd MMM yyyy HH:mm:ss");
         }
-
-
 
 
 
@@ -242,27 +310,30 @@ namespace AdGuardTray.Views
 
 
 
-
-
         private void Settings_Click(
-            object sender,
-            RoutedEventArgs e)
+    object sender,
+    RoutedEventArgs e)
         {
-            var settingsWindow =
+            var settings =
                 new SettingsWindow();
 
+            settings.Owner = this;
 
-
-            settingsWindow.Owner =
-                this;
-
-
-
-            settingsWindow.ShowDialog();
-
-
+            settings.ShowDialog();
 
             _ = RefreshDashboard();
         }
+
+
+        protected override void OnClosed(EventArgs e)
+        {
+            if (_refreshTimer != null)
+            {
+                _refreshTimer.Stop();
+            }
+
+            base.OnClosed(e);
+        }
+
     }
 }

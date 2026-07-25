@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Net.Http;
+using System.Text.Json;
 using System.Threading.Tasks;
 using AdGuardTray.Models;
 
@@ -8,159 +10,192 @@ namespace AdGuardTray.Services
     {
         private readonly GLInetSshService _ssh;
 
+        private readonly string _routerIp;
+
+        private readonly RouterInfoService _routerInfo;
+
+        private readonly NetworkService _network;
 
         public RouterManager(
-            string routerIp,
-            string username,
-            string password)
+     string routerIp,
+     string username,
+     string password)
         {
+            _routerIp = routerIp;
+
             _ssh =
                 new GLInetSshService(
                     routerIp,
                     username,
                     password);
+
+            _routerInfo =
+                new RouterInfoService(_ssh);
+
+            _network =
+                new NetworkService(_ssh);
         }
 
+        //
+        // Router
+        //
 
+        public Task<RouterInfo> GetRouterInfoAsync()
+        {
+            return _routerInfo.GetRouterInfoAsync();
+        }
 
+        //
+        // Network
+        //
 
+        public Task<NetworkInfo> GetNetworkInfoAsync()
+        {
+            return _network.GetNetworkInfoAsync();
+        }
+
+        //
+        // AdGuard
+        //
 
         public async Task<AdGuardStatus> GetAdGuardStatusAsync()
         {
-            try
-            {
-                string service =
-                    await _ssh.RunCommandAsync(
-                        "/etc/init.d/adguardhome status");
+            string service =
+                await _ssh.RunCommandAsync(
+                    "/etc/init.d/adguardhome status");
 
-
-
-                if (IsSshError(service))
-                {
-                    return CreateErrorStatus(service);
-                }
-
-
-
-                string process =
-                    await _ssh.RunCommandAsync(
-                        "pgrep -a AdGuardHome");
-
-
-
-                if (IsSshError(process))
-                {
-                    return CreateErrorStatus(process);
-                }
-
-
-
-                string version =
-                    await _ssh.RunCommandAsync(
-                        "/usr/bin/AdGuardHome --version");
-
-
-
-                if (IsSshError(version))
-                {
-                    return CreateErrorStatus(version);
-                }
-
-
-
-                return new AdGuardStatus
-                {
-                    IsRunning =
-                        service.Contains(
-                            "running",
-                            StringComparison.OrdinalIgnoreCase),
-
-
-                    ServiceStatus =
-                        service.Trim(),
-
-
-                    Process =
-                        string.IsNullOrWhiteSpace(process)
-                            ? "Not Running"
-                            : process.Trim(),
-
-
-                    Version =
-                        version.Trim()
-                };
-            }
-            catch (Exception ex)
+            if (service.StartsWith("SSH_"))
             {
                 return new AdGuardStatus
                 {
                     IsRunning = false,
-
-                    ServiceStatus =
-                        "ERROR",
-
-                    Process =
-                        ex.Message,
-
-                    Version =
-                        ""
+                    ServiceStatus = service
                 };
             }
+
+            string process =
+                await _ssh.RunCommandAsync(
+                    "pgrep -a AdGuardHome");
+
+            string version =
+                await _ssh.RunCommandAsync(
+                    "/usr/bin/AdGuardHome --version");
+
+            return new AdGuardStatus
+            {
+                IsRunning =
+                    service.Contains("running"),
+
+                ServiceStatus =
+                    service.Trim(),
+
+                Process =
+                    string.IsNullOrWhiteSpace(process)
+                        ? "Not Running"
+                        : process.Trim(),
+
+                Version =
+                    version.Trim()
+            };
+        }
+
+        //
+        // AdGuard Statistics
+        //
+
+        public async Task<AdGuardStatistics> GetAdGuardStatisticsAsync()
+        {
+            var stats =
+                new AdGuardStatistics();
+
+
+            try
+            {
+                using HttpClient client =
+                    new HttpClient();
+
+
+                string url =
+                    $"http://{_routerIp}:3000/control/stats";
+
+
+                string json =
+                    await client.GetStringAsync(url);
+
+
+                using JsonDocument doc =
+                    JsonDocument.Parse(json);
+
+
+                JsonElement root =
+                    doc.RootElement;
+
+
+                if (root.TryGetProperty(
+                    "num_dns_queries",
+                    out JsonElement queries))
+                {
+                    stats.TotalQueries =
+                        queries.GetInt32();
+                }
+
+
+                if (root.TryGetProperty(
+                    "num_blocked_filtering",
+                    out JsonElement blocked))
+                {
+                    stats.BlockedQueries =
+                        blocked.GetInt32();
+                }
+            }
+            catch (Exception ex)
+            {
+                stats.TotalQueries = -1;
+                stats.BlockedQueries = -1;
+            }
+
+
+            return stats;
         }
 
 
+        //
+        // Controls
+        //
 
-
-
-        public async Task StartAdGuardAsync()
+        public Task StartAdGuardAsync()
         {
-            await _ssh.RunCommandAsync(
+            return _ssh.RunCommandAsync(
                 "/etc/init.d/adguardhome start");
         }
 
-
-
-
-
-        public async Task StopAdGuardAsync()
+        public Task StopAdGuardAsync()
         {
-            await _ssh.RunCommandAsync(
+            return _ssh.RunCommandAsync(
                 "/etc/init.d/adguardhome stop");
         }
 
-
-
-
-
-        public async Task RestartAdGuardAsync()
+        public Task RestartAdGuardAsync()
         {
-            await _ssh.RunCommandAsync(
+            return _ssh.RunCommandAsync(
                 "/etc/init.d/adguardhome restart");
         }
 
-
-
-
-
-        public async Task EnableAdGuardAsync()
+        public Task EnableAdGuardAsync()
         {
-            await _ssh.RunCommandAsync(
+            return _ssh.RunCommandAsync(
                 "/etc/init.d/adguardhome enable");
         }
 
-
-
-
-
-        public async Task DisableAdGuardAsync()
+        public Task DisableAdGuardAsync()
         {
-            await _ssh.RunCommandAsync(
+            return _ssh.RunCommandAsync(
                 "/etc/init.d/adguardhome disable");
         }
 
-
-
-
+        //
+        // Logs
+        //
 
         public async Task<string> GetLogsAsync()
         {
@@ -168,116 +203,14 @@ namespace AdGuardTray.Services
                 "logread -e AdGuardHome");
         }
 
+        //
+        // Reboot
+        //
 
-
-
-
-        public async Task<string> GetRouterInfoAsync()
+        public Task RebootRouterAsync()
         {
-            string board =
-                await _ssh.RunCommandAsync(
-                    "ubus call system board");
-
-
-            string uptime =
-                await _ssh.RunCommandAsync(
-                    "uptime");
-
-
-            string memory =
-                await _ssh.RunCommandAsync(
-                    "free -h");
-
-
-            string disk =
-                await _ssh.RunCommandAsync(
-                    "df -h");
-
-
-
-            return
-                "===== Router Information =====\r\n\r\n" +
-
-                "System Board\r\n" +
-                "------------\r\n" +
-                board +
-
-                "\r\n\r\nUptime\r\n" +
-                "------\r\n" +
-                uptime +
-
-                "\r\n\r\nMemory\r\n" +
-                "------\r\n" +
-                memory +
-
-                "\r\n\r\nDisk Usage\r\n" +
-                "----------\r\n" +
-                disk;
-        }
-
-
-
-
-
-        public async Task RebootRouterAsync()
-        {
-            await _ssh.RunCommandAsync(
+            return _ssh.RunCommandAsync(
                 "reboot");
-        }
-
-
-
-
-
-        private bool IsSshError(
-            string result)
-        {
-            return
-                result == "SSH_AUTH_FAILED" ||
-                result == "SSH_CONNECTION_FAILED" ||
-                result == "SSH_NETWORK_FAILED" ||
-                result.StartsWith(
-                    "SSH_ERROR:",
-                    StringComparison.OrdinalIgnoreCase);
-        }
-
-
-
-
-
-        private AdGuardStatus CreateErrorStatus(
-            string error)
-        {
-            string message =
-                error switch
-                {
-                    "SSH_AUTH_FAILED" =>
-                        "SSH authentication failed",
-
-                    "SSH_CONNECTION_FAILED" =>
-                        "Router connection failed",
-
-                    "SSH_NETWORK_FAILED" =>
-                        "Network unavailable",
-
-                    _ =>
-                        error
-                };
-
-
-            return new AdGuardStatus
-            {
-                IsRunning = false,
-
-                ServiceStatus =
-                    message,
-
-                Process =
-                    "",
-
-                Version =
-                    ""
-            };
         }
     }
 }
