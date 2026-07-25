@@ -2,6 +2,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using AdGuardTray.Models;
+using System.Linq;
 
 namespace AdGuardTray.ViewModels
 {
@@ -75,6 +76,9 @@ namespace AdGuardTray.ViewModels
         // AdGuard graph and rankings
         //
 
+        [ObservableProperty]
+        private double adGuardQueryGraphMaximum = 1;
+
         public ObservableCollection<AdGuardTimePoint>
             AdGuardQueryHistory
         { get; } =
@@ -94,7 +98,6 @@ namespace AdGuardTray.ViewModels
             TopBlockedDomains
         { get; } =
                 new();
-
 
         //
         // Internet
@@ -166,7 +169,7 @@ namespace AdGuardTray.ViewModels
         //
 
         public void UpdateAdGuardStatistics(
-            AdGuardStatistics statistics)
+    AdGuardStatistics statistics)
         {
             AdGuardProtectionEnabled =
                 statistics.ProtectionEnabled;
@@ -174,6 +177,14 @@ namespace AdGuardTray.ViewModels
             ReplaceCollection(
                 AdGuardQueryHistory,
                 statistics.QueryHistory);
+
+            AdGuardQueryGraphMaximum =
+                statistics.QueryHistory.Count == 0
+                    ? 1
+                    : Math.Max(
+                        1,
+                        statistics.QueryHistory.Max(
+                            point => point.Queries));
 
             ReplaceCollection(
                 TopClients,
@@ -196,6 +207,7 @@ namespace AdGuardTray.ViewModels
             TopBlockedDomains.Clear();
 
             AdGuardProtectionEnabled = false;
+            AdGuardQueryGraphMaximum = 1;
         }
 
         private static void ReplaceCollection<T>(
