@@ -3,46 +3,57 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
         Title="GL.iNet Router Manager"
-        Width="1000"
-        Height="700"
+        Width="1100"
+        Height="720"
+        MinWidth="900"
+        MinHeight="600"
         WindowStartupLocation="CenterScreen"
         Background="#F3F5F7">
 
-    <ScrollViewer
-        VerticalScrollBarVisibility="Auto"
-        HorizontalScrollBarVisibility="Disabled">
+    <Grid>
 
-        <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="72"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="35"/>
+        </Grid.RowDefinitions>
 
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="20"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="25"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="35"/>
-            </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="190"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
 
-            <!-- Header -->
+        <!-- Header -->
 
-            <Grid Grid.Row="0">
+        <Border
+            Grid.Row="0"
+            Grid.Column="0"
+            Grid.ColumnSpan="2"
+            Background="White"
+            BorderBrush="#DDDDDD"
+            BorderThickness="0,0,0,1">
+
+            <Grid Margin="20,0">
 
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <StackPanel Grid.Column="0">
+                <StackPanel
+                    Grid.Column="0"
+                    VerticalAlignment="Center">
 
                     <TextBlock
-                        FontSize="28"
+                        FontSize="24"
                         FontWeight="Bold"
                         Text="GL.iNet Router Manager"/>
 
                     <TextBlock
-                        Margin="0,8,0,0"
-                        FontSize="16"
+                        Margin="0,4,0,0"
+                        FontSize="14"
                         FontWeight="SemiBold"
+                        Foreground="#555555"
                         Text="{Binding RouterStatusText}"/>
 
                 </StackPanel>
@@ -54,23 +65,145 @@
 
                     <Button
                         x:Name="RefreshButton"
-                        Width="120"
-                        Height="35"
-                        Margin="5"
+                        Width="110"
+                        Height="36"
+                        Margin="5,0"
                         Content="Refresh"
                         Click="Refresh_Click"/>
 
                     <Button
                         x:Name="SettingsButton"
-                        Width="120"
-                        Height="35"
-                        Margin="5"
+                        Width="110"
+                        Height="36"
+                        Margin="5,0"
                         Content="Settings"
                         Click="Settings_Click"/>
 
                 </StackPanel>
 
             </Grid>
+
+        </Border>
+
+        <!-- Navigation -->
+
+        <Border
+            Grid.Row="1"
+            Grid.Column="0"
+            Background="#20262E"
+            BorderBrush="#15191E"
+            BorderThickness="0,0,1,0">
+
+            <Grid>
+
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock
+                    Grid.Row="0"
+                    Margin="20,22,20,14"
+                    FontSize="12"
+                    FontWeight="SemiBold"
+                    Foreground="#AAB2BC"
+                    Text="NAVIGATION"/>
+
+                <StackPanel Grid.Row="1">
+
+                    <Button
+                        Height="48"
+                        Margin="10,2"
+                        HorizontalContentAlignment="Left"
+                        Padding="16,0"
+                        Background="#35404D"
+                        Foreground="White"
+                        BorderThickness="0"
+                        Content="Overview"/>
+
+                    <Button
+                        Height="48"
+                        Margin="10,2"
+                        HorizontalContentAlignment="Left"
+                        Padding="16,0"
+                        Background="Transparent"
+                        Foreground="#D7DCE2"
+                        BorderThickness="0"
+                        Content="Analytics"/>
+
+                    <Button
+                        Height="48"
+                        Margin="10,2"
+                        HorizontalContentAlignment="Left"
+                        Padding="16,0"
+                        Background="Transparent"
+                        Foreground="#D7DCE2"
+                        BorderThickness="0"
+                        Content="Network"/>
+
+                    <Button
+                        Height="48"
+                        Margin="10,2"
+                        HorizontalContentAlignment="Left"
+                        Padding="16,0"
+                        Background="Transparent"
+                        Foreground="#D7DCE2"
+                        BorderThickness="0"
+                        Content="Clients"/>
+
+                    <Button
+                        Height="48"
+                        Margin="10,2"
+                        HorizontalContentAlignment="Left"
+                        Padding="16,0"
+                        Background="Transparent"
+                        Foreground="#D7DCE2"
+                        BorderThickness="0"
+                        Content="Logs"/>
+
+                    <Button
+                        Height="48"
+                        Margin="10,2"
+                        HorizontalContentAlignment="Left"
+                        Padding="16,0"
+                        Background="Transparent"
+                        Foreground="#D7DCE2"
+                        BorderThickness="0"
+                        Content="Settings"/>
+
+                </StackPanel>
+
+            </Grid>
+
+        </Border>
+
+        <!-- Main overview content -->
+
+        <Grid
+            Grid.Row="1"
+            Grid.Column="1"
+            Margin="20">
+
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="16"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <StackPanel Grid.Row="0">
+
+                <TextBlock
+                    FontSize="24"
+                    FontWeight="Bold"
+                    Text="Overview"/>
+
+                <TextBlock
+                    Margin="0,5,0,0"
+                    FontSize="14"
+                    Foreground="#666666"
+                    Text="Current router, AdGuard Home and internet status"/>
+
+            </StackPanel>
 
             <!-- Cards -->
 
@@ -81,8 +214,8 @@
                 <!-- Router -->
 
                 <Border
-                    Margin="8"
-                    Padding="15"
+                    Margin="6"
+                    Padding="16"
                     Background="White"
                     CornerRadius="10"
                     BorderBrush="#DDDDDD"
@@ -172,8 +305,8 @@
                 <!-- AdGuard -->
 
                 <Border
-                    Margin="8"
-                    Padding="15"
+                    Margin="6"
+                    Padding="16"
                     Background="White"
                     CornerRadius="10"
                     BorderBrush="#DDDDDD"
@@ -247,8 +380,8 @@
                 <!-- Internet -->
 
                 <Border
-                    Margin="8"
-                    Padding="15"
+                    Margin="6"
+                    Padding="16"
                     Background="White"
                     CornerRadius="10"
                     BorderBrush="#DDDDDD"
@@ -313,63 +446,33 @@
 
             </UniformGrid>
 
-            <!-- DNS Query History -->
-
-            <Border
-                Grid.Row="4"
-                Margin="8"
-                Padding="15"
-                Background="White"
-                CornerRadius="10"
-                BorderBrush="#DDDDDD"
-                BorderThickness="1">
-
-                <Grid>
-
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="240"/>
-                    </Grid.RowDefinitions>
-
-                    <TextBlock
-                        Grid.Row="0"
-                        Margin="0,0,0,12"
-                        FontSize="18"
-                        FontWeight="Bold"
-                        Text="DNS Query History"/>
-
-                    <lvc:CartesianChart
-                        Grid.Row="1"
-                        Series="{Binding QueryHistorySeries}"/>
-
-                </Grid>
-
-            </Border>
-
-            <!-- Status -->
-
-            <StatusBar Grid.Row="5">
-
-                <StatusBarItem>
-
-                    <TextBlock
-                        Text="{Binding StatusMessage}"/>
-
-                </StatusBarItem>
-
-                <Separator/>
-
-                <StatusBarItem>
-
-                    <TextBlock
-                        Text="{Binding LastRefresh}"/>
-
-                </StatusBarItem>
-
-            </StatusBar>
-
         </Grid>
 
-    </ScrollViewer>
+        <!-- Status bar -->
+
+        <StatusBar
+            Grid.Row="2"
+            Grid.Column="0"
+            Grid.ColumnSpan="2">
+
+            <StatusBarItem>
+
+                <TextBlock
+                    Text="{Binding StatusMessage}"/>
+
+            </StatusBarItem>
+
+            <Separator/>
+
+            <StatusBarItem>
+
+                <TextBlock
+                    Text="{Binding LastRefresh}"/>
+
+            </StatusBarItem>
+
+        </StatusBar>
+
+    </Grid>
 
 </Window>
