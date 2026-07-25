@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -9,31 +10,27 @@ namespace AdGuardTray.Services
     public class RouterManager
     {
         private readonly GLInetSshService _ssh;
-
         private readonly string _routerIp;
-
+        private readonly string _adminToken;
         private readonly RouterInfoService _routerInfo;
-
         private readonly NetworkService _network;
 
         public RouterManager(
-     string routerIp,
-     string username,
-     string password)
+            string routerIp,
+            string username,
+            string password,
+            string adminToken)
         {
             _routerIp = routerIp;
+            _adminToken = adminToken;
 
-            _ssh =
-                new GLInetSshService(
-                    routerIp,
-                    username,
-                    password);
+            _ssh = new GLInetSshService(
+                routerIp,
+                username,
+                password);
 
-            _routerInfo =
-                new RouterInfoService(_ssh);
-
-            _network =
-                new NetworkService(_ssh);
+            _routerInfo = new RouterInfoService(_ssh);
+            _network = new NetworkService(_ssh);
         }
 
         //
@@ -55,47 +52,33 @@ namespace AdGuardTray.Services
         }
 
         //
-        // AdGuard
+        // AdGuard Status
         //
 
         public async Task<AdGuardStatus> GetAdGuardStatusAsync()
         {
-            string service =
-                await _ssh.RunCommandAsync(
-                    "/etc/init.d/adguardhome status");
+            string service = await _ssh.RunCommandAsync(
+                "/etc/init.d/adguardhome status");
 
-            if (service.StartsWith("SSH_"))
-            {
-                return new AdGuardStatus
-                {
-                    IsRunning = false,
-                    ServiceStatus = service
-                };
-            }
+            string process = await _ssh.RunCommandAsync(
+                "pgrep -a AdGuardHome");
 
-            string process =
-                await _ssh.RunCommandAsync(
-                    "pgrep -a AdGuardHome");
-
-            string version =
-                await _ssh.RunCommandAsync(
-                    "/usr/bin/AdGuardHome --version");
+            string version = await _ssh.RunCommandAsync(
+                "/usr/bin/AdGuardHome --version");
 
             return new AdGuardStatus
             {
-                IsRunning =
-                    service.Contains("running"),
+                IsRunning = service.Contains(
+                    "running",
+                    StringComparison.OrdinalIgnoreCase),
 
-                ServiceStatus =
-                    service.Trim(),
+                ServiceStatus = service.Trim(),
 
-                Process =
-                    string.IsNullOrWhiteSpace(process)
-                        ? "Not Running"
-                        : process.Trim(),
+                Process = string.IsNullOrWhiteSpace(process)
+                    ? "Not Running"
+                    : process.Trim(),
 
-                Version =
-                    version.Trim()
+                Version = version.Trim()
             };
         }
 
@@ -105,59 +88,147 @@ namespace AdGuardTray.Services
 
         public async Task<AdGuardStatistics> GetAdGuardStatisticsAsync()
         {
-            var stats =
-                new AdGuardStatistics();
-
+            var stats = new AdGuardStatistics();
 
             try
             {
-                using HttpClient client =
-                    new HttpClient();
+                if (string.IsNullOrWhiteSpace(_adminToken))
+                {
+                    System.Diagnostics.Debug.WriteLine(
+                        "AdGuard Admin-Token has not been configured.");
 
+                    stats.TotalQueries = -1;
+                    stats.BlockedQueries = -1;
+
+                    return stats;
+                }
+
+                var cookieContainer = new CookieContainer();
+
+                cookieContainer.Add(
+                    new Uri($"http://{_routerIp}:3000"),
+                    new Cookie(
+                        "Admin-Token",
+                        _adminToken,
+                        "/"));
+
+                using var handler = new HttpClientHandler
+                {
+                    CookieContainer = cookieContainer,
+                    UseCookies = true,
+                    AutomaticDecompression =
+                        DecompressionMethods.GZip |
+                        DecompressionMethods.Deflate
+                };
+
+                using var client = new HttpClient(handler)
+                {
+                    Timeout = TimeSpan.FromSeconds(10)
+                };
+
+                client.DefaultRequestHeaders.Accept.ParseAdd(
+                    "application/json");
 
                 string url =
                     $"http://{_routerIp}:3000/control/stats";
 
+                System.Diagnostics.Debug.WriteLine(
+                    "Calling AdGuard stats: " + url);
+
+                using HttpResponseMessage response =
+                    await client.GetAsync(url);
 
                 string json =
-                    await client.GetStringAsync(url);
+                    await response.Content.ReadAsStringAsync();
 
+                System.Diagnostics.Debug.WriteLine(
+                    "AdGuard status: " + response.StatusCode);
 
-                using JsonDocument doc =
+                if (response.StatusCode == HttpStatusCode.Unauthorized)
+                {
+                    System.Diagnostics.Debug.WriteLine(
+                        "The GL.iNet Admin-Token is missing or expired.");
+
+                    stats.TotalQueries = -1;
+                    stats.BlockedQueries = -1;
+
+                    return stats;
+                }
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    System.Diagnostics.Debug.WriteLine(
+                        "AdGuard response: " + json);
+
+                    stats.TotalQueries = -1;
+                    stats.BlockedQueries = -1;
+
+                    return stats;
+                }
+
+                using JsonDocument document =
                     JsonDocument.Parse(json);
 
-
                 JsonElement root =
-                    doc.RootElement;
-
+                    document.RootElement;
 
                 if (root.TryGetProperty(
                     "num_dns_queries",
-                    out JsonElement queries))
+                    out JsonElement queries) &&
+                    queries.TryGetInt32(out int totalQueries))
                 {
-                    stats.TotalQueries =
-                        queries.GetInt32();
+                    stats.TotalQueries = totalQueries;
                 }
-
 
                 if (root.TryGetProperty(
                     "num_blocked_filtering",
-                    out JsonElement blocked))
+                    out JsonElement blocked) &&
+                    blocked.TryGetInt32(out int blockedQueries))
                 {
-                    stats.BlockedQueries =
-                        blocked.GetInt32();
+                    stats.BlockedQueries = blockedQueries;
                 }
+
+                System.Diagnostics.Debug.WriteLine(
+                    $"Queries: {stats.TotalQueries}");
+
+                System.Diagnostics.Debug.WriteLine(
+                    $"Blocked: {stats.BlockedQueries}");
+            }
+            catch (TaskCanceledException)
+            {
+                System.Diagnostics.Debug.WriteLine(
+                    "The AdGuard statistics request timed out.");
+
+                stats.TotalQueries = -1;
+                stats.BlockedQueries = -1;
+            }
+            catch (HttpRequestException ex)
+            {
+                System.Diagnostics.Debug.WriteLine(
+                    "AdGuard HTTP error: " + ex.Message);
+
+                stats.TotalQueries = -1;
+                stats.BlockedQueries = -1;
+            }
+            catch (JsonException ex)
+            {
+                System.Diagnostics.Debug.WriteLine(
+                    "AdGuard JSON error: " + ex.Message);
+
+                stats.TotalQueries = -1;
+                stats.BlockedQueries = -1;
             }
             catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine(
+                    "AdGuard statistics error: " + ex.Message);
+
                 stats.TotalQueries = -1;
                 stats.BlockedQueries = -1;
             }
 
-
             return stats;
         }
-
 
         //
         // Controls
@@ -197,9 +268,9 @@ namespace AdGuardTray.Services
         // Logs
         //
 
-        public async Task<string> GetLogsAsync()
+        public Task<string> GetLogsAsync()
         {
-            return await _ssh.RunCommandAsync(
+            return _ssh.RunCommandAsync(
                 "logread -e AdGuardHome");
         }
 

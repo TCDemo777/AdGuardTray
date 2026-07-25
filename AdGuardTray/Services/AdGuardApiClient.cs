@@ -1,6 +1,6 @@
-﻿using System.Net.Http;
-using System.Text.Json;
+﻿using System.Text.Json;
 using AdGuardTray.Models;
+using System.Net.Http;
 
 namespace AdGuardTray.Services;
 
@@ -13,14 +13,34 @@ public class AdGuardApiClient
         _httpClient = httpClient;
     }
 
-    public async Task<StatusResponse?> GetStatusAsync()
+    public async Task<StatsResponse?> GetStatsAsync()
     {
-        var response = await _httpClient.GetAsync("/control/status");
+        try
+        {
+            var response = await _httpClient.GetAsync("/control/stats");
 
-        response.EnsureSuccessStatusCode();
+            var json = await response.Content.ReadAsStringAsync();
 
-        var json = await response.Content.ReadAsStringAsync();
+            Console.WriteLine("===== AdGuard Stats Test =====");
+            Console.WriteLine($"Status Code: {response.StatusCode}");
+            Console.WriteLine(json);
+            Console.WriteLine("==============================");
 
-        return JsonSerializer.Deserialize<StatusResponse>(json);
+            response.EnsureSuccessStatusCode();
+
+            return JsonSerializer.Deserialize<StatsResponse>(
+                json,
+                new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("AdGuard API Error:");
+            Console.WriteLine(ex.Message);
+
+            return null;
+        }
     }
 }

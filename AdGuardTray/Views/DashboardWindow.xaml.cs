@@ -1,7 +1,7 @@
-﻿using System.Windows.Threading;
-using System;
+﻿using System;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Threading;
 using AdGuardTray.Models;
 using AdGuardTray.Services;
 using AdGuardTray.ViewModels;
@@ -15,28 +15,34 @@ namespace AdGuardTray.Views
         private readonly SettingsService _settingsService;
         private readonly DispatcherTimer _refreshTimer;
 
+        //
+        // Temporary GL.iNet session token.
+        // Replace this whenever the router session expires.
+        //
+        private const string AdminToken =
+            "YOUR_CURRENT_ADMIN_TOKEN";
+
         public DashboardWindow()
         {
             InitializeComponent();
 
-            _viewModel = new DashboardViewModel();
+            _viewModel =
+                new DashboardViewModel();
 
-            DataContext = _viewModel;
+            DataContext =
+                _viewModel;
 
             _settingsService =
                 new SettingsService();
 
-
-            Loaded += DashboardWindow_Loaded;
-
+            Loaded +=
+                DashboardWindow_Loaded;
 
             _refreshTimer =
                 new DispatcherTimer();
 
-
             _refreshTimer.Interval =
                 TimeSpan.FromSeconds(30);
-
 
             _refreshTimer.Tick += async (s, e) =>
             {
@@ -44,16 +50,14 @@ namespace AdGuardTray.Views
             };
         }
 
-
         private async void DashboardWindow_Loaded(
-     object sender,
-     RoutedEventArgs e)
+            object sender,
+            RoutedEventArgs e)
         {
             await RefreshDashboard();
 
             _refreshTimer.Start();
         }
-
 
         private async Task RefreshDashboard()
         {
@@ -62,9 +66,10 @@ namespace AdGuardTray.Views
                 var settings =
                     _settingsService.Load();
 
-
-                if (string.IsNullOrWhiteSpace(settings.RouterIp) ||
-                    string.IsNullOrWhiteSpace(settings.Username))
+                if (string.IsNullOrWhiteSpace(
+                        settings.RouterIp) ||
+                    string.IsNullOrWhiteSpace(
+                        settings.Username))
                 {
                     ShowConnectionError(
                         "Router settings are incomplete.");
@@ -72,29 +77,22 @@ namespace AdGuardTray.Views
                     return;
                 }
 
-
                 string password =
                     _settingsService.DecryptPassword(
                         settings.EncryptedPassword);
-
 
                 var router =
                     new RouterManager(
                         settings.RouterIp,
                         settings.Username,
-                        password);
-
-
-
-                //
-                // Router Information
-                //
+                        password,
+                        AdminToken);
 
                 RouterInfo info =
                     await router.GetRouterInfoAsync();
 
-
-                _viewModel.RouterConnected = true;
+                _viewModel.RouterConnected =
+                    true;
 
                 _viewModel.RouterModel =
                     info.Model;
@@ -117,24 +115,18 @@ namespace AdGuardTray.Views
                 _viewModel.StorageUsage =
                     info.StorageUsage;
 
-
-
-                //
-                // AdGuard
-                //
-
                 AdGuardStatus adGuard =
                     await router.GetAdGuardStatusAsync();
 
-
-                if (adGuard.ServiceStatus.StartsWith("SSH_"))
+                if (adGuard.ServiceStatus.StartsWith(
+                    "SSH_",
+                    StringComparison.OrdinalIgnoreCase))
                 {
                     ShowConnectionError(
                         adGuard.ServiceStatus);
 
                     return;
                 }
-
 
                 _viewModel.AdGuardRunning =
                     adGuard.IsRunning;
@@ -148,67 +140,63 @@ namespace AdGuardTray.Views
                 _viewModel.AdGuardService =
                     adGuard.ServiceStatus;
 
-                //
-                // AdGuard Statistics
-                //
-
                 AdGuardStatistics statistics =
                     await router.GetAdGuardStatisticsAsync();
 
+                if (statistics.TotalQueries < 0 ||
+                    statistics.BlockedQueries < 0)
+                {
+                    _viewModel.AdGuardQueries =
+                        "-";
 
-                _viewModel.AdGuardQueries =
-                    statistics.TotalQueries.ToString("N0");
+                    _viewModel.AdGuardBlocked =
+                        "-";
 
+                    _viewModel.AdGuardBlockRate =
+                        "-";
+                }
+                else
+                {
+                    _viewModel.AdGuardQueries =
+                        statistics.TotalQueries
+                            .ToString("N0");
 
-                _viewModel.AdGuardBlocked =
-                    statistics.BlockedQueries.ToString("N0");
+                    _viewModel.AdGuardBlocked =
+                        statistics.BlockedQueries
+                            .ToString("N0");
 
-
-                _viewModel.AdGuardBlockRate =
-                    statistics.BlockPercentage
-                        .ToString("0.0") + "%";
-
-                //
-                // Internet / Network
-                //
+                    _viewModel.AdGuardBlockRate =
+                        statistics.BlockPercentage
+                            .ToString("0.0") + "%";
+                }
 
                 NetworkInfo network =
                     await router.GetNetworkInfoAsync();
 
-
                 _viewModel.InternetConnected =
                     network.Connected;
-
 
                 _viewModel.WanIp =
                     network.WanIp;
 
-
                 _viewModel.Gateway =
                     network.Gateway;
-
 
                 _viewModel.ExternalDns =
                     network.ExternalDns;
 
-
                 _viewModel.AdvertisedDns =
                     network.AdvertisedDns;
-
 
                 _viewModel.Latency =
                     network.Latency;
 
-
-
-                //
-                // Dashboard status
-                //
-
                 _viewModel.StatusMessage =
-                    "Connected";
-                _viewModel.RefreshStatusIndicators();
+                    statistics.TotalQueries < 0
+                        ? "Connected - AdGuard token expired or invalid"
+                        : "Connected";
 
+                _viewModel.RefreshStatusIndicators();
 
                 _viewModel.LastRefresh =
                     "Last refresh: " +
@@ -232,17 +220,17 @@ namespace AdGuardTray.Views
             }
         }
 
-
-
         private void ShowConnectionError(
             string message)
         {
-            _viewModel.RouterConnected = false;
+            _viewModel.RouterConnected =
+                false;
 
-            _viewModel.InternetConnected = false;
+            _viewModel.InternetConnected =
+                false;
 
-            _viewModel.AdGuardRunning = false;
-
+            _viewModel.AdGuardRunning =
+                false;
 
             _viewModel.RouterModel =
                 "Connection Failed";
@@ -265,7 +253,6 @@ namespace AdGuardTray.Views
             _viewModel.StorageUsage =
                 "-";
 
-
             _viewModel.AdGuardVersion =
                 "-";
 
@@ -275,6 +262,14 @@ namespace AdGuardTray.Views
             _viewModel.AdGuardService =
                 "-";
 
+            _viewModel.AdGuardQueries =
+                "-";
+
+            _viewModel.AdGuardBlocked =
+                "-";
+
+            _viewModel.AdGuardBlockRate =
+                "-";
 
             _viewModel.WanIp =
                 "-";
@@ -282,24 +277,25 @@ namespace AdGuardTray.Views
             _viewModel.Gateway =
                 "-";
 
-            _viewModel.ExternalDns = "-";
+            _viewModel.ExternalDns =
+                "-";
 
-            _viewModel.AdvertisedDns = "-";
+            _viewModel.AdvertisedDns =
+                "-";
 
             _viewModel.Latency =
                 "-";
 
-
             _viewModel.StatusMessage =
                 message;
 
+            _viewModel.RefreshStatusIndicators();
 
             _viewModel.LastRefresh =
+                "Last refresh: " +
                 DateTime.Now.ToString(
                     "dd MMM yyyy HH:mm:ss");
         }
-
-
 
         private async void Refresh_Click(
             object sender,
@@ -308,32 +304,27 @@ namespace AdGuardTray.Views
             await RefreshDashboard();
         }
 
-
-
         private void Settings_Click(
-    object sender,
-    RoutedEventArgs e)
+            object sender,
+            RoutedEventArgs e)
         {
             var settings =
-                new SettingsWindow();
-
-            settings.Owner = this;
+                new SettingsWindow
+                {
+                    Owner = this
+                };
 
             settings.ShowDialog();
 
             _ = RefreshDashboard();
         }
 
-
-        protected override void OnClosed(EventArgs e)
+        protected override void OnClosed(
+            EventArgs e)
         {
-            if (_refreshTimer != null)
-            {
-                _refreshTimer.Stop();
-            }
+            _refreshTimer.Stop();
 
             base.OnClosed(e);
         }
-
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using System.Windows;
 using AdGuardTray.Models;
 using AdGuardTray.Services;
@@ -17,16 +18,35 @@ namespace AdGuardTray.Views
                 new SettingsService();
         }
 
-        private RouterManager CreateRouterManager()
+        private async Task<RouterManager> CreateRouterManagerAsync()
         {
             var settings =
                 _settingsService.Load();
 
+            string password =
+                _settingsService.DecryptPassword(
+                    settings.EncryptedPassword);
+
+            using GLInetSessionService sessionService =
+                new GLInetSessionService(
+                    settings.RouterIp,
+                    settings.Username,
+                    password);
+
+            string adminToken =
+                await sessionService.GetAdminTokenAsync();
+
+            if (string.IsNullOrWhiteSpace(adminToken))
+            {
+                throw new InvalidOperationException(
+                    "The router login succeeded but no Admin-Token was returned.");
+            }
+
             return new RouterManager(
                 settings.RouterIp,
                 settings.Username,
-                _settingsService.DecryptPassword(
-                    settings.EncryptedPassword));
+                password,
+                adminToken);
         }
 
         private async void RouterInfoButton_Click(
@@ -34,13 +54,15 @@ namespace AdGuardTray.Views
             RoutedEventArgs e)
         {
             OutputBox.Text =
-                "Loading router information...";
+                "Logging into the router and loading router information...";
 
             try
             {
+                RouterManager routerManager =
+                    await CreateRouterManagerAsync();
+
                 RouterInfo info =
-                    await CreateRouterManager()
-                        .GetRouterInfoAsync();
+                    await routerManager.GetRouterInfoAsync();
 
                 OutputBox.Text =
 $@"Router Information
@@ -101,13 +123,15 @@ Latency
             RoutedEventArgs e)
         {
             OutputBox.Text =
-                "Checking AdGuard Home...";
+                "Logging into the router and checking AdGuard Home...";
 
             try
             {
-                var status =
-                    await CreateRouterManager()
-                        .GetAdGuardStatusAsync();
+                RouterManager routerManager =
+                    await CreateRouterManagerAsync();
+
+                AdGuardStatus status =
+                    await routerManager.GetAdGuardStatusAsync();
 
                 OutputBox.Text =
 $@"AdGuard Home Status
@@ -140,13 +164,15 @@ Process
             RoutedEventArgs e)
         {
             OutputBox.Text =
-                "Loading logs...";
+                "Logging into the router and loading logs...";
 
             try
             {
+                RouterManager routerManager =
+                    await CreateRouterManagerAsync();
+
                 OutputBox.Text =
-                    await CreateRouterManager()
-                        .GetLogsAsync();
+                    await routerManager.GetLogsAsync();
             }
             catch (Exception ex)
             {
@@ -160,12 +186,14 @@ Process
             RoutedEventArgs e)
         {
             OutputBox.Text =
-                "Restarting AdGuard Home...";
+                "Logging into the router and restarting AdGuard Home...";
 
             try
             {
-                await CreateRouterManager()
-                    .RestartAdGuardAsync();
+                RouterManager routerManager =
+                    await CreateRouterManagerAsync();
+
+                await routerManager.RestartAdGuardAsync();
 
                 OutputBox.Text =
                     "AdGuard Home restarted successfully.";
@@ -177,11 +205,53 @@ Process
             }
         }
 
-        private void RefreshButton_Click(
+        private async void RefreshButton_Click(
             object sender,
             RoutedEventArgs e)
         {
-            OutputBox.Clear();
+            OutputBox.Text =
+                "Testing automatic GL.iNet login...";
+
+            try
+            {
+                var settings =
+                    _settingsService.Load();
+
+                string password =
+                    _settingsService.DecryptPassword(
+                        settings.EncryptedPassword);
+
+                using GLInetSessionService sessionService =
+                    new GLInetSessionService(
+                        settings.RouterIp,
+                        settings.Username,
+                        password);
+
+                string adminToken =
+                    await sessionService.GetAdminTokenAsync();
+
+                OutputBox.Text =
+$@"Automatic GL.iNet Login
+
+Result
+------
+Login successful
+
+Token received
+--------------
+Yes
+
+Token length
+------------
+{adminToken.Length}
+
+The token has not been displayed for security.";
+            }
+            catch (Exception ex)
+            {
+                OutputBox.Text =
+                    ex.ToString();
+            }
         }
     }
 }
