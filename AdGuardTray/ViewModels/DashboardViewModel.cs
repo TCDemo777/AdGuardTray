@@ -1,14 +1,17 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using CommunityToolkit.Mvvm.ComponentModel;
+using AdGuardTray.Models;
 
 namespace AdGuardTray.ViewModels
 {
     public partial class DashboardViewModel : ObservableObject
     {
-        //
-        // Router
-        //
+//
+// Router
+//
 
-        [ObservableProperty]
+    [ObservableProperty]
         private bool routerConnected;
 
         [ObservableProperty]
@@ -29,25 +32,25 @@ namespace AdGuardTray.ViewModels
         [ObservableProperty]
         private double cpuPercentage;
 
-
         [ObservableProperty]
         private string memoryUsage = "-";
 
         [ObservableProperty]
         private double memoryPercentage;
 
-
         [ObservableProperty]
         private string storageUsage = "-";
 
 
-
         //
-        // AdGuard
+        // AdGuard summary
         //
 
         [ObservableProperty]
         private bool adGuardRunning;
+
+        [ObservableProperty]
+        private bool adGuardProtectionEnabled;
 
         [ObservableProperty]
         private string adGuardVersion = "-";
@@ -64,10 +67,33 @@ namespace AdGuardTray.ViewModels
         [ObservableProperty]
         private string adGuardBlocked = "-";
 
-
         [ObservableProperty]
         private string adGuardBlockRate = "-";
 
+
+        //
+        // AdGuard graph and rankings
+        //
+
+        public ObservableCollection<AdGuardTimePoint>
+            AdGuardQueryHistory
+        { get; } =
+                new();
+
+        public ObservableCollection<AdGuardRankedItem>
+            TopClients
+        { get; } =
+                new();
+
+        public ObservableCollection<AdGuardRankedItem>
+            TopQueriedDomains
+        { get; } =
+                new();
+
+        public ObservableCollection<AdGuardRankedItem>
+            TopBlockedDomains
+        { get; } =
+                new();
 
 
         //
@@ -92,13 +118,11 @@ namespace AdGuardTray.ViewModels
         [ObservableProperty]
         private string latency = "-";
 
-
         public string DnsServer
         {
             get => ExternalDns;
             set => ExternalDns = value;
         }
-
 
 
         //
@@ -112,7 +136,6 @@ namespace AdGuardTray.ViewModels
         private string lastRefresh = "-";
 
 
-
         //
         // Status text
         //
@@ -122,18 +145,70 @@ namespace AdGuardTray.ViewModels
                 ? "🟢 Connected"
                 : "🔴 Offline";
 
-
         public string AdGuardStatusText =>
             AdGuardRunning
                 ? "🟢 Running"
                 : "🔴 Stopped";
 
+        public string AdGuardProtectionStatusText =>
+            AdGuardProtectionEnabled
+                ? "🟢 Protection enabled"
+                : "🔴 Protection disabled";
 
         public string InternetStatusText =>
             InternetConnected
                 ? "🟢 Connected"
                 : "🔴 Offline";
 
+
+        //
+        // Collection updates
+        //
+
+        public void UpdateAdGuardStatistics(
+            AdGuardStatistics statistics)
+        {
+            AdGuardProtectionEnabled =
+                statistics.ProtectionEnabled;
+
+            ReplaceCollection(
+                AdGuardQueryHistory,
+                statistics.QueryHistory);
+
+            ReplaceCollection(
+                TopClients,
+                statistics.TopClients);
+
+            ReplaceCollection(
+                TopQueriedDomains,
+                statistics.TopQueriedDomains);
+
+            ReplaceCollection(
+                TopBlockedDomains,
+                statistics.TopBlockedDomains);
+        }
+
+        public void ClearAdGuardStatistics()
+        {
+            AdGuardQueryHistory.Clear();
+            TopClients.Clear();
+            TopQueriedDomains.Clear();
+            TopBlockedDomains.Clear();
+
+            AdGuardProtectionEnabled = false;
+        }
+
+        private static void ReplaceCollection<T>(
+            ObservableCollection<T> destination,
+            IEnumerable<T> source)
+        {
+            destination.Clear();
+
+            foreach (T item in source)
+            {
+                destination.Add(item);
+            }
+        }
 
 
         //
@@ -142,18 +217,26 @@ namespace AdGuardTray.ViewModels
 
         public void RefreshStatusIndicators()
         {
-            OnPropertyChanged(nameof(RouterStatusText));
-            OnPropertyChanged(nameof(AdGuardStatusText));
-            OnPropertyChanged(nameof(InternetStatusText));
-        }
+            OnPropertyChanged(
+                nameof(RouterStatusText));
 
+            OnPropertyChanged(
+                nameof(AdGuardStatusText));
+
+            OnPropertyChanged(
+                nameof(AdGuardProtectionStatusText));
+
+            OnPropertyChanged(
+                nameof(InternetStatusText));
+        }
 
 
         //
         // Convert CPU text to progress value
         //
 
-        partial void OnCpuUsageChanged(string value)
+        partial void OnCpuUsageChanged(
+            string value)
         {
             if (double.TryParse(
                 value.Replace("%", ""),
@@ -168,12 +251,12 @@ namespace AdGuardTray.ViewModels
         }
 
 
-
         //
         // Convert memory text to progress value
         //
 
-        partial void OnMemoryUsageChanged(string value)
+        partial void OnMemoryUsageChanged(
+            string value)
         {
             if (double.TryParse(
                 value.Replace("%", ""),
@@ -188,26 +271,38 @@ namespace AdGuardTray.ViewModels
         }
 
 
-
         //
         // Status property updates
         //
 
-        partial void OnRouterConnectedChanged(bool value)
+        partial void OnRouterConnectedChanged(
+            bool value)
         {
-            OnPropertyChanged(nameof(RouterStatusText));
+            OnPropertyChanged(
+                nameof(RouterStatusText));
         }
 
-
-        partial void OnAdGuardRunningChanged(bool value)
+        partial void OnAdGuardRunningChanged(
+            bool value)
         {
-            OnPropertyChanged(nameof(AdGuardStatusText));
+            OnPropertyChanged(
+                nameof(AdGuardStatusText));
         }
 
-
-        partial void OnInternetConnectedChanged(bool value)
+        partial void OnAdGuardProtectionEnabledChanged(
+            bool value)
         {
-            OnPropertyChanged(nameof(InternetStatusText));
+            OnPropertyChanged(
+                nameof(AdGuardProtectionStatusText));
+        }
+
+        partial void OnInternetConnectedChanged(
+            bool value)
+        {
+            OnPropertyChanged(
+                nameof(InternetStatusText));
         }
     }
+
+
 }

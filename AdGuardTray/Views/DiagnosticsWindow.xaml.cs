@@ -17,8 +17,7 @@ namespace AdGuardTray.Views
             _settingsService =
                 new SettingsService();
         }
-
-        private async Task<RouterManager> CreateRouterManagerAsync()
+                private async Task<RouterManager> CreateRouterManagerAsync()
         {
             var settings =
                 _settingsService.Load();
@@ -43,10 +42,9 @@ namespace AdGuardTray.Views
             }
 
             return new RouterManager(
-                settings.RouterIp,
-                settings.Username,
-                password,
-                adminToken);
+    settings.RouterIp,
+    settings.Username,
+    password);
         }
 
         private async void RouterInfoButton_Click(

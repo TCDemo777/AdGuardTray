@@ -15,14 +15,7 @@ namespace AdGuardTray.Views
         private readonly SettingsService _settingsService;
         private readonly DispatcherTimer _refreshTimer;
 
-        //
-        // Temporary GL.iNet session token.
-        // Replace this whenever the router session expires.
-        //
-        private const string AdminToken =
-            "YOUR_CURRENT_ADMIN_TOKEN";
-
-        public DashboardWindow()
+    public DashboardWindow()
         {
             InitializeComponent();
 
@@ -85,8 +78,7 @@ namespace AdGuardTray.Views
                     new RouterManager(
                         settings.RouterIp,
                         settings.Username,
-                        password,
-                        AdminToken);
+                        password);
 
                 RouterInfo info =
                     await router.GetRouterInfoAsync();
@@ -143,6 +135,9 @@ namespace AdGuardTray.Views
                 AdGuardStatistics statistics =
                     await router.GetAdGuardStatisticsAsync();
 
+                _viewModel.UpdateAdGuardStatistics(
+    statistics);
+
                 if (statistics.TotalQueries < 0 ||
                     statistics.BlockedQueries < 0)
                 {
@@ -193,7 +188,7 @@ namespace AdGuardTray.Views
 
                 _viewModel.StatusMessage =
                     statistics.TotalQueries < 0
-                        ? "Connected - AdGuard token expired or invalid"
+                        ? "Connected - AdGuard statistics unavailable"
                         : "Connected";
 
                 _viewModel.RefreshStatusIndicators();
@@ -231,6 +226,8 @@ namespace AdGuardTray.Views
 
             _viewModel.AdGuardRunning =
                 false;
+
+            _viewModel.ClearAdGuardStatistics();
 
             _viewModel.RouterModel =
                 "Connection Failed";
@@ -327,4 +324,5 @@ namespace AdGuardTray.Views
             base.OnClosed(e);
         }
     }
+
 }
