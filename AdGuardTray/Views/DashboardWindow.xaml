@@ -352,7 +352,8 @@ xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCor
                     Text="DNS Query History"/>
 
                 <lvc:CartesianChart
-                    Grid.Row="1"/>
+    Grid.Row="1"
+    Series="{Binding QueryHistorySeries}"/>
 
             </Grid>
 
