@@ -1,4 +1,5 @@
 ﻿using System.Windows.Controls;
+using AdGuardTray.ViewModels;
 
 namespace AdGuardTray.Views
 {
@@ -7,6 +8,9 @@ namespace AdGuardTray.Views
         public ClientsView()
         {
             InitializeComponent();
+
+            DataContext =
+                new ClientsViewModel();
         }
     }
 }

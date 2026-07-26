@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
@@ -6,7 +7,6 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using AdGuardTray.Models;
-using System.Collections.Generic;
 
 namespace AdGuardTray.Services
 {
@@ -18,8 +18,8 @@ namespace AdGuardTray.Services
         private readonly RouterInfoService _routerInfo;
         private readonly NetworkService _network;
 
-    private readonly SemaphoreSlim _tokenLock =
-        new SemaphoreSlim(1, 1);
+        private readonly SemaphoreSlim _tokenLock =
+            new SemaphoreSlim(1, 1);
 
         private string? _adminToken;
 
@@ -49,20 +49,29 @@ namespace AdGuardTray.Services
                     nameof(password));
             }
 
-            _routerIp = NormaliseRouterHost(routerIp);
+            _routerIp =
+                NormaliseRouterHost(
+                    routerIp);
 
-            _ssh = new GLInetSshService(
-                _routerIp,
-                username,
-                password);
+            _ssh =
+                new GLInetSshService(
+                    _routerIp,
+                    username,
+                    password);
 
-            _sessionService = new GLInetSessionService(
-                _routerIp,
-                username,
-                password);
+            _sessionService =
+                new GLInetSessionService(
+                    _routerIp,
+                    username,
+                    password);
 
-            _routerInfo = new RouterInfoService(_ssh);
-            _network = new NetworkService(_ssh);
+            _routerInfo =
+                new RouterInfoService(
+                    _ssh);
+
+            _network =
+                new NetworkService(
+                    _ssh);
         }
 
         //
@@ -71,7 +80,8 @@ namespace AdGuardTray.Services
 
         public Task<RouterInfo> GetRouterInfoAsync()
         {
-            return _routerInfo.GetRouterInfoAsync();
+            return _routerInfo
+                .GetRouterInfoAsync();
         }
 
         //
@@ -80,37 +90,46 @@ namespace AdGuardTray.Services
 
         public Task<NetworkInfo> GetNetworkInfoAsync()
         {
-            return _network.GetNetworkInfoAsync();
+            return _network
+                .GetNetworkInfoAsync();
         }
 
         //
         // AdGuard Status
         //
 
-        public async Task<AdGuardStatus> GetAdGuardStatusAsync()
+        public async Task<AdGuardStatus>
+            GetAdGuardStatusAsync()
         {
-            string service = await _ssh.RunCommandAsync(
-                "/etc/init.d/adguardhome status");
+            string service =
+                await _ssh.RunCommandAsync(
+                    "/etc/init.d/adguardhome status");
 
-            string process = await _ssh.RunCommandAsync(
-                "pgrep -a AdGuardHome");
+            string process =
+                await _ssh.RunCommandAsync(
+                    "pgrep -a AdGuardHome");
 
-            string version = await _ssh.RunCommandAsync(
-                "/usr/bin/AdGuardHome --version");
+            string version =
+                await _ssh.RunCommandAsync(
+                    "/usr/bin/AdGuardHome --version");
 
             return new AdGuardStatus
             {
-                IsRunning = service.Contains(
-                    "running",
-                    StringComparison.OrdinalIgnoreCase),
+                IsRunning =
+                    service.Contains(
+                        "running",
+                        StringComparison.OrdinalIgnoreCase),
 
-                ServiceStatus = service.Trim(),
+                ServiceStatus =
+                    service.Trim(),
 
-                Process = string.IsNullOrWhiteSpace(process)
-                    ? "Not Running"
-                    : process.Trim(),
+                Process =
+                    string.IsNullOrWhiteSpace(process)
+                        ? "Not Running"
+                        : process.Trim(),
 
-                Version = version.Trim()
+                Version =
+                    version.Trim()
             };
         }
 
@@ -118,16 +137,20 @@ namespace AdGuardTray.Services
         // AdGuard Statistics
         //
 
-        public async Task<AdGuardStatistics> GetAdGuardStatisticsAsync()
+        public async Task<AdGuardStatistics>
+            GetAdGuardStatisticsAsync()
         {
-            var stats = CreateUnavailableStatistics();
+            AdGuardStatistics stats =
+                CreateUnavailableStatistics();
 
             try
             {
-                string token = await GetAdminTokenAsync();
+                string token =
+                    await GetAdminTokenAsync();
 
                 AdGuardStatsResponse firstAttempt =
-                    await RequestAdGuardStatisticsAsync(token);
+                    await RequestAdGuardStatisticsAsync(
+                        token);
 
                 if (firstAttempt.RequiresNewToken)
                 {
@@ -137,14 +160,17 @@ namespace AdGuardTray.Services
 
                     InvalidateAdminToken();
 
-                    token = await GetAdminTokenAsync();
+                    token =
+                        await GetAdminTokenAsync();
 
                     AdGuardStatsResponse secondAttempt =
-                        await RequestAdGuardStatisticsAsync(token);
+                        await RequestAdGuardStatisticsAsync(
+                            token);
 
                     if (!secondAttempt.IsSuccess)
                     {
-                        LogFailedAdGuardResponse(secondAttempt);
+                        LogFailedAdGuardResponse(
+                            secondAttempt);
 
                         return stats;
                     }
@@ -155,7 +181,8 @@ namespace AdGuardTray.Services
 
                 if (!firstAttempt.IsSuccess)
                 {
-                    LogFailedAdGuardResponse(firstAttempt);
+                    LogFailedAdGuardResponse(
+                        firstAttempt);
 
                     return stats;
                 }
@@ -171,25 +198,469 @@ namespace AdGuardTray.Services
             catch (HttpRequestException ex)
             {
                 Debug.WriteLine(
-                    "AdGuard HTTP error: " + ex.Message);
+                    "AdGuard HTTP error: " +
+                    ex.Message);
             }
             catch (JsonException ex)
             {
                 Debug.WriteLine(
-                    "AdGuard JSON error: " + ex.Message);
+                    "AdGuard JSON error: " +
+                    ex.Message);
             }
             catch (Exception ex)
             {
                 Debug.WriteLine(
-                    "AdGuard statistics error: " + ex);
+                    "AdGuard statistics error: " +
+                    ex);
             }
 
             return stats;
         }
 
-        private async Task<string> GetAdminTokenAsync()
+        //
+        // AdGuard Clients
+        //
+
+        public async Task<List<ClientInfo>>
+            GetAdGuardClientsAsync()
         {
-            if (!string.IsNullOrWhiteSpace(_adminToken))
+            try
+            {
+                string token =
+                    await GetAdminTokenAsync();
+
+                AdGuardClientsResponse firstAttempt =
+                    await RequestAdGuardClientsAsync(
+                        token);
+
+                if (firstAttempt.RequiresNewToken)
+                {
+                    Debug.WriteLine(
+                        "The GL.iNet Admin-Token was rejected " +
+                        "while loading clients. Obtaining a " +
+                        "new token and retrying.");
+
+                    InvalidateAdminToken();
+
+                    token =
+                        await GetAdminTokenAsync();
+
+                    AdGuardClientsResponse secondAttempt =
+                        await RequestAdGuardClientsAsync(
+                            token);
+
+                    if (!secondAttempt.IsSuccess)
+                    {
+                        LogFailedClientsResponse(
+                            secondAttempt);
+
+                        return new List<ClientInfo>();
+                    }
+
+                    return ParseAdGuardClients(
+                        secondAttempt.Content);
+                }
+
+                if (!firstAttempt.IsSuccess)
+                {
+                    LogFailedClientsResponse(
+                        firstAttempt);
+
+                    return new List<ClientInfo>();
+                }
+
+                return ParseAdGuardClients(
+                    firstAttempt.Content);
+            }
+            catch (TaskCanceledException)
+            {
+                Debug.WriteLine(
+                    "The AdGuard clients request timed out.");
+            }
+            catch (HttpRequestException ex)
+            {
+                Debug.WriteLine(
+                    "AdGuard clients HTTP error: " +
+                    ex.Message);
+            }
+            catch (JsonException ex)
+            {
+                Debug.WriteLine(
+                    "AdGuard clients JSON error: " +
+                    ex.Message);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(
+                    "AdGuard clients error: " +
+                    ex);
+            }
+
+            return new List<ClientInfo>();
+        }
+
+        private async Task<AdGuardClientsResponse>
+            RequestAdGuardClientsAsync(
+                string token)
+        {
+            var cookieContainer =
+                new CookieContainer();
+
+            var adGuardBaseUri =
+                new Uri(
+                    $"http://{_routerIp}:3000");
+
+            cookieContainer.Add(
+                adGuardBaseUri,
+                new Cookie(
+                    "Admin-Token",
+                    token,
+                    "/"));
+
+            using var handler =
+                new HttpClientHandler
+                {
+                    CookieContainer =
+                        cookieContainer,
+
+                    UseCookies =
+                        true,
+
+                    AutomaticDecompression =
+                        DecompressionMethods.GZip |
+                        DecompressionMethods.Deflate
+                };
+
+            using var client =
+                new HttpClient(handler)
+                {
+                    Timeout =
+                        TimeSpan.FromSeconds(10)
+                };
+
+            client.DefaultRequestHeaders
+                .Accept
+                .ParseAdd(
+                    "application/json");
+
+            string url =
+                $"http://{_routerIp}:3000/control/clients";
+
+            Debug.WriteLine(
+                "Calling AdGuard clients: " +
+                url);
+
+            using HttpResponseMessage response =
+                await client.GetAsync(
+                    url);
+
+            string content =
+                await response.Content
+                    .ReadAsStringAsync();
+
+            Debug.WriteLine(
+                "AdGuard clients status: " +
+                $"{(int)response.StatusCode} " +
+                response.StatusCode);
+
+            return new AdGuardClientsResponse(
+                response.StatusCode,
+                content);
+        }
+
+        private static List<ClientInfo>
+            ParseAdGuardClients(
+                string json)
+        {
+            var clients =
+                new List<ClientInfo>();
+
+            var knownIdentifiers =
+                new HashSet<string>(
+                    StringComparer.OrdinalIgnoreCase);
+
+            using JsonDocument document =
+                JsonDocument.Parse(
+                    json);
+
+            JsonElement root =
+                document.RootElement;
+
+            ParseConfiguredClients(
+                root,
+                clients,
+                knownIdentifiers);
+
+            ParseAutomaticClients(
+                root,
+                clients,
+                knownIdentifiers);
+
+            clients.Sort(
+                (left, right) =>
+                    string.Compare(
+                        left.Name,
+                        right.Name,
+                        StringComparison.OrdinalIgnoreCase));
+
+            Debug.WriteLine(
+                $"AdGuard clients loaded: {clients.Count}");
+
+            return clients;
+        }
+
+        private static void ParseConfiguredClients(
+            JsonElement root,
+            List<ClientInfo> clients,
+            HashSet<string> knownIdentifiers)
+        {
+            if (!root.TryGetProperty(
+                    "clients",
+                    out JsonElement configuredClients) ||
+                configuredClients.ValueKind !=
+                    JsonValueKind.Array)
+            {
+                return;
+            }
+
+            foreach (JsonElement configuredClient
+                     in configuredClients.EnumerateArray())
+            {
+                string name =
+                    GetClientStringProperty(
+                        configuredClient,
+                        "name");
+
+                if (!configuredClient.TryGetProperty(
+                        "ids",
+                        out JsonElement identifiers) ||
+                    identifiers.ValueKind !=
+                        JsonValueKind.Array)
+                {
+                    continue;
+                }
+
+                foreach (JsonElement identifierElement
+                         in identifiers.EnumerateArray())
+                {
+                    if (identifierElement.ValueKind !=
+                        JsonValueKind.String)
+                    {
+                        continue;
+                    }
+
+                    string identifier =
+                        identifierElement
+                            .GetString()?
+                            .Trim() ??
+                        string.Empty;
+
+                    AddClient(
+                        clients,
+                        knownIdentifiers,
+                        name,
+                        identifier);
+                }
+            }
+        }
+
+        private static void ParseAutomaticClients(
+            JsonElement root,
+            List<ClientInfo> clients,
+            HashSet<string> knownIdentifiers)
+        {
+            if (!root.TryGetProperty(
+                    "auto_clients",
+                    out JsonElement automaticClients) ||
+                automaticClients.ValueKind !=
+                    JsonValueKind.Array)
+            {
+                return;
+            }
+
+            foreach (JsonElement automaticClient
+                     in automaticClients.EnumerateArray())
+            {
+                string name =
+                    GetClientStringProperty(
+                        automaticClient,
+                        "name");
+
+                string ipAddress =
+                    GetClientStringProperty(
+                        automaticClient,
+                        "ip");
+
+                AddClient(
+                    clients,
+                    knownIdentifiers,
+                    name,
+                    ipAddress);
+            }
+        }
+
+        private static void AddClient(
+            List<ClientInfo> clients,
+            HashSet<string> knownIdentifiers,
+            string name,
+            string identifier)
+        {
+            if (string.IsNullOrWhiteSpace(
+                    identifier))
+            {
+                return;
+            }
+
+            string normalisedIdentifier =
+                identifier.Trim();
+
+            if (!knownIdentifiers.Add(
+                    normalisedIdentifier))
+            {
+                return;
+            }
+
+            string displayName =
+                string.IsNullOrWhiteSpace(name)
+                    ? normalisedIdentifier
+                    : name.Trim();
+
+            string ipAddress =
+                "-";
+
+            string macAddress =
+                "-";
+
+            if (IPAddress.TryParse(
+                    normalisedIdentifier,
+                    out _))
+            {
+                ipAddress =
+                    normalisedIdentifier;
+            }
+            else if (LooksLikeMacAddress(
+                         normalisedIdentifier))
+            {
+                macAddress =
+                    normalisedIdentifier;
+            }
+            else
+            {
+                ipAddress =
+                    normalisedIdentifier;
+            }
+
+            clients.Add(
+                new ClientInfo
+                {
+                    Name =
+                        displayName,
+
+                    IpAddress =
+                        ipAddress,
+
+                    MacAddress =
+                        macAddress,
+
+                    TotalQueries =
+                        0,
+
+                    BlockedQueries =
+                        0,
+
+                    LastSeen =
+                        "-"
+                });
+        }
+
+        private static string GetClientStringProperty(
+            JsonElement element,
+            string propertyName)
+        {
+            if (element.TryGetProperty(
+                    propertyName,
+                    out JsonElement property) &&
+                property.ValueKind ==
+                    JsonValueKind.String)
+            {
+                return property
+                           .GetString()?
+                           .Trim() ??
+                       string.Empty;
+            }
+
+            return string.Empty;
+        }
+
+        private static bool LooksLikeMacAddress(
+            string value)
+        {
+            string compactValue =
+                value
+                    .Replace(
+                        ":",
+                        string.Empty,
+                        StringComparison.Ordinal)
+                    .Replace(
+                        "-",
+                        string.Empty,
+                        StringComparison.Ordinal);
+
+            if (compactValue.Length != 12)
+            {
+                return false;
+            }
+
+            foreach (char character
+                     in compactValue)
+            {
+                bool isHexadecimal =
+                    character >= '0' &&
+                    character <= '9' ||
+                    character >= 'a' &&
+                    character <= 'f' ||
+                    character >= 'A' &&
+                    character <= 'F';
+
+                if (!isHexadecimal)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static void LogFailedClientsResponse(
+            AdGuardClientsResponse response)
+        {
+            if (response.RequiresNewToken)
+            {
+                Debug.WriteLine(
+                    "The GL.iNet Admin-Token is missing, " +
+                    "invalid or expired.");
+            }
+
+            Debug.WriteLine(
+                "AdGuard clients request failed with status " +
+                $"{(int)response.StatusCode} " +
+                response.StatusCode +
+                ".");
+
+            if (!string.IsNullOrWhiteSpace(
+                    response.Content))
+            {
+                Debug.WriteLine(
+                    "AdGuard clients response: " +
+                    response.Content);
+            }
+        }
+
+        private async Task<string>
+            GetAdminTokenAsync()
+        {
+            if (!string.IsNullOrWhiteSpace(
+                    _adminToken))
             {
                 return _adminToken;
             }
@@ -198,7 +669,8 @@ namespace AdGuardTray.Services
 
             try
             {
-                if (!string.IsNullOrWhiteSpace(_adminToken))
+                if (!string.IsNullOrWhiteSpace(
+                        _adminToken))
                 {
                     return _adminToken;
                 }
@@ -208,17 +680,20 @@ namespace AdGuardTray.Services
                     "Logging in automatically.");
 
                 string token =
-                    await _sessionService.GetAdminTokenAsync(
-                        CancellationToken.None);
+                    await _sessionService
+                        .GetAdminTokenAsync(
+                            CancellationToken.None);
 
-                if (string.IsNullOrWhiteSpace(token))
+                if (string.IsNullOrWhiteSpace(
+                        token))
                 {
                     throw new InvalidOperationException(
                         "GL.iNet login succeeded but no " +
                         "Admin-Token was returned.");
                 }
 
-                _adminToken = token;
+                _adminToken =
+                    token;
 
                 Debug.WriteLine(
                     "GL.iNet Admin-Token obtained successfully.");
@@ -233,16 +708,20 @@ namespace AdGuardTray.Services
 
         private void InvalidateAdminToken()
         {
-            _adminToken = null;
+            _adminToken =
+                null;
         }
 
         private async Task<AdGuardStatsResponse>
-            RequestAdGuardStatisticsAsync(string token)
+            RequestAdGuardStatisticsAsync(
+                string token)
         {
-            var cookieContainer = new CookieContainer();
+            var cookieContainer =
+                new CookieContainer();
 
             var adGuardBaseUri =
-                new Uri($"http://{_routerIp}:3000");
+                new Uri(
+                    $"http://{_routerIp}:3000");
 
             cookieContainer.Add(
                 adGuardBaseUri,
@@ -251,35 +730,46 @@ namespace AdGuardTray.Services
                     token,
                     "/"));
 
-            using var handler = new HttpClientHandler
-            {
-                CookieContainer = cookieContainer,
-                UseCookies = true,
+            using var handler =
+                new HttpClientHandler
+                {
+                    CookieContainer =
+                        cookieContainer,
 
-                AutomaticDecompression =
-                    DecompressionMethods.GZip |
-                    DecompressionMethods.Deflate
-            };
+                    UseCookies =
+                        true,
 
-            using var client = new HttpClient(handler)
-            {
-                Timeout = TimeSpan.FromSeconds(10)
-            };
+                    AutomaticDecompression =
+                        DecompressionMethods.GZip |
+                        DecompressionMethods.Deflate
+                };
 
-            client.DefaultRequestHeaders.Accept.ParseAdd(
-                "application/json");
+            using var client =
+                new HttpClient(handler)
+                {
+                    Timeout =
+                        TimeSpan.FromSeconds(10)
+                };
+
+            client.DefaultRequestHeaders
+                .Accept
+                .ParseAdd(
+                    "application/json");
 
             string url =
                 $"http://{_routerIp}:3000/control/stats";
 
             Debug.WriteLine(
-                "Calling AdGuard stats: " + url);
+                "Calling AdGuard stats: " +
+                url);
 
             using HttpResponseMessage response =
-                await client.GetAsync(url);
+                await client.GetAsync(
+                    url);
 
             string content =
-                await response.Content.ReadAsStringAsync();
+                await response.Content
+                    .ReadAsStringAsync();
 
             Debug.WriteLine(
                 "AdGuard status: " +
@@ -292,12 +782,15 @@ namespace AdGuardTray.Services
         }
 
         private static AdGuardStatistics
-    ParseAdGuardStatistics(string json)
+            ParseAdGuardStatistics(
+                string json)
         {
-            var stats = CreateUnavailableStatistics();
+            AdGuardStatistics stats =
+                CreateUnavailableStatistics();
 
             using JsonDocument document =
-                JsonDocument.Parse(json);
+                JsonDocument.Parse(
+                    json);
 
             JsonElement root =
                 document.RootElement;
@@ -305,21 +798,26 @@ namespace AdGuardTray.Services
             if (root.TryGetProperty(
                     "num_dns_queries",
                     out JsonElement queries) &&
-                queries.TryGetInt32(out int totalQueries))
+                queries.TryGetInt32(
+                    out int totalQueries))
             {
-                stats.TotalQueries = totalQueries;
+                stats.TotalQueries =
+                    totalQueries;
             }
 
             if (root.TryGetProperty(
                     "num_blocked_filtering",
                     out JsonElement blocked) &&
-                blocked.TryGetInt32(out int blockedQueries))
+                blocked.TryGetInt32(
+                    out int blockedQueries))
             {
-                stats.BlockedQueries = blockedQueries;
+                stats.BlockedQueries =
+                    blockedQueries;
             }
 
             stats.QueryHistory =
-                ParseQueryHistory(root);
+                ParseQueryHistory(
+                    root);
 
             Debug.WriteLine(
                 $"Queries: {stats.TotalQueries}");
@@ -334,7 +832,8 @@ namespace AdGuardTray.Services
         }
 
         private static List<AdGuardTimePoint>
-    ParseQueryHistory(JsonElement root)
+            ParseQueryHistory(
+                JsonElement root)
         {
             var history =
                 new List<AdGuardTimePoint>();
@@ -342,7 +841,8 @@ namespace AdGuardTray.Services
             if (!root.TryGetProperty(
                     "dns_queries",
                     out JsonElement queryArray) ||
-                queryArray.ValueKind != JsonValueKind.Array)
+                queryArray.ValueKind !=
+                    JsonValueKind.Array)
             {
                 Debug.WriteLine(
                     "AdGuard statistics did not contain " +
@@ -376,7 +876,8 @@ namespace AdGuardTray.Services
                         queryArray,
                         index);
 
-                int blockedCount = 0;
+                int blockedCount =
+                    0;
 
                 if (blockedArray.ValueKind ==
                         JsonValueKind.Array &&
@@ -390,7 +891,9 @@ namespace AdGuardTray.Services
                 }
 
                 int intervalsAgo =
-                    pointCount - index - 1;
+                    pointCount -
+                    index -
+                    1;
 
                 DateTime timestamp =
                     SubtractTimeInterval(
@@ -401,9 +904,14 @@ namespace AdGuardTray.Services
                 history.Add(
                     new AdGuardTimePoint
                     {
-                        Timestamp = timestamp,
-                        Queries = queryCount,
-                        Blocked = blockedCount
+                        Timestamp =
+                            timestamp,
+
+                        Queries =
+                            queryCount,
+
+                        Blocked =
+                            blockedCount
                     });
             }
 
@@ -456,7 +964,8 @@ namespace AdGuardTray.Services
                 string? value =
                     property.GetString();
 
-                if (!string.IsNullOrWhiteSpace(value))
+                if (!string.IsNullOrWhiteSpace(
+                        value))
                 {
                     return value;
                 }
@@ -470,7 +979,8 @@ namespace AdGuardTray.Services
             string timeUnits,
             int intervalCount)
         {
-            return timeUnits.ToLowerInvariant() switch
+            return timeUnits
+                .ToLowerInvariant() switch
             {
                 "seconds" =>
                     timestamp.AddSeconds(
@@ -510,7 +1020,8 @@ namespace AdGuardTray.Services
                 response.StatusCode +
                 ".");
 
-            if (!string.IsNullOrWhiteSpace(response.Content))
+            if (!string.IsNullOrWhiteSpace(
+                    response.Content))
             {
                 Debug.WriteLine(
                     "AdGuard response: " +
@@ -519,12 +1030,16 @@ namespace AdGuardTray.Services
         }
 
         private static AdGuardStatistics
-    CreateUnavailableStatistics()
+            CreateUnavailableStatistics()
         {
             return new AdGuardStatistics
             {
-                TotalQueries = -1,
-                BlockedQueries = -1,
+                TotalQueries =
+                    -1,
+
+                BlockedQueries =
+                    -1,
+
                 QueryHistory =
                     new List<AdGuardTimePoint>()
             };
@@ -533,39 +1048,51 @@ namespace AdGuardTray.Services
         private static string NormaliseRouterHost(
             string routerIp)
         {
-            string value = routerIp.Trim();
+            string value =
+                routerIp.Trim();
 
             if (Uri.TryCreate(
                     value,
                     UriKind.Absolute,
                     out Uri? uri) &&
-                !string.IsNullOrWhiteSpace(uri.Host))
+                !string.IsNullOrWhiteSpace(
+                    uri.Host))
             {
                 return uri.Host;
             }
 
-            value = value
-                .Replace("https://", string.Empty,
-                    StringComparison.OrdinalIgnoreCase)
-                .Replace("http://", string.Empty,
-                    StringComparison.OrdinalIgnoreCase)
-                .TrimEnd('/');
+            value =
+                value
+                    .Replace(
+                        "https://",
+                        string.Empty,
+                        StringComparison.OrdinalIgnoreCase)
+                    .Replace(
+                        "http://",
+                        string.Empty,
+                        StringComparison.OrdinalIgnoreCase)
+                    .TrimEnd('/');
 
-            int slashIndex = value.IndexOf('/');
+            int slashIndex =
+                value.IndexOf('/');
 
             if (slashIndex >= 0)
             {
-                value = value[..slashIndex];
+                value =
+                    value[..slashIndex];
             }
 
-            int colonIndex = value.IndexOf(':');
+            int colonIndex =
+                value.IndexOf(':');
 
             if (colonIndex >= 0)
             {
-                value = value[..colonIndex];
+                value =
+                    value[..colonIndex];
             }
 
-            if (string.IsNullOrWhiteSpace(value))
+            if (string.IsNullOrWhiteSpace(
+                    value))
             {
                 throw new ArgumentException(
                     "The router address is invalid.",
@@ -629,28 +1156,72 @@ namespace AdGuardTray.Services
                 "reboot");
         }
 
-        private sealed class AdGuardStatsResponse
+        private sealed class AdGuardClientsResponse
         {
-            public AdGuardStatsResponse(
+            public AdGuardClientsResponse(
                 HttpStatusCode statusCode,
                 string content)
             {
-                StatusCode = statusCode;
-                Content = content;
+                StatusCode =
+                    statusCode;
+
+                Content =
+                    content;
             }
 
-            public HttpStatusCode StatusCode { get; }
+            public HttpStatusCode StatusCode
+            {
+                get;
+            }
 
-            public string Content { get; }
+            public string Content
+            {
+                get;
+            }
 
             public bool IsSuccess =>
                 (int)StatusCode >= 200 &&
                 (int)StatusCode <= 299;
 
             public bool RequiresNewToken =>
-                StatusCode == HttpStatusCode.Unauthorized ||
-                StatusCode == HttpStatusCode.Forbidden;
+                StatusCode ==
+                    HttpStatusCode.Unauthorized ||
+                StatusCode ==
+                    HttpStatusCode.Forbidden;
+        }
+
+        private sealed class AdGuardStatsResponse
+        {
+            public AdGuardStatsResponse(
+                HttpStatusCode statusCode,
+                string content)
+            {
+                StatusCode =
+                    statusCode;
+
+                Content =
+                    content;
+            }
+
+            public HttpStatusCode StatusCode
+            {
+                get;
+            }
+
+            public string Content
+            {
+                get;
+            }
+
+            public bool IsSuccess =>
+                (int)StatusCode >= 200 &&
+                (int)StatusCode <= 299;
+
+            public bool RequiresNewToken =>
+                StatusCode ==
+                    HttpStatusCode.Unauthorized ||
+                StatusCode ==
+                    HttpStatusCode.Forbidden;
         }
     }
-
 }

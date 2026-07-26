@@ -6,13 +6,16 @@
 
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="20"/>
+            <RowDefinition Height="15"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="15"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Page heading -->
+        <!-- Title -->
 
-        <StackPanel Grid.Row="0">
+        <StackPanel>
 
             <TextBlock
                 FontSize="24"
@@ -23,40 +26,99 @@
                 Margin="0,5,0,0"
                 FontSize="14"
                 Foreground="#666666"
-                Text="Connected devices and DNS client activity"/>
+                Text="Connected DNS clients"/>
 
         </StackPanel>
 
-        <!-- Placeholder content -->
+        <!-- Toolbar -->
 
-        <Border
+        <DockPanel
             Grid.Row="2"
-            Padding="30"
-            Background="White"
-            BorderBrush="#DDDDDD"
-            BorderThickness="1"
-            CornerRadius="10">
+            LastChildFill="False">
 
-            <StackPanel
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center">
+            <TextBox
+                Width="250"
+                Height="32"
+                Margin="0,0,10,0"
+                VerticalContentAlignment="Center"
+                Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" />
+
+            <Button
+                Width="100"
+                Height="32"
+                Content="Refresh"/>
+
+        </DockPanel>
+
+        <!-- Client Grid -->
+
+        <DataGrid
+            Grid.Row="4"
+            AutoGenerateColumns="False"
+            CanUserAddRows="False"
+            CanUserDeleteRows="False"
+            CanUserResizeRows="False"
+            IsReadOnly="True"
+            SelectionMode="Single"
+            AlternatingRowBackground="#F8F8F8"
+            HeadersVisibility="Column"
+            GridLinesVisibility="Horizontal"
+            ItemsSource="{Binding Clients}"
+            SelectedItem="{Binding SelectedClient}">
+
+            <DataGrid.Columns>
+
+                <DataGridTextColumn
+                    Header="Name"
+                    Width="2*"
+                    Binding="{Binding Name}" />
+
+                <DataGridTextColumn
+                    Header="IP Address"
+                    Width="140"
+                    Binding="{Binding IpAddress}" />
+
+                <DataGridTextColumn
+                    Header="MAC Address"
+                    Width="160"
+                    Binding="{Binding MacAddress}" />
+
+                <DataGridTextColumn
+                    Header="Queries"
+                    Width="100"
+                    Binding="{Binding TotalQueries}" />
+
+                <DataGridTextColumn
+                    Header="Blocked"
+                    Width="100"
+                    Binding="{Binding BlockedQueries}" />
+
+                <DataGridTextColumn
+                    Header="Block %"
+                    Width="90"
+                    Binding="{Binding BlockRate, StringFormat={}{0:F1}%}" />
+
+                <DataGridTextColumn
+                    Header="Last Seen"
+                    Width="140"
+                    Binding="{Binding LastSeen}" />
+
+            </DataGrid.Columns>
+
+        </DataGrid>
+
+        <!-- Status -->
+
+        <StatusBar Grid.Row="5">
+
+            <StatusBarItem>
 
                 <TextBlock
-                    HorizontalAlignment="Center"
-                    FontSize="22"
-                    FontWeight="SemiBold"
-                    Text="Clients"/>
+                    Text="{Binding StatusMessage}"/>
 
-                <TextBlock
-                    Margin="0,10,0,0"
-                    HorizontalAlignment="Center"
-                    FontSize="15"
-                    Foreground="Gray"
-                    Text="Connected clients and DNS usage will appear here."/>
+            </StatusBarItem>
 
-            </StackPanel>
-
-        </Border>
+        </StatusBar>
 
     </Grid>
 
