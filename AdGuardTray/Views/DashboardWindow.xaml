@@ -136,6 +136,7 @@
                         Click="Analytics_Click"/>
 
                     <Button
+                        x:Name="NetworkButton"
                         Height="48"
                         Margin="10,2"
                         Padding="16,0"
@@ -143,7 +144,8 @@
                         Background="Transparent"
                         Foreground="#D7DCE2"
                         BorderThickness="0"
-                        Content="Network"/>
+                        Content="Network"
+                        Click="Network_Click"/>
 
                     <Button
                         Height="48"

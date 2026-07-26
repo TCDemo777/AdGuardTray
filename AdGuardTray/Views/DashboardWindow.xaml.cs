@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Threading;
 using AdGuardTray.Models;
@@ -15,6 +16,20 @@ namespace AdGuardTray.Views
         private readonly DashboardViewModel _viewModel;
         private readonly SettingsService _settingsService;
         private readonly DispatcherTimer _refreshTimer;
+
+        private readonly Brush _selectedNavigationBackground =
+            new SolidColorBrush(
+                Color.FromRgb(
+                    53,
+                    64,
+                    77));
+
+        private readonly Brush _unselectedNavigationForeground =
+            new SolidColorBrush(
+                Color.FromRgb(
+                    215,
+                    220,
+                    226));
 
         public DashboardWindow()
         {
@@ -324,25 +339,8 @@ namespace AdGuardTray.Views
             PageContent.Content =
                 new OverviewView();
 
-            OverviewButton.Background =
-                new SolidColorBrush(
-                    Color.FromRgb(
-                        53,
-                        64,
-                        77));
-
-            OverviewButton.Foreground =
-                Brushes.White;
-
-            AnalyticsButton.Background =
-                Brushes.Transparent;
-
-            AnalyticsButton.Foreground =
-                new SolidColorBrush(
-                    Color.FromRgb(
-                        215,
-                        220,
-                        226));
+            SelectNavigationButton(
+                OverviewButton);
         }
 
         private void Analytics_Click(
@@ -352,25 +350,46 @@ namespace AdGuardTray.Views
             PageContent.Content =
                 new AnalyticsView();
 
-            AnalyticsButton.Background =
-                new SolidColorBrush(
-                    Color.FromRgb(
-                        53,
-                        64,
-                        77));
+            SelectNavigationButton(
+                AnalyticsButton);
+        }
 
-            AnalyticsButton.Foreground =
-                Brushes.White;
+        private void Network_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            PageContent.Content =
+                new NetworkView();
 
-            OverviewButton.Background =
-                Brushes.Transparent;
+            SelectNavigationButton(
+                NetworkButton);
+        }
 
-            OverviewButton.Foreground =
-                new SolidColorBrush(
-                    Color.FromRgb(
-                        215,
-                        220,
-                        226));
+        private void SelectNavigationButton(
+            Button selectedButton)
+        {
+            Button[] navigationButtons =
+            {
+                OverviewButton,
+                AnalyticsButton,
+                NetworkButton
+            };
+
+            foreach (Button button in navigationButtons)
+            {
+                bool isSelected =
+                    button == selectedButton;
+
+                button.Background =
+                    isSelected
+                        ? _selectedNavigationBackground
+                        : Brushes.Transparent;
+
+                button.Foreground =
+                    isSelected
+                        ? Brushes.White
+                        : _unselectedNavigationForeground;
+            }
         }
 
         protected override void OnClosed(
