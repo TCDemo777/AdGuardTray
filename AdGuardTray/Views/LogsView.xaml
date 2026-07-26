@@ -10,8 +10,6 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Page heading -->
-
         <StackPanel Grid.Row="0">
 
             <TextBlock
@@ -27,34 +25,135 @@
 
         </StackPanel>
 
-        <!-- Placeholder content -->
-
         <Border
             Grid.Row="2"
-            Padding="30"
+            Padding="20"
             Background="White"
             BorderBrush="#DDDDDD"
             BorderThickness="1"
             CornerRadius="10">
 
-            <StackPanel
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center">
+            <Grid>
+
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="15"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="12"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0">
+
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBox
+                        Grid.Column="0"
+                        Height="34"
+                        Padding="10,6"
+                        VerticalContentAlignment="Center"
+                        Text="{Binding SearchText,
+                                       UpdateSourceTrigger=PropertyChanged}"
+                        ToolTip="Search by client, domain, or status"/>
+
+                    <Button
+                        Grid.Column="2"
+                        MinWidth="100"
+                        Height="34"
+                        Padding="15,5"
+                        Command="{Binding TogglePauseCommand}"
+                        Content="{Binding PauseButtonText}"/>
+
+                </Grid>
+
+                <DataGrid
+                    Grid.Row="2"
+                    AutoGenerateColumns="False"
+                    CanUserAddRows="False"
+                    CanUserDeleteRows="False"
+                    HeadersVisibility="Column"
+                    IsReadOnly="True"
+                    ItemsSource="{Binding Entries}"
+                    SelectionMode="Single">
+
+                    <DataGrid.Columns>
+
+                        <DataGridTextColumn
+                            Width="170"
+                            Binding="{Binding Time}"
+                            Header="Time"/>
+
+                        <DataGridTextColumn
+                            Width="180"
+                            Binding="{Binding Client}"
+                            Header="Client"/>
+
+                        <DataGridTextColumn
+                            Width="*"
+                            Binding="{Binding Domain}"
+                            Header="Domain"/>
+
+                        <DataGridTemplateColumn
+                            Width="110"
+                            Header="Status">
+
+                            <DataGridTemplateColumn.CellTemplate>
+
+                                <DataTemplate>
+
+                                    <TextBlock
+                                        FontWeight="SemiBold"
+                                        Text="{Binding Status}">
+
+                                        <TextBlock.Style>
+
+                                            <Style TargetType="TextBlock">
+
+                                                <Setter
+                                                    Property="Foreground"
+                                                    Value="Green"/>
+
+                                                <Style.Triggers>
+
+                                                    <DataTrigger
+                                                        Binding="{Binding IsBlocked}"
+                                                        Value="True">
+
+                                                        <Setter
+                                                            Property="Foreground"
+                                                            Value="Red"/>
+
+                                                    </DataTrigger>
+
+                                                </Style.Triggers>
+
+                                            </Style>
+
+                                        </TextBlock.Style>
+
+                                    </TextBlock>
+
+                                </DataTemplate>
+
+                            </DataGridTemplateColumn.CellTemplate>
+
+                        </DataGridTemplateColumn>
+
+                    </DataGrid.Columns>
+
+                </DataGrid>
 
                 <TextBlock
-                    HorizontalAlignment="Center"
-                    FontSize="22"
-                    FontWeight="SemiBold"
-                    Text="Logs"/>
+                    Grid.Row="4"
+                    FontSize="13"
+                    Foreground="#666666"
+                    Text="{Binding StatusMessage}"/>
 
-                <TextBlock
-                    Margin="0,10,0,0"
-                    HorizontalAlignment="Center"
-                    FontSize="15"
-                    Foreground="Gray"
-                    Text="Router and DNS query logs will appear here."/>
-
-            </StackPanel>
+            </Grid>
 
         </Border>
 

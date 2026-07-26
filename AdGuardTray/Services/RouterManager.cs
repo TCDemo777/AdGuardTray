@@ -314,6 +314,74 @@ namespace AdGuardTray.Services
             return new List<ClientInfo>();
         }
 
+        //
+        // AdGuard Query Log
+        //
+
+        public async Task<List<QueryLogEntry>>
+            GetQueryLogAsync()
+        {
+            try
+            {
+                string token =
+                    await GetAdminTokenAsync();
+
+                AdGuardQueryLogResponse response =
+                    await RequestAdGuardQueryLogAsync(
+                        token,
+                        500);
+
+                if (response.RequiresNewToken)
+                {
+                    InvalidateAdminToken();
+
+                    token =
+                        await GetAdminTokenAsync();
+
+                    response =
+                        await RequestAdGuardQueryLogAsync(
+                            token,
+                            500);
+                }
+
+                if (!response.IsSuccess)
+                {
+                    LogFailedQueryLogResponse(
+                        response);
+
+                    return new List<QueryLogEntry>();
+                }
+
+                return ParseAdGuardQueryLog(
+                    response.Content);
+            }
+            catch (TaskCanceledException)
+            {
+                Debug.WriteLine(
+                    "The AdGuard query-log request timed out.");
+            }
+            catch (HttpRequestException ex)
+            {
+                Debug.WriteLine(
+                    "AdGuard query-log HTTP error: " +
+                    ex.Message);
+            }
+            catch (JsonException ex)
+            {
+                Debug.WriteLine(
+                    "AdGuard query-log JSON error: " +
+                    ex.Message);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(
+                    "AdGuard query-log error: " +
+                    ex);
+            }
+
+            return new List<QueryLogEntry>();
+        }
+
         private async Task<AdGuardClientsResponse>
             RequestAdGuardClientsAsync(
                 string token)
@@ -385,7 +453,8 @@ namespace AdGuardTray.Services
 
         private async Task<AdGuardQueryLogResponse>
             RequestAdGuardQueryLogAsync(
-                string token)
+                string token,
+                int limit = 5000)
         {
             var cookieContainer =
                 new CookieContainer();
@@ -427,9 +496,15 @@ namespace AdGuardTray.Services
                 .ParseAdd(
                     "application/json");
 
+            int safeLimit =
+                Math.Clamp(
+                    limit,
+                    1,
+                    5000);
+
             string url =
                 $"http://{_routerIp}:3000/control/querylog" +
-                "?limit=5000";
+                $"?limit={safeLimit}";
 
             Debug.WriteLine(
                 "Calling AdGuard query log: " +
@@ -451,6 +526,124 @@ namespace AdGuardTray.Services
             return new AdGuardQueryLogResponse(
                 response.StatusCode,
                 content);
+        }
+
+        private static List<QueryLogEntry>
+            ParseAdGuardQueryLog(
+                string json)
+        {
+            var entries =
+                new List<QueryLogEntry>();
+
+            using JsonDocument document =
+                JsonDocument.Parse(
+                    json);
+
+            JsonElement root =
+                document.RootElement;
+
+            if (!root.TryGetProperty(
+                    "data",
+                    out JsonElement data) ||
+                data.ValueKind !=
+                    JsonValueKind.Array)
+            {
+                Debug.WriteLine(
+                    "AdGuard query log did not contain " +
+                    "a data array.");
+
+                return entries;
+            }
+
+            foreach (JsonElement item
+                     in data.EnumerateArray())
+            {
+                string timeText =
+                    GetClientStringProperty(
+                        item,
+                        "time");
+
+                string displayTime =
+                    timeText;
+
+                if (DateTimeOffset.TryParse(
+                        timeText,
+                        out DateTimeOffset timestamp))
+                {
+                    displayTime =
+                        timestamp
+                            .ToLocalTime()
+                            .ToString(
+                                "dd MMM yyyy HH:mm:ss");
+                }
+
+                string client =
+                    GetClientStringProperty(
+                        item,
+                        "client");
+
+                if (string.IsNullOrWhiteSpace(
+                        client))
+                {
+                    client =
+                        "-";
+                }
+
+                string domain =
+                    GetQueryDomain(
+                        item);
+
+                string reason =
+                    GetClientStringProperty(
+                        item,
+                        "reason");
+
+                entries.Add(
+                    new QueryLogEntry
+                    {
+                        Time =
+                            string.IsNullOrWhiteSpace(
+                                displayTime)
+                                ? "-"
+                                : displayTime,
+
+                        Client =
+                            client,
+
+                        Domain =
+                            string.IsNullOrWhiteSpace(
+                                domain)
+                                ? "-"
+                                : domain,
+
+                        IsBlocked =
+                            IsBlockedQueryReason(
+                                reason)
+                    });
+            }
+
+            Debug.WriteLine(
+                $"AdGuard query-log entries loaded: " +
+                entries.Count);
+
+            return entries;
+        }
+
+        private static string GetQueryDomain(
+            JsonElement entry)
+        {
+            if (!entry.TryGetProperty(
+                    "question",
+                    out JsonElement question) ||
+                question.ValueKind !=
+                    JsonValueKind.Object)
+            {
+                return string.Empty;
+            }
+
+            return GetClientStringProperty(
+                question,
+                "name");
         }
 
         private static void ApplyQueryLogStatistics(
