@@ -365,6 +365,17 @@ namespace AdGuardTray.Views
                 NetworkButton);
         }
 
+        private void Clients_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            PageContent.Content =
+                new ClientsView();
+
+            SelectNavigationButton(
+                ClientsButton);
+        }
+
         private void SelectNavigationButton(
             Button selectedButton)
         {
@@ -372,7 +383,8 @@ namespace AdGuardTray.Views
             {
                 OverviewButton,
                 AnalyticsButton,
-                NetworkButton
+                NetworkButton,
+                ClientsButton
             };
 
             foreach (Button button in navigationButtons)

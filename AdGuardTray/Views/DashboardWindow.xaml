@@ -148,6 +148,7 @@
                         Click="Network_Click"/>
 
                     <Button
+                        x:Name="ClientsButton"
                         Height="48"
                         Margin="10,2"
                         Padding="16,0"
@@ -155,7 +156,8 @@
                         Background="Transparent"
                         Foreground="#D7DCE2"
                         BorderThickness="0"
-                        Content="Clients"/>
+                        Content="Clients"
+                        Click="Clients_Click"/>
 
                     <Button
                         Height="48"
