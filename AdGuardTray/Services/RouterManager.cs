@@ -229,48 +229,63 @@ namespace AdGuardTray.Services
                 string token =
                     await GetAdminTokenAsync();
 
-                AdGuardClientsResponse firstAttempt =
+                AdGuardClientsResponse clientsResponse =
                     await RequestAdGuardClientsAsync(
                         token);
 
-                if (firstAttempt.RequiresNewToken)
+                if (clientsResponse.RequiresNewToken)
                 {
-                    Debug.WriteLine(
-                        "The GL.iNet Admin-Token was rejected " +
-                        "while loading clients. Obtaining a " +
-                        "new token and retrying.");
-
                     InvalidateAdminToken();
 
                     token =
                         await GetAdminTokenAsync();
 
-                    AdGuardClientsResponse secondAttempt =
+                    clientsResponse =
                         await RequestAdGuardClientsAsync(
                             token);
-
-                    if (!secondAttempt.IsSuccess)
-                    {
-                        LogFailedClientsResponse(
-                            secondAttempt);
-
-                        return new List<ClientInfo>();
-                    }
-
-                    return ParseAdGuardClients(
-                        secondAttempt.Content);
                 }
 
-                if (!firstAttempt.IsSuccess)
+                if (!clientsResponse.IsSuccess)
                 {
                     LogFailedClientsResponse(
-                        firstAttempt);
+                        clientsResponse);
 
                     return new List<ClientInfo>();
                 }
 
-                return ParseAdGuardClients(
-                    firstAttempt.Content);
+                List<ClientInfo> clients =
+                    ParseAdGuardClients(
+                        clientsResponse.Content);
+
+                AdGuardQueryLogResponse queryLogResponse =
+                    await RequestAdGuardQueryLogAsync(
+                        token);
+
+                if (queryLogResponse.RequiresNewToken)
+                {
+                    InvalidateAdminToken();
+
+                    token =
+                        await GetAdminTokenAsync();
+
+                    queryLogResponse =
+                        await RequestAdGuardQueryLogAsync(
+                            token);
+                }
+
+                if (queryLogResponse.IsSuccess)
+                {
+                    ApplyQueryLogStatistics(
+                        clients,
+                        queryLogResponse.Content);
+                }
+                else
+                {
+                    LogFailedQueryLogResponse(
+                        queryLogResponse);
+                }
+
+                return clients;
             }
             catch (TaskCanceledException)
             {
@@ -366,6 +381,241 @@ namespace AdGuardTray.Services
             return new AdGuardClientsResponse(
                 response.StatusCode,
                 content);
+        }
+
+        private async Task<AdGuardQueryLogResponse>
+            RequestAdGuardQueryLogAsync(
+                string token)
+        {
+            var cookieContainer =
+                new CookieContainer();
+
+            var adGuardBaseUri =
+                new Uri(
+                    $"http://{_routerIp}:3000");
+
+            cookieContainer.Add(
+                adGuardBaseUri,
+                new Cookie(
+                    "Admin-Token",
+                    token,
+                    "/"));
+
+            using var handler =
+                new HttpClientHandler
+                {
+                    CookieContainer =
+                        cookieContainer,
+
+                    UseCookies =
+                        true,
+
+                    AutomaticDecompression =
+                        DecompressionMethods.GZip |
+                        DecompressionMethods.Deflate
+                };
+
+            using var client =
+                new HttpClient(handler)
+                {
+                    Timeout =
+                        TimeSpan.FromSeconds(15)
+                };
+
+            client.DefaultRequestHeaders
+                .Accept
+                .ParseAdd(
+                    "application/json");
+
+            string url =
+                $"http://{_routerIp}:3000/control/querylog" +
+                "?limit=5000";
+
+            Debug.WriteLine(
+                "Calling AdGuard query log: " +
+                url);
+
+            using HttpResponseMessage response =
+                await client.GetAsync(
+                    url);
+
+            string content =
+                await response.Content
+                    .ReadAsStringAsync();
+
+            Debug.WriteLine(
+                "AdGuard query log status: " +
+                $"{(int)response.StatusCode} " +
+                response.StatusCode);
+
+            return new AdGuardQueryLogResponse(
+                response.StatusCode,
+                content);
+        }
+
+        private static void ApplyQueryLogStatistics(
+            List<ClientInfo> clients,
+            string json)
+        {
+            var clientsByAddress =
+                new Dictionary<string, ClientInfo>(
+                    StringComparer.OrdinalIgnoreCase);
+
+            foreach (ClientInfo client in clients)
+            {
+                if (!string.IsNullOrWhiteSpace(
+                        client.IpAddress) &&
+                    client.IpAddress != "-")
+                {
+                    clientsByAddress[
+                        client.IpAddress.Trim()] =
+                        client;
+                }
+            }
+
+            using JsonDocument document =
+                JsonDocument.Parse(
+                    json);
+
+            JsonElement root =
+                document.RootElement;
+
+            if (!root.TryGetProperty(
+                    "data",
+                    out JsonElement entries) ||
+                entries.ValueKind !=
+                    JsonValueKind.Array)
+            {
+                Debug.WriteLine(
+                    "AdGuard query log did not contain " +
+                    "a data array.");
+
+                return;
+            }
+
+            var mostRecentByClient =
+                new Dictionary<string, DateTimeOffset>(
+                    StringComparer.OrdinalIgnoreCase);
+
+            foreach (JsonElement entry
+                     in entries.EnumerateArray())
+            {
+                string clientAddress =
+                    GetClientStringProperty(
+                        entry,
+                        "client");
+
+                if (string.IsNullOrWhiteSpace(
+                        clientAddress) ||
+                    !clientsByAddress.TryGetValue(
+                        clientAddress,
+                        out ClientInfo? client))
+                {
+                    continue;
+                }
+
+                client.TotalQueries++;
+
+                string reason =
+                    GetClientStringProperty(
+                        entry,
+                        "reason");
+
+                if (IsBlockedQueryReason(
+                        reason))
+                {
+                    client.BlockedQueries++;
+                }
+
+                string timeText =
+                    GetClientStringProperty(
+                        entry,
+                        "time");
+
+                if (DateTimeOffset.TryParse(
+                        timeText,
+                        out DateTimeOffset timestamp))
+                {
+                    if (!mostRecentByClient.TryGetValue(
+                            clientAddress,
+                            out DateTimeOffset current) ||
+                        timestamp > current)
+                    {
+                        mostRecentByClient[
+                            clientAddress] =
+                            timestamp;
+                    }
+                }
+            }
+
+            foreach (KeyValuePair<string, DateTimeOffset> item
+                     in mostRecentByClient)
+            {
+                if (clientsByAddress.TryGetValue(
+                        item.Key,
+                        out ClientInfo? client))
+                {
+                    client.LastSeen =
+                        item.Value
+                            .ToLocalTime()
+                            .ToString(
+                                "dd MMM yyyy HH:mm:ss");
+                }
+            }
+
+            Debug.WriteLine(
+                "Applied query-log statistics to " +
+                $"{mostRecentByClient.Count} clients.");
+        }
+
+        private static bool IsBlockedQueryReason(
+            string reason)
+        {
+            if (string.IsNullOrWhiteSpace(
+                    reason))
+            {
+                return false;
+            }
+
+            bool filteredBlock =
+                reason.StartsWith(
+                    "Filtered",
+                    StringComparison.OrdinalIgnoreCase) &&
+                !reason.Contains(
+                    "WhiteList",
+                    StringComparison.OrdinalIgnoreCase);
+
+            return filteredBlock ||
+                   reason.Equals(
+                       "SafeBrowsing",
+                       StringComparison.OrdinalIgnoreCase) ||
+                   reason.Equals(
+                       "Parental",
+                       StringComparison.OrdinalIgnoreCase) ||
+                   reason.Equals(
+                       "SafeSearch",
+                       StringComparison.OrdinalIgnoreCase) ||
+                   reason.Equals(
+                       "BlockedService",
+                       StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static void LogFailedQueryLogResponse(
+            AdGuardQueryLogResponse response)
+        {
+            Debug.WriteLine(
+                "AdGuard query-log request failed with status " +
+                $"{(int)response.StatusCode} " +
+                response.StatusCode +
+                ".");
+
+            if (!string.IsNullOrWhiteSpace(
+                    response.Content))
+            {
+                Debug.WriteLine(
+                    "AdGuard query-log response: " +
+                    response.Content);
+            }
         }
 
         private static List<ClientInfo>
@@ -1159,6 +1409,40 @@ namespace AdGuardTray.Services
         private sealed class AdGuardClientsResponse
         {
             public AdGuardClientsResponse(
+                HttpStatusCode statusCode,
+                string content)
+            {
+                StatusCode =
+                    statusCode;
+
+                Content =
+                    content;
+            }
+
+            public HttpStatusCode StatusCode
+            {
+                get;
+            }
+
+            public string Content
+            {
+                get;
+            }
+
+            public bool IsSuccess =>
+                (int)StatusCode >= 200 &&
+                (int)StatusCode <= 299;
+
+            public bool RequiresNewToken =>
+                StatusCode ==
+                    HttpStatusCode.Unauthorized ||
+                StatusCode ==
+                    HttpStatusCode.Forbidden;
+        }
+
+        private sealed class AdGuardQueryLogResponse
+        {
+            public AdGuardQueryLogResponse(
                 HttpStatusCode statusCode,
                 string content)
             {
