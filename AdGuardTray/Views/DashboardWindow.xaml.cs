@@ -376,6 +376,17 @@ namespace AdGuardTray.Views
                 ClientsButton);
         }
 
+        private void Logs_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            PageContent.Content =
+                new LogsView();
+
+            SelectNavigationButton(
+                LogsButton);
+        }
+
         private void SelectNavigationButton(
             Button selectedButton)
         {
@@ -384,7 +395,8 @@ namespace AdGuardTray.Views
                 OverviewButton,
                 AnalyticsButton,
                 NetworkButton,
-                ClientsButton
+                ClientsButton,
+                LogsButton
             };
 
             foreach (Button button in navigationButtons)

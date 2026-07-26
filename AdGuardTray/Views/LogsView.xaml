@@ -1,0 +1,63 @@
+﻿<UserControl x:Class="AdGuardTray.Views.LogsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid>
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="20"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Page heading -->
+
+        <StackPanel Grid.Row="0">
+
+            <TextBlock
+                FontSize="24"
+                FontWeight="Bold"
+                Text="Logs"/>
+
+            <TextBlock
+                Margin="0,5,0,0"
+                FontSize="14"
+                Foreground="#666666"
+                Text="Router events and AdGuard Home query activity"/>
+
+        </StackPanel>
+
+        <!-- Placeholder content -->
+
+        <Border
+            Grid.Row="2"
+            Padding="30"
+            Background="White"
+            BorderBrush="#DDDDDD"
+            BorderThickness="1"
+            CornerRadius="10">
+
+            <StackPanel
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center">
+
+                <TextBlock
+                    HorizontalAlignment="Center"
+                    FontSize="22"
+                    FontWeight="SemiBold"
+                    Text="Logs"/>
+
+                <TextBlock
+                    Margin="0,10,0,0"
+                    HorizontalAlignment="Center"
+                    FontSize="15"
+                    Foreground="Gray"
+                    Text="Router and DNS query logs will appear here."/>
+
+            </StackPanel>
+
+        </Border>
+
+    </Grid>
+
+</UserControl>
