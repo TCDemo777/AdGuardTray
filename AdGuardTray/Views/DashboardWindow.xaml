@@ -112,6 +112,7 @@
                 <StackPanel Grid.Row="1">
 
                     <Button
+                        x:Name="OverviewButton"
                         Height="48"
                         Margin="10,2"
                         Padding="16,0"
@@ -119,9 +120,11 @@
                         Background="#35404D"
                         Foreground="White"
                         BorderThickness="0"
-                        Content="Overview"/>
+                        Content="Overview"
+                        Click="Overview_Click"/>
 
                     <Button
+                        x:Name="AnalyticsButton"
                         Height="48"
                         Margin="10,2"
                         Padding="16,0"
@@ -129,7 +132,8 @@
                         Background="Transparent"
                         Foreground="#D7DCE2"
                         BorderThickness="0"
-                        Content="Analytics"/>
+                        Content="Analytics"
+                        Click="Analytics_Click"/>
 
                     <Button
                         Height="48"
@@ -179,10 +183,15 @@
 
         <!-- Current page -->
 
-        <views:OverviewView
+        <ContentControl
+            x:Name="PageContent"
             Grid.Row="1"
             Grid.Column="1"
-            Margin="20"/>
+            Margin="20">
+
+            <views:OverviewView/>
+
+        </ContentControl>
 
         <!-- Status bar -->
 

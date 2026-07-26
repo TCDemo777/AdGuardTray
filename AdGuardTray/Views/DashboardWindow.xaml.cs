@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media;
 using System.Windows.Threading;
 using AdGuardTray.Models;
 using AdGuardTray.Services;
@@ -15,7 +16,7 @@ namespace AdGuardTray.Views
         private readonly SettingsService _settingsService;
         private readonly DispatcherTimer _refreshTimer;
 
-    public DashboardWindow()
+        public DashboardWindow()
         {
             InitializeComponent();
 
@@ -136,7 +137,7 @@ namespace AdGuardTray.Views
                     await router.GetAdGuardStatisticsAsync();
 
                 _viewModel.UpdateAdGuardStatistics(
-    statistics);
+                    statistics);
 
                 if (statistics.TotalQueries < 0 ||
                     statistics.BlockedQueries < 0)
@@ -316,6 +317,62 @@ namespace AdGuardTray.Views
             _ = RefreshDashboard();
         }
 
+        private void Overview_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            PageContent.Content =
+                new OverviewView();
+
+            OverviewButton.Background =
+                new SolidColorBrush(
+                    Color.FromRgb(
+                        53,
+                        64,
+                        77));
+
+            OverviewButton.Foreground =
+                Brushes.White;
+
+            AnalyticsButton.Background =
+                Brushes.Transparent;
+
+            AnalyticsButton.Foreground =
+                new SolidColorBrush(
+                    Color.FromRgb(
+                        215,
+                        220,
+                        226));
+        }
+
+        private void Analytics_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            PageContent.Content =
+                new AnalyticsView();
+
+            AnalyticsButton.Background =
+                new SolidColorBrush(
+                    Color.FromRgb(
+                        53,
+                        64,
+                        77));
+
+            AnalyticsButton.Foreground =
+                Brushes.White;
+
+            OverviewButton.Background =
+                Brushes.Transparent;
+
+            OverviewButton.Foreground =
+                new SolidColorBrush(
+                    Color.FromRgb(
+                        215,
+                        220,
+                        226));
+        }
+
         protected override void OnClosed(
             EventArgs e)
         {
@@ -324,5 +381,4 @@ namespace AdGuardTray.Views
             base.OnClosed(e);
         }
     }
-
 }
