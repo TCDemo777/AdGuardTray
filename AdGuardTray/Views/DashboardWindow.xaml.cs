@@ -387,17 +387,29 @@ namespace AdGuardTray.Views
                 LogsButton);
         }
 
+        private void NavigationSettings_Click(
+    object sender,
+    RoutedEventArgs e)
+        {
+            PageContent.Content =
+                new SettingsView();
+
+            SelectNavigationButton(
+                NavigationSettingsButton);
+        }
+
         private void SelectNavigationButton(
-            Button selectedButton)
+    Button selectedButton)
         {
             Button[] navigationButtons =
             {
-                OverviewButton,
-                AnalyticsButton,
-                NetworkButton,
-                ClientsButton,
-                LogsButton
-            };
+        OverviewButton,
+        AnalyticsButton,
+        NetworkButton,
+        ClientsButton,
+        LogsButton,
+        NavigationSettingsButton
+    };
 
             foreach (Button button in navigationButtons)
             {

@@ -172,14 +172,16 @@
                         Click="Logs_Click"/>
 
                     <Button
-                        Height="48"
-                        Margin="10,2"
-                        Padding="16,0"
-                        HorizontalContentAlignment="Left"
-                        Background="Transparent"
-                        Foreground="#D7DCE2"
-                        BorderThickness="0"
-                        Content="Settings"/>
+    x:Name="NavigationSettingsButton"
+    Height="48"
+    Margin="10,2"
+    Padding="16,0"
+    HorizontalContentAlignment="Left"
+    Background="Transparent"
+    Foreground="#D7DCE2"
+    BorderThickness="0"
+    Content="Settings"
+    Click="NavigationSettings_Click"/>
 
                 </StackPanel>
 
