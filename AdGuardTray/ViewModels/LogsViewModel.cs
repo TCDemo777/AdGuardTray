@@ -12,6 +12,7 @@ using AdGuardTray.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
+using System.Windows;
 
 namespace AdGuardTray.ViewModels
 {
@@ -235,8 +236,22 @@ namespace AdGuardTray.ViewModels
 
                 if (IsPaused)
                 {
-                    _allEntries.Clear();
-                    _allEntries.AddRange(entries);
+                    void BufferEntries()
+                    {
+                        _allEntries.Clear();
+                        _allEntries.AddRange(entries);
+                    }
+
+                    if (Application.Current?.Dispatcher is null ||
+                        Application.Current.Dispatcher.CheckAccess())
+                    {
+                        BufferEntries();
+                    }
+                    else
+                    {
+                        Application.Current.Dispatcher.Invoke(
+                            BufferEntries);
+                    }
 
                     LastUpdatedText =
                         $"Checked {DateTime.Now:HH:mm:ss}";
@@ -283,20 +298,64 @@ namespace AdGuardTray.ViewModels
 
         public void ApplyEntries(IEnumerable<QueryLogEntry> entries)
         {
-            _allEntries.Clear();
-            _allEntries.AddRange(entries);
+            List<QueryLogEntry> snapshot =
+                entries?.ToList() ??
+                new List<QueryLogEntry>();
 
-            ApplyFilter();
-
-            if (_successfulRefreshes == 0)
+            void UpdateCollections()
             {
-                StatusMessage = _allEntries.Count switch
+                string? selectedKey =
+                    SelectedEntry is null
+                        ? null
+                        : BuildEntryKey(SelectedEntry);
+
+                _allEntries.Clear();
+                _allEntries.AddRange(snapshot);
+
+                ApplyFilter();
+
+                if (!string.IsNullOrWhiteSpace(selectedKey))
                 {
-                    0 => "No query-log entries found.",
-                    1 => "1 query-log entry loaded.",
-                    _ => $"{_allEntries.Count} query-log entries loaded."
-                };
+                    SelectedEntry =
+                        Entries.FirstOrDefault(entry =>
+                            string.Equals(
+                                BuildEntryKey(entry),
+                                selectedKey,
+                                StringComparison.Ordinal));
+                }
+
+                if (_successfulRefreshes == 0)
+                {
+                    StatusMessage = _allEntries.Count switch
+                    {
+                        0 => "No query-log entries found.",
+                        1 => "1 query-log entry loaded.",
+                        _ => $"{_allEntries.Count} query-log entries loaded."
+                    };
+                }
             }
+
+            if (Application.Current?.Dispatcher is null ||
+                Application.Current.Dispatcher.CheckAccess())
+            {
+                UpdateCollections();
+                return;
+            }
+
+            Application.Current.Dispatcher.Invoke(
+                UpdateCollections);
+        }
+
+        private static string BuildEntryKey(
+            QueryLogEntry entry)
+        {
+            return string.Join(
+                "\u001F",
+                entry.Time ?? string.Empty,
+                entry.Client ?? string.Empty,
+                entry.Domain ?? string.Empty,
+                entry.Status ?? string.Empty,
+                entry.IsBlocked.ToString());
         }
 
         [RelayCommand]

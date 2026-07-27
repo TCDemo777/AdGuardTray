@@ -119,9 +119,9 @@
 
         <Grid Grid.Row="4">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="1.45*"/>
+                <ColumnDefinition Width="1.35*"/>
                 <ColumnDefinition Width="14"/>
-                <ColumnDefinition Width="1*"/>
+                <ColumnDefinition Width="1.05*"/>
             </Grid.ColumnDefinitions>
 
             <Border Padding="16"
@@ -139,7 +139,7 @@
                                FontWeight="Bold"
                                Text="DNS Query History"/>
                     <lvc:CartesianChart Grid.Row="2"
-                                        MinHeight="300"
+                                        MinHeight="250"
                                         Series="{Binding QueryHistorySeries}"/>
                 </Grid>
             </Border>
@@ -183,17 +183,37 @@
                                     </Style>
                                 </TextBlock.Style>
                             </TextBlock>
-                        <ListBox BorderThickness="0"
+                        <ListBox Padding="0"
+                                 BorderThickness="0"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
                                  ItemsSource="{Binding TopClients}">
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
-                                    <DockPanel Margin="0,3">
-                                        <TextBlock DockPanel.Dock="Right"
-                                                   FontWeight="Bold"
-                                                   Text="{Binding Count}"/>
-                                        <TextBlock TextTrimming="CharacterEllipsis"
+                                    <Grid Margin="0,2"
+                                          Height="30">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="12"/>
+                                            <ColumnDefinition Width="72"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock VerticalAlignment="Center"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   ToolTip="{Binding Name}"
                                                    Text="{Binding Name}"/>
-                                    </DockPanel>
+                                        <Border Grid.Column="2"
+                                                MinWidth="52"
+                                                Padding="8,3"
+                                                HorizontalAlignment="Right"
+                                                VerticalAlignment="Center"
+                                                Background="#F2F4F7"
+                                                CornerRadius="9">
+                                            <TextBlock HorizontalAlignment="Center"
+                                                       FontWeight="SemiBold"
+                                                       Text="{Binding Count,
+                                                                      StringFormat={}{0:N0}}"/>
+                                        </Border>
+                                    </Grid>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
@@ -232,17 +252,37 @@
                                     </Style>
                                 </TextBlock.Style>
                             </TextBlock>
-                        <ListBox BorderThickness="0"
+                        <ListBox Padding="0"
+                                 BorderThickness="0"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
                                  ItemsSource="{Binding TopQueriedDomains}">
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
-                                    <DockPanel Margin="0,3">
-                                        <TextBlock DockPanel.Dock="Right"
-                                                   FontWeight="Bold"
-                                                   Text="{Binding Count}"/>
-                                        <TextBlock TextTrimming="CharacterEllipsis"
+                                    <Grid Margin="0,2"
+                                          Height="30">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="12"/>
+                                            <ColumnDefinition Width="72"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock VerticalAlignment="Center"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   ToolTip="{Binding Name}"
                                                    Text="{Binding Name}"/>
-                                    </DockPanel>
+                                        <Border Grid.Column="2"
+                                                MinWidth="52"
+                                                Padding="8,3"
+                                                HorizontalAlignment="Right"
+                                                VerticalAlignment="Center"
+                                                Background="#F2F4F7"
+                                                CornerRadius="9">
+                                            <TextBlock HorizontalAlignment="Center"
+                                                       FontWeight="SemiBold"
+                                                       Text="{Binding Count,
+                                                                      StringFormat={}{0:N0}}"/>
+                                        </Border>
+                                    </Grid>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
@@ -281,18 +321,38 @@
                                     </Style>
                                 </TextBlock.Style>
                             </TextBlock>
-                        <ListBox BorderThickness="0"
+                        <ListBox Padding="0"
+                                 BorderThickness="0"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
                                  ItemsSource="{Binding TopBlockedDomains}">
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
-                                    <DockPanel Margin="0,3">
-                                        <TextBlock DockPanel.Dock="Right"
-                                                   FontWeight="Bold"
-                                                   Foreground="#C62828"
-                                                   Text="{Binding Count}"/>
-                                        <TextBlock TextTrimming="CharacterEllipsis"
+                                    <Grid Margin="0,2"
+                                          Height="30">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="12"/>
+                                            <ColumnDefinition Width="72"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock VerticalAlignment="Center"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   ToolTip="{Binding Name}"
                                                    Text="{Binding Name}"/>
-                                    </DockPanel>
+                                        <Border Grid.Column="2"
+                                                MinWidth="52"
+                                                Padding="8,3"
+                                                HorizontalAlignment="Right"
+                                                VerticalAlignment="Center"
+                                                Background="#FDECEC"
+                                                CornerRadius="9">
+                                            <TextBlock HorizontalAlignment="Center"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="#C62828"
+                                                       Text="{Binding Count,
+                                                                      StringFormat={}{0:N0}}"/>
+                                        </Border>
+                                    </Grid>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
