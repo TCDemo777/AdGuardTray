@@ -1,5 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Windows.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
@@ -25,6 +27,8 @@ namespace AdGuardTray.ViewModels
         private string _remaining = "";
         private string _message = "";
         private string _blockedServicesStatus = "Loading available services...";
+        private string _blockedServicesSearch = "";
+        private bool _showBlockedOnly;
         private string _profileName = "Custom";
         private bool _filteringEnabled;
         private bool _safeBrowsingEnabled;
@@ -56,6 +60,10 @@ namespace AdGuardTray.ViewModels
             ApplyFamilyProfileCommand = new AsyncRelayCommand(() => ApplyProfileAsync("Family", true, true, true, true, true), () => !IsBusy);
             ApplyPrivacyProfileCommand = new AsyncRelayCommand(() => ApplyProfileAsync("Privacy", true, true, false, true, false), () => !IsBusy);
             SaveBlockedServicesCommand = new AsyncRelayCommand(SaveBlockedServicesAsync, () => !IsBusy);
+            SelectAllServicesCommand = new RelayCommand(() => SetAllBlockedServices(true), () => !IsBusy);
+            ClearAllServicesCommand = new RelayCommand(() => SetAllBlockedServices(false), () => !IsBusy);
+            BlockedServicesView = CollectionViewSource.GetDefaultView(BlockedServices);
+            BlockedServicesView.Filter = FilterBlockedService;
             AddDenyRuleCommand = new AsyncRelayCommand(() => AddRuleAsync(false), () => !IsBusy);
             AddAllowRuleCommand = new AsyncRelayCommand(() => AddRuleAsync(true), () => !IsBusy);
             DeleteRuleCommand = new AsyncRelayCommand(DeleteRuleAsync, () => !IsBusy && SelectedRule is not null);
@@ -64,6 +72,7 @@ namespace AdGuardTray.ViewModels
         }
 
         public ObservableCollection<BlockedServiceItem> BlockedServices { get; } = new();
+        public ICollectionView BlockedServicesView { get; }
         public ObservableCollection<CustomFilteringRule> FilteringRules { get; } = new();
         public ObservableCollection<DnsRewriteRule> DnsRewrites { get; } = new();
 
@@ -74,6 +83,9 @@ namespace AdGuardTray.ViewModels
         public string Remaining { get => _remaining; private set => SetProperty(ref _remaining, value); }
         public string Message { get => _message; private set => SetProperty(ref _message, value); }
         public string BlockedServicesStatus { get => _blockedServicesStatus; private set => SetProperty(ref _blockedServicesStatus, value); }
+        public string BlockedServicesSearch { get => _blockedServicesSearch; set { if (SetProperty(ref _blockedServicesSearch, value)) BlockedServicesView.Refresh(); } }
+        public bool ShowBlockedOnly { get => _showBlockedOnly; set { if (SetProperty(ref _showBlockedOnly, value)) BlockedServicesView.Refresh(); } }
+        public string BlockedServicesSelectionSummary => $"{BlockedServices.Count(s => s.IsBlocked)} selected";
         public string ProfileName { get => _profileName; private set => SetProperty(ref _profileName, value); }
 
         public bool FilteringEnabled { get => _filteringEnabled; set { if (SetProperty(ref _filteringEnabled, value) && !_isInitialising) _ = UpdateOptionAsync("DNS filtering", r => r.SetFilteringEnabledAsync(value)); } }
@@ -100,6 +112,8 @@ namespace AdGuardTray.ViewModels
         public IAsyncRelayCommand ApplyFamilyProfileCommand { get; }
         public IAsyncRelayCommand ApplyPrivacyProfileCommand { get; }
         public IAsyncRelayCommand SaveBlockedServicesCommand { get; }
+        public IRelayCommand SelectAllServicesCommand { get; }
+        public IRelayCommand ClearAllServicesCommand { get; }
         public IAsyncRelayCommand AddDenyRuleCommand { get; }
         public IAsyncRelayCommand AddAllowRuleCommand { get; }
         public IAsyncRelayCommand DeleteRuleCommand { get; }
@@ -139,8 +153,15 @@ namespace AdGuardTray.ViewModels
                 _isInitialising = false;
                 DetermineProfile();
 
+                foreach (var oldService in BlockedServices) oldService.PropertyChanged -= BlockedService_PropertyChanged;
                 BlockedServices.Clear();
-                foreach (var service in services.OrderBy(s => s.Name)) BlockedServices.Add(service);
+                foreach (var service in services.OrderBy(s => s.Name))
+                {
+                    service.PropertyChanged += BlockedService_PropertyChanged;
+                    BlockedServices.Add(service);
+                }
+                BlockedServicesView.Refresh();
+                OnPropertyChanged(nameof(BlockedServicesSelectionSummary));
                 BlockedServicesStatus = BlockedServices.Count == 0
                     ? "No blocked-service catalogue was returned by this AdGuard Home build."
                     : $"{BlockedServices.Count} services available. Select services and save your changes.";
@@ -229,6 +250,30 @@ namespace AdGuardTray.ViewModels
             finally { IsBusy = false; }
         }
 
+        private bool FilterBlockedService(object item)
+        {
+            if (item is not BlockedServiceItem service) return false;
+            if (ShowBlockedOnly && !service.IsBlocked) return false;
+            return string.IsNullOrWhiteSpace(BlockedServicesSearch) ||
+                   service.Name.Contains(BlockedServicesSearch.Trim(), StringComparison.OrdinalIgnoreCase) ||
+                   service.Id.Contains(BlockedServicesSearch.Trim(), StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void BlockedService_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName != nameof(BlockedServiceItem.IsBlocked)) return;
+            OnPropertyChanged(nameof(BlockedServicesSelectionSummary));
+            if (ShowBlockedOnly) BlockedServicesView.Refresh();
+        }
+
+        private void SetAllBlockedServices(bool blocked)
+        {
+            foreach (BlockedServiceItem service in BlockedServicesView.Cast<BlockedServiceItem>())
+                service.IsBlocked = blocked;
+            OnPropertyChanged(nameof(BlockedServicesSelectionSummary));
+            Message = blocked ? "All visible services selected." : "All visible services cleared.";
+        }
+
         private async Task SaveBlockedServicesAsync()
         {
             if (IsBusy) return;
@@ -315,6 +360,8 @@ namespace AdGuardTray.ViewModels
         private void NotifyCommands()
         {
             foreach (var command in new[] { RefreshAllCommand, EnableProtectionCommand, DisableProtectionCommand, ResumeProtectionCommand, Pause30Command, Pause1HourCommand, Pause4HoursCommand, PauseUntilTomorrowCommand, ApplyStandardProfileCommand, ApplyFamilyProfileCommand, ApplyPrivacyProfileCommand, SaveBlockedServicesCommand, AddDenyRuleCommand, AddAllowRuleCommand, DeleteRuleCommand, AddRewriteCommand, DeleteRewriteCommand }) command.NotifyCanExecuteChanged();
+            SelectAllServicesCommand.NotifyCanExecuteChanged();
+            ClearAllServicesCommand.NotifyCanExecuteChanged();
         }
         private static string NormaliseDomain(string value) => value.Trim().TrimEnd('.').ToLowerInvariant();
         private static string FormatRemaining(TimeSpan d) => d.TotalDays >= 1 ? $"{(int)d.TotalDays}d {d.Hours}h {d.Minutes}m" : d.TotalHours >= 1 ? $"{(int)d.TotalHours}h {d.Minutes}m" : $"{Math.Max(1, d.Minutes)}m";

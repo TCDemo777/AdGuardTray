@@ -25,7 +25,48 @@
     </Grid>
 
     <Border Style="{StaticResource Card}">
-     <StackPanel><DockPanel><TextBlock FontSize="18" FontWeight="Bold" Text="Blocked services"/><Button DockPanel.Dock="Right" Width="110" Height="34" Content="Save changes" Command="{Binding SaveBlockedServicesCommand}"/></DockPanel><Separator Margin="0,8"/><TextBlock Foreground="#555" TextWrapping="Wrap" Text="{Binding BlockedServicesStatus}"/><ListBox Margin="0,12,0,0" Height="230" ItemsSource="{Binding BlockedServices}" BorderThickness="0"><ListBox.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ListBox.ItemsPanel><ListBox.ItemTemplate><DataTemplate><CheckBox Width="180" Margin="4,5" Content="{Binding Name}" IsChecked="{Binding IsBlocked, Mode=TwoWay}" IsEnabled="{Binding DataContext.ControlsEnabled, RelativeSource={RelativeSource AncestorType=UserControl}}"/></DataTemplate></ListBox.ItemTemplate></ListBox></StackPanel>
+     <StackPanel>
+      <DockPanel>
+       <StackPanel>
+        <TextBlock FontSize="18" FontWeight="Bold" Text="Blocked services"/>
+        <TextBlock Margin="0,4,0,0" Foreground="#667085" Text="Choose services to block across the network."/>
+       </StackPanel>
+       <Button DockPanel.Dock="Right" Width="120" Height="36" Content="Save changes" Command="{Binding SaveBlockedServicesCommand}"/>
+      </DockPanel>
+      <Separator Margin="0,10"/>
+      <Grid Margin="0,0,0,10">
+       <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+       <TextBox Height="36" Padding="10,6" Text="{Binding BlockedServicesSearch, UpdateSourceTrigger=PropertyChanged}" ToolTip="Search blocked services"/>
+       <CheckBox Grid.Column="1" Margin="14,0,12,0" VerticalAlignment="Center" Content="Blocked only" IsChecked="{Binding ShowBlockedOnly}"/>
+       <Button Grid.Column="2" Width="90" Margin="0,0,8,0" Content="Select all" Command="{Binding SelectAllServicesCommand}"/>
+       <Button Grid.Column="3" Width="90" Content="Clear all" Command="{Binding ClearAllServicesCommand}"/>
+      </Grid>
+      <DockPanel Margin="0,0,0,8">
+       <TextBlock Foreground="#555" TextWrapping="Wrap" Text="{Binding BlockedServicesStatus}"/>
+       <TextBlock DockPanel.Dock="Right" Foreground="#475467" FontWeight="SemiBold" Text="{Binding BlockedServicesSelectionSummary}"/>
+      </DockPanel>
+      <Border Height="286" Padding="8" Background="#F8FAFC" CornerRadius="8" BorderBrush="#E2E8F0" BorderThickness="1">
+       <ListBox ItemsSource="{Binding BlockedServicesView}" BorderThickness="0" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Disabled">
+        <ListBox.ItemsPanel>
+         <ItemsPanelTemplate>
+          <WrapPanel Orientation="Vertical" ItemWidth="220"/>
+         </ItemsPanelTemplate>
+        </ListBox.ItemsPanel>
+        <ListBox.ItemContainerStyle>
+         <Style TargetType="ListBoxItem">
+          <Setter Property="Padding" Value="0"/><Setter Property="Margin" Value="0"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+         </Style>
+        </ListBox.ItemContainerStyle>
+        <ListBox.ItemTemplate>
+         <DataTemplate>
+          <Border Width="210" Margin="4" Padding="10,8" Background="White" CornerRadius="6" BorderBrush="#E2E8F0" BorderThickness="1">
+           <CheckBox Content="{Binding Name}" IsChecked="{Binding IsBlocked, Mode=TwoWay}" IsEnabled="{Binding DataContext.ControlsEnabled, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+          </Border>
+         </DataTemplate>
+        </ListBox.ItemTemplate>
+       </ListBox>
+      </Border>
+     </StackPanel>
     </Border>
 
     <Grid>

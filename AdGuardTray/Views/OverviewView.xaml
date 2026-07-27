@@ -127,22 +127,7 @@
                     </Border>
                 </UniformGrid>
 
-                <Border Margin="6,14,6,6"
-                        Padding="16"
-                        Background="#F8FAFC"
-                        CornerRadius="10"
-                        BorderBrush="#D7DDE5"
-                        BorderThickness="1">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock VerticalAlignment="Center"
-                                   FontWeight="SemiBold"
-                                   Text="Protection controls have moved to the dedicated Protection page."/>
-                        <TextBlock Margin="8,0,0,0"
-                                   VerticalAlignment="Center"
-                                   Foreground="#666666"
-                                   Text="Use the navigation menu to manage protection."/>
-                    </StackPanel>
-                </Border>
+
             </StackPanel>
         </ScrollViewer>
     </Grid>

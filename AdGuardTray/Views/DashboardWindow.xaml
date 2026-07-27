@@ -174,10 +174,20 @@
                             Content="About"
                             Click="About_Click"/>
                 </StackPanel>
-                <StackPanel Grid.Row="2" Margin="20,8,20,18">
-                    <TextBlock Foreground="#AAB2BC" FontSize="12" Text="AdGuardTray"/>
-                    <TextBlock Margin="0,3,0,0" Foreground="#7F8995" FontSize="11" Text="Windows management console"/>
-                </StackPanel>
+                <Border Grid.Row="2" Margin="10,8,10,12" Padding="10" Background="#192027" CornerRadius="8">
+                    <StackPanel>
+                        <TextBlock Foreground="#D7DCE2"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   Text="AdGuardTray"/>
+                        <TextBlock Margin="0,3,0,0"
+                                   Foreground="#8F9AA6"
+                                   FontSize="10.5"
+                                   LineHeight="14"
+                                   TextWrapping="Wrap"
+                                   Text="Router and DNS management"/>
+                    </StackPanel>
+                </Border>
             </Grid>
         </Border>
 
