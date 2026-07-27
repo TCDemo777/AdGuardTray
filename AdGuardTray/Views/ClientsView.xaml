@@ -4,71 +4,116 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="15"/>
+            <RowDefinition Height="14"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="15"/>
+            <RowDefinition Height="12"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <StackPanel>
             <TextBlock FontSize="24" FontWeight="Bold" Text="Clients"/>
-            <TextBlock Margin="0,5,0,0"
-                       FontSize="14"
-                       Foreground="#666666"
-                       Text="Connected DNS clients"/>
+            <TextBlock Margin="0,5,0,0" FontSize="14" Foreground="#667085"
+                       Text="Connected devices and DNS activity"/>
         </StackPanel>
 
-        <DockPanel Grid.Row="2" LastChildFill="False">
-            <TextBox Width="250"
-                     Height="32"
-                     Margin="0,0,10,0"
-                     VerticalContentAlignment="Center"
-                     Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                     ToolTip="Search by name, IP address, or MAC address"/>
+        <Border Grid.Row="2" Padding="14" Background="White" CornerRadius="10"
+                BorderBrush="#DDE3EA" BorderThickness="1">
+            <DockPanel>
+                <TextBox Width="300" Height="36" Margin="0,0,10,0"
+                         VerticalContentAlignment="Center"
+                         Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                         ToolTip="Search by name, IP address, or MAC address"/>
+                <Button DockPanel.Dock="Right" MinWidth="120" Height="36"
+                        Click="ViewDetailsButton_Click" Content="View Details"/>
+                <Button DockPanel.Dock="Right" MinWidth="100" Height="36" Margin="0,0,10,0"
+                        Command="{Binding LoadClientsCommand}" Content="Refresh"/>
+            </DockPanel>
+        </Border>
 
-            <Button Width="100"
-                    Height="32"
-                    Margin="0,0,10,0"
-                    Command="{Binding LoadClientsCommand}"
-                    Content="Refresh"/>
+        <Border Grid.Row="4" Padding="10" Background="#F8FAFC" CornerRadius="10"
+                BorderBrush="#DDE3EA" BorderThickness="1">
+            <ListBox x:Name="ClientsGrid"
+                     ItemsSource="{Binding Clients}"
+                     SelectedItem="{Binding SelectedClient}"
+                     BorderThickness="0"
+                     Background="Transparent"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                     MouseDoubleClick="ClientsGrid_MouseDoubleClick">
+                <ListBox.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                </ListBox.ItemsPanel>
+                <ListBox.ItemContainerStyle>
+                    <Style TargetType="ListBoxItem">
+                        <Setter Property="Margin" Value="6"/>
+                        <Setter Property="Padding" Value="0"/>
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                    </Style>
+                </ListBox.ItemContainerStyle>
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Border Width="260" MinHeight="168" Padding="16" Background="White"
+                                CornerRadius="10" BorderBrush="#DDE3EA" BorderThickness="1">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="8"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="12"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="42"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Width="36" Height="36" Background="#EAF2FF" CornerRadius="18">
+                                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                   FontSize="18" Text="●"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock FontSize="16" FontWeight="Bold" TextTrimming="CharacterEllipsis"
+                                                   Text="{Binding Name}"/>
+                                        <TextBlock Margin="0,3,0,0" Foreground="#667085" Text="{Binding IpAddress}"/>
+                                    </StackPanel>
+                                </Grid>
+                                <StackPanel Grid.Row="2">
+                                    <TextBlock Foreground="#667085" Text="{Binding MacAddress}"/>
+                                    <TextBlock Margin="0,4,0,0" Foreground="#667085"
+                                               Text="{Binding LastSeen, StringFormat=Last seen: {0}}"/>
+                                </StackPanel>
+                                <Grid Grid.Row="4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock FontSize="17" FontWeight="Bold" Text="{Binding TotalQueries}"/>
+                                        <TextBlock FontSize="11" Foreground="#667085" Text="Queries"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock FontSize="17" FontWeight="Bold" Foreground="#C62828"
+                                                   Text="{Binding BlockedQueries}"/>
+                                        <TextBlock FontSize="11" Foreground="#667085" Text="Blocked"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock FontSize="17" FontWeight="Bold"
+                                                   Text="{Binding BlockRate, StringFormat={}{0:F1}%}"/>
+                                        <TextBlock FontSize="11" Foreground="#667085" Text="Block rate"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Border>
 
-            <Button Width="120"
-                    Height="32"
-                    Click="ViewDetailsButton_Click"
-                    Content="View Details"/>
-        </DockPanel>
-
-        <DataGrid x:Name="ClientsGrid"
-                  Grid.Row="4"
-                  AutoGenerateColumns="False"
-                  CanUserAddRows="False"
-                  CanUserDeleteRows="False"
-                  CanUserResizeRows="False"
-                  IsReadOnly="True"
-                  SelectionMode="Single"
-                  AlternatingRowBackground="#F8F8F8"
-                  HeadersVisibility="Column"
-                  GridLinesVisibility="Horizontal"
-                  ItemsSource="{Binding Clients}"
-                  SelectedItem="{Binding SelectedClient}"
-                  MouseDoubleClick="ClientsGrid_MouseDoubleClick">
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="Name" Width="2*" Binding="{Binding Name}"/>
-                <DataGridTextColumn Header="IP Address" Width="140" Binding="{Binding IpAddress}"/>
-                <DataGridTextColumn Header="MAC Address" Width="160" Binding="{Binding MacAddress}"/>
-                <DataGridTextColumn Header="Queries" Width="100" Binding="{Binding TotalQueries}"/>
-                <DataGridTextColumn Header="Blocked" Width="100" Binding="{Binding BlockedQueries}"/>
-                <DataGridTextColumn Header="Block %" Width="90"
-                                    Binding="{Binding BlockRate, StringFormat={}{0:F1}%}"/>
-                <DataGridTextColumn Header="Last Seen" Width="140" Binding="{Binding LastSeen}"/>
-            </DataGrid.Columns>
-        </DataGrid>
-
-        <StatusBar Grid.Row="5">
-            <StatusBarItem>
-                <TextBlock Text="{Binding StatusMessage}"/>
-            </StatusBarItem>
-        </StatusBar>
+        <TextBlock Grid.Row="5" Margin="2,9,0,0" Foreground="#667085"
+                   Text="{Binding StatusMessage}"/>
     </Grid>
 </UserControl>

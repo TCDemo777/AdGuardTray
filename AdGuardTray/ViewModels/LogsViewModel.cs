@@ -1,7 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.IO;
+using System.Text;
+using System.Text.Json;
+using Microsoft.Win32;
 using System.Threading.Tasks;
 using System.Windows.Threading;
 using AdGuardTray.Models;
@@ -39,6 +43,9 @@ namespace AdGuardTray.ViewModels
 
         [ObservableProperty]
         private bool isPaused;
+
+        [ObservableProperty]
+        private QueryLogEntry? selectedEntry;
 
         public string PauseButtonText =>
             IsPaused
@@ -250,6 +257,64 @@ namespace AdGuardTray.ViewModels
                     $"{Entries.Count} of " +
                     $"{_allEntries.Count} entries shown.";
             }
+        }
+
+
+        [RelayCommand]
+        private void ExportCsv()
+        {
+            var dialog = new SaveFileDialog
+            {
+                Title = "Export query log",
+                Filter = "CSV files (*.csv)|*.csv",
+                FileName = $"AdGuardTray-QueryLog-{DateTime.Now:yyyyMMdd-HHmmss}.csv"
+            };
+
+            if (dialog.ShowDialog() != true)
+            {
+                return;
+            }
+
+            var builder = new StringBuilder();
+            builder.AppendLine("Time,Client,Domain,Status");
+
+            foreach (QueryLogEntry entry in Entries)
+            {
+                builder.AppendLine(
+                    $"{Csv(entry.Time)},{Csv(entry.Client)},{Csv(entry.Domain)},{Csv(entry.Status)}");
+            }
+
+            File.WriteAllText(dialog.FileName, builder.ToString(), Encoding.UTF8);
+            StatusMessage = $"{Entries.Count} entries exported to CSV.";
+        }
+
+        [RelayCommand]
+        private void ExportJson()
+        {
+            var dialog = new SaveFileDialog
+            {
+                Title = "Export query log",
+                Filter = "JSON files (*.json)|*.json",
+                FileName = $"AdGuardTray-QueryLog-{DateTime.Now:yyyyMMdd-HHmmss}.json"
+            };
+
+            if (dialog.ShowDialog() != true)
+            {
+                return;
+            }
+
+            string json = JsonSerializer.Serialize(
+                Entries,
+                new JsonSerializerOptions { WriteIndented = true });
+
+            File.WriteAllText(dialog.FileName, json, Encoding.UTF8);
+            StatusMessage = $"{Entries.Count} entries exported to JSON.";
+        }
+
+        private static string Csv(string? value)
+        {
+            string safe = value ?? string.Empty;
+            return "\"" + safe.Replace("\"", "\"\"") + "\"";
         }
 
         private static bool ContainsText(

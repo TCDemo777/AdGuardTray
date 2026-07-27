@@ -8,6 +8,7 @@ namespace AdGuardTray.ViewModels
 {
     public class SettingsViewModel : ObservableObject
     {
+        public event EventHandler? SettingsSaved;
         private readonly SettingsService _settingsService;
 
         private string _routerIp = "";
@@ -240,6 +241,8 @@ namespace AdGuardTray.ViewModels
 
                 StatusMessage =
                     "Settings saved successfully.";
+
+                SettingsSaved?.Invoke(this, EventArgs.Empty);
             }
             catch (Exception ex)
             {

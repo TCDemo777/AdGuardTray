@@ -107,11 +107,23 @@
                             <TextBlock FontWeight="SemiBold"
                                        Text="SSH password"/>
 
-                            <PasswordBox x:Name="PasswordInput"
-                                         Height="34"
-                                         Margin="0,8,0,12"
+                            <Grid Margin="0,8,0,10">
+                                <PasswordBox x:Name="PasswordInput"
+                                             Height="36"
+                                             VerticalContentAlignment="Center"
+                                             PasswordChanged="PasswordInput_PasswordChanged"/>
+                                <TextBox x:Name="PasswordTextInput"
+                                         Height="36"
+                                         Visibility="Collapsed"
                                          VerticalContentAlignment="Center"
-                                         PasswordChanged="PasswordInput_PasswordChanged"/>
+                                         Text="{Binding Password, UpdateSourceTrigger=PropertyChanged}"/>
+                            </Grid>
+
+                            <CheckBox x:Name="ShowPasswordCheckBox"
+                                      Margin="0,0,0,10"
+                                      Content="Show password"
+                                      Checked="ShowPasswordCheckBox_Changed"
+                                      Unchecked="ShowPasswordCheckBox_Changed"/>
 
                             <CheckBox Content="Remember password securely for this Windows user"
                                       IsChecked="{Binding RememberPassword}"/>
@@ -170,7 +182,7 @@
                                     <TextBlock Margin="0,6,0,0"
                                                Foreground="#555555"
                                                TextWrapping="Wrap"
-                                               Text="Protection status, timed pause, resume controls and blocked-services management will use these settings."/>
+                                               Text="Protection controls, blocked services, DNS rules, live logs and dashboard refresh all use the settings stored here."/>
                                 </StackPanel>
                             </Border>
                         </StackPanel>

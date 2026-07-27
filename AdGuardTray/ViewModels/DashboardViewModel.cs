@@ -356,42 +356,35 @@ namespace AdGuardTray.ViewModels
         partial void OnRouterConnectedChanged(
             bool value)
         {
-            OnPropertyChanged(
-                nameof(RouterStatusText));
+            RefreshStatusIndicators();
         }
 
         partial void OnAdGuardRunningChanged(
             bool value)
         {
-            OnPropertyChanged(
-                nameof(AdGuardStatusText));
+            RefreshStatusIndicators();
         }
 
         partial void OnAdGuardProtectionEnabledChanged(
             bool value)
         {
-            OnPropertyChanged(
-                nameof(AdGuardProtectionStatusText));
+            RefreshStatusIndicators();
         }
 
         partial void OnInternetConnectedChanged(
             bool value)
         {
-            OnPropertyChanged(
-                nameof(InternetStatusText));
+            RefreshStatusIndicators();
         }
 
-        partial void OnAdGuardProtectionEnabledChanged(bool value)
+        partial void OnAdGuardProtectionPausedChanged(
+            bool value)
         {
             RefreshStatusIndicators();
         }
 
-        partial void OnAdGuardProtectionPausedChanged(bool value)
-        {
-            RefreshStatusIndicators();
-        }
-
-        partial void OnAdGuardProtectionStatusKnownChanged(bool value)
+        partial void OnAdGuardProtectionStatusKnownChanged(
+            bool value)
         {
             RefreshStatusIndicators();
         }

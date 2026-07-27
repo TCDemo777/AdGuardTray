@@ -1,4 +1,4 @@
-﻿namespace AdGuardTray.Models
+namespace AdGuardTray.Models
 {
     public class QueryLogEntry
     {

@@ -21,6 +21,9 @@ namespace AdGuardTray.Views
 
             Loaded +=
                 SettingsView_Loaded;
+
+            _viewModel.SettingsSaved +=
+                ViewModel_SettingsSaved;
         }
 
         private void SettingsView_Loaded(
@@ -41,6 +44,47 @@ namespace AdGuardTray.Views
 
             _viewModel.Password =
                 PasswordInput.Password;
+        }
+
+        private void ShowPasswordCheckBox_Changed(
+            object sender,
+            RoutedEventArgs e)
+        {
+            bool show = ShowPasswordCheckBox.IsChecked == true;
+
+            if (show)
+            {
+                PasswordTextInput.Text = PasswordInput.Password;
+                PasswordInput.Visibility = Visibility.Collapsed;
+                PasswordTextInput.Visibility = Visibility.Visible;
+                PasswordTextInput.Focus();
+                PasswordTextInput.CaretIndex = PasswordTextInput.Text.Length;
+            }
+            else
+            {
+                PasswordInput.Password = PasswordTextInput.Text;
+                PasswordTextInput.Visibility = Visibility.Collapsed;
+                PasswordInput.Visibility = Visibility.Visible;
+                PasswordInput.Focus();
+            }
+        }
+
+        private void ViewModel_SettingsSaved(
+            object? sender,
+            System.EventArgs e)
+        {
+            Window? host = Window.GetWindow(this);
+
+            // On first-run or standalone settings windows, saving should
+            // continue directly to the dashboard.
+            if (host is not null &&
+                host is not DashboardWindow)
+            {
+                var dashboard = new DashboardWindow();
+                Application.Current.MainWindow = dashboard;
+                dashboard.Show();
+                host.Close();
+            }
         }
 
         private void UpdatePasswordBox()
