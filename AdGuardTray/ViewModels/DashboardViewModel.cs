@@ -57,6 +57,15 @@ namespace AdGuardTray.ViewModels
         private bool adGuardProtectionEnabled;
 
         [ObservableProperty]
+        private bool adGuardProtectionPaused;
+
+        [ObservableProperty]
+        private bool adGuardProtectionStatusKnown;
+
+        [ObservableProperty]
+        private string adGuardProtectionRemaining = "";
+
+        [ObservableProperty]
         private string adGuardVersion = "-";
 
         [ObservableProperty]
@@ -73,19 +82,6 @@ namespace AdGuardTray.ViewModels
 
         [ObservableProperty]
         private string adGuardBlockRate = "-";
-
-
-        [ObservableProperty]
-        private string adGuardProtectionDetail = "Checking protection status...";
-
-        [ObservableProperty]
-        private string adGuardProtectionRemaining = "";
-
-        [ObservableProperty]
-        private string adGuardProtectionMessage = "";
-
-        [ObservableProperty]
-        private bool protectionControlsEnabled = true;
 
 
         //
@@ -174,23 +170,58 @@ namespace AdGuardTray.ViewModels
 
         public string RouterStatusText =>
             RouterConnected
-                ? "🟢 Connected"
-                : "🔴 Offline";
+                ? "Connected"
+                : "Disconnected";
+
+        public string RouterStatusColour =>
+            RouterConnected
+                ? "#16803C"
+                : "#C62828";
 
         public string AdGuardStatusText =>
             AdGuardRunning
-                ? "🟢 Running"
-                : "🔴 Stopped";
+                ? "Running"
+                : "Stopped";
+
+        public string AdGuardStatusColour =>
+            AdGuardRunning
+                ? "#16803C"
+                : "#C62828";
 
         public string AdGuardProtectionStatusText =>
-            AdGuardProtectionEnabled
-                ? "🟢 Protection enabled"
-                : "🔴 Protection disabled";
+            !AdGuardProtectionStatusKnown
+                ? "Status unavailable"
+                : AdGuardProtectionEnabled
+                    ? "Protection enabled"
+                    : AdGuardProtectionPaused
+                        ? "Protection paused"
+                        : "Protection disabled";
+
+        public string AdGuardProtectionStatusColour =>
+            !AdGuardProtectionStatusKnown
+                ? "#687386"
+                : AdGuardProtectionEnabled
+                    ? "#16803C"
+                    : AdGuardProtectionPaused
+                        ? "#B26A00"
+                        : "#C62828";
 
         public string InternetStatusText =>
             InternetConnected
-                ? "🟢 Connected"
-                : "🔴 Offline";
+                ? "Connected"
+                : "Disconnected";
+
+        public string InternetStatusColour =>
+            InternetConnected
+                ? "#16803C"
+                : "#C62828";
+
+        public string OverallStatusColour =>
+            RouterConnected &&
+            InternetConnected &&
+            AdGuardRunning
+                ? "#16803C"
+                : "#C62828";
 
 
         //
@@ -241,6 +272,9 @@ namespace AdGuardTray.ViewModels
                 Array.Empty<double>();
 
             AdGuardProtectionEnabled = false;
+            AdGuardProtectionPaused = false;
+            AdGuardProtectionStatusKnown = false;
+            AdGuardProtectionRemaining = "";
             AdGuardQueryGraphMaximum = 1;
         }
 
@@ -263,17 +297,15 @@ namespace AdGuardTray.ViewModels
 
         public void RefreshStatusIndicators()
         {
-            OnPropertyChanged(
-                nameof(RouterStatusText));
-
-            OnPropertyChanged(
-                nameof(AdGuardStatusText));
-
-            OnPropertyChanged(
-                nameof(AdGuardProtectionStatusText));
-
-            OnPropertyChanged(
-                nameof(InternetStatusText));
+            OnPropertyChanged(nameof(RouterStatusText));
+            OnPropertyChanged(nameof(RouterStatusColour));
+            OnPropertyChanged(nameof(AdGuardStatusText));
+            OnPropertyChanged(nameof(AdGuardStatusColour));
+            OnPropertyChanged(nameof(AdGuardProtectionStatusText));
+            OnPropertyChanged(nameof(AdGuardProtectionStatusColour));
+            OnPropertyChanged(nameof(InternetStatusText));
+            OnPropertyChanged(nameof(InternetStatusColour));
+            OnPropertyChanged(nameof(OverallStatusColour));
         }
 
 
@@ -347,6 +379,21 @@ namespace AdGuardTray.ViewModels
         {
             OnPropertyChanged(
                 nameof(InternetStatusText));
+        }
+
+        partial void OnAdGuardProtectionEnabledChanged(bool value)
+        {
+            RefreshStatusIndicators();
+        }
+
+        partial void OnAdGuardProtectionPausedChanged(bool value)
+        {
+            RefreshStatusIndicators();
+        }
+
+        partial void OnAdGuardProtectionStatusKnownChanged(bool value)
+        {
+            RefreshStatusIndicators();
         }
     }
 }

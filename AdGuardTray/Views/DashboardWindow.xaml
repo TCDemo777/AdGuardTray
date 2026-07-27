@@ -48,12 +48,6 @@
                     <TextBlock FontSize="24"
                                FontWeight="Bold"
                                Text="AdGuardTray"/>
-
-                    <TextBlock Margin="0,4,0,0"
-                               FontSize="14"
-                               FontWeight="SemiBold"
-                               Foreground="#555555"
-                               Text="{Binding RouterStatusText}"/>
                 </StackPanel>
 
                 <Button x:Name="RefreshButton"
@@ -202,7 +196,7 @@
                    Grid.Column="0"
                    Grid.ColumnSpan="2">
             <StatusBarItem>
-                <TextBlock Text="{Binding StatusMessage}"/>
+                <TextBlock FontWeight="SemiBold" Foreground="{Binding OverallStatusColour}" Text="{Binding StatusMessage}"/>
             </StatusBarItem>
 
             <Separator/>

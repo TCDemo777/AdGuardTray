@@ -34,8 +34,15 @@
                                        FontWeight="Bold"
                                        Text="Router"/>
                             <Separator Margin="0,8"/>
-                            <TextBlock FontWeight="SemiBold"
-                                       Text="{Binding RouterStatusText}"/>
+                            <Border Margin="0,2,0,2"
+                                    Padding="10,5"
+                                    HorizontalAlignment="Left"
+                                    Background="#F6F8FA"
+                                    CornerRadius="12">
+                                <TextBlock FontWeight="SemiBold"
+                                           Foreground="{Binding RouterStatusColour}"
+                                           Text="{Binding RouterStatusText}"/>
+                            </Border>
                             <TextBlock Margin="0,10,0,0" Text="Model"/>
                             <TextBlock FontWeight="SemiBold" Text="{Binding RouterModel}"/>
                             <TextBlock Margin="0,8,0,0" Text="Firmware"/>
@@ -76,11 +83,28 @@
                                        FontWeight="Bold"
                                        Text="AdGuard Home"/>
                             <Separator Margin="0,8"/>
-                            <TextBlock FontWeight="SemiBold"
-                                       Text="{Binding AdGuardStatusText}"/>
+                            <Border Margin="0,2,0,2"
+                                    Padding="10,5"
+                                    HorizontalAlignment="Left"
+                                    Background="#F6F8FA"
+                                    CornerRadius="12">
+                                <TextBlock FontWeight="SemiBold"
+                                           Foreground="{Binding AdGuardStatusColour}"
+                                           Text="{Binding AdGuardStatusText}"/>
+                            </Border>
                             <TextBlock Margin="0,10,0,0" Text="Protection"/>
-                            <TextBlock FontWeight="SemiBold"
-                                       Text="{Binding AdGuardProtectionStatusText}"/>
+                            <Border Margin="0,2,0,2"
+                                    Padding="10,5"
+                                    HorizontalAlignment="Left"
+                                    Background="#F6F8FA"
+                                    CornerRadius="12">
+                                <TextBlock FontWeight="SemiBold"
+                                           Foreground="{Binding AdGuardProtectionStatusColour}"
+                                           Text="{Binding AdGuardProtectionStatusText}"/>
+                            </Border>
+                            <TextBlock Margin="0,4,0,0"
+                                       Foreground="#687386"
+                                       Text="{Binding AdGuardProtectionRemaining}"/>
                             <TextBlock Margin="0,5,0,0"
                                        Foreground="#555555"
                                        TextWrapping="Wrap"
@@ -111,8 +135,15 @@
                                        FontWeight="Bold"
                                        Text="Internet"/>
                             <Separator Margin="0,8"/>
-                            <TextBlock FontWeight="SemiBold"
-                                       Text="{Binding InternetStatusText}"/>
+                            <Border Margin="0,2,0,2"
+                                    Padding="10,5"
+                                    HorizontalAlignment="Left"
+                                    Background="#F6F8FA"
+                                    CornerRadius="12">
+                                <TextBlock FontWeight="SemiBold"
+                                           Foreground="{Binding InternetStatusColour}"
+                                           Text="{Binding InternetStatusText}"/>
+                            </Border>
                             <TextBlock Margin="0,10,0,0" Text="WAN IP"/>
                             <TextBlock FontWeight="SemiBold" Text="{Binding WanIp}"/>
                             <TextBlock Margin="0,8,0,0" Text="Gateway"/>

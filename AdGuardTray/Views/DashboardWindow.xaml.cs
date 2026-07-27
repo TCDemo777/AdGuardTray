@@ -165,6 +165,27 @@ namespace AdGuardTray.Views
                 _viewModel.UpdateAdGuardStatistics(
                     statistics);
 
+                // Protection state is authoritative from /control/status.
+                // Statistics responses are not reliable for this value on
+                // every GL.iNet AdGuard Home build.
+                AdGuardProtectionStatus protectionStatus =
+                    await router.GetAdGuardProtectionStatusAsync();
+
+                _viewModel.AdGuardProtectionEnabled =
+                    protectionStatus.IsEnabled;
+
+                _viewModel.AdGuardProtectionPaused =
+                    protectionStatus.IsPaused;
+
+                _viewModel.AdGuardProtectionStatusKnown =
+                    true;
+
+                _viewModel.AdGuardProtectionRemaining =
+                    protectionStatus.IsPaused
+                        ? FormatProtectionRemaining(
+                            protectionStatus.RemainingPause)
+                        : "";
+
                 if (statistics.TotalQueries < 0 ||
                     statistics.BlockedQueries < 0)
                 {
@@ -240,6 +261,27 @@ namespace AdGuardTray.Views
                 ShowConnectionError(
                     ex.Message);
             }
+        }
+
+        private static string FormatProtectionRemaining(
+            TimeSpan duration)
+        {
+            if (duration <= TimeSpan.Zero)
+            {
+                return "Less than a minute remaining";
+            }
+
+            if (duration.TotalDays >= 1)
+            {
+                return $"{(int)duration.TotalDays}d {duration.Hours}h {duration.Minutes}m remaining";
+            }
+
+            if (duration.TotalHours >= 1)
+            {
+                return $"{(int)duration.TotalHours}h {duration.Minutes}m remaining";
+            }
+
+            return $"{Math.Max(1, duration.Minutes)}m remaining";
         }
 
         private void ShowConnectionError(
