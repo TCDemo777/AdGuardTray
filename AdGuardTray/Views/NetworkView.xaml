@@ -94,22 +94,56 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <StackPanel>
-                            <TextBlock FontSize="17" FontWeight="Bold" Text="CPU"/>
+                            <DockPanel>
+                                <TextBlock FontSize="17" FontWeight="Bold" Text="CPU"/>
+                                <TextBlock DockPanel.Dock="Right"
+                                           FontWeight="SemiBold"
+                                           Foreground="{Binding CpuHealthColour}"
+                                           Text="{Binding CpuHealthText}"/>
+                            </DockPanel>
                             <ProgressBar Height="16" Margin="0,12,0,6" Minimum="0" Maximum="100"
                                          Value="{Binding CpuPercentage}"/>
                             <TextBlock FontWeight="SemiBold" Text="{Binding CpuUsage}"/>
                         </StackPanel>
                         <StackPanel Grid.Column="2">
-                            <TextBlock FontSize="17" FontWeight="Bold" Text="Memory"/>
+                            <DockPanel>
+                                <TextBlock FontSize="17" FontWeight="Bold" Text="Memory"/>
+                                <TextBlock DockPanel.Dock="Right"
+                                           FontWeight="SemiBold"
+                                           Foreground="{Binding MemoryHealthColour}"
+                                           Text="{Binding MemoryHealthText}"/>
+                            </DockPanel>
                             <ProgressBar Height="16" Margin="0,12,0,6" Minimum="0" Maximum="100"
                                          Value="{Binding MemoryPercentage}"/>
                             <TextBlock FontWeight="SemiBold" Text="{Binding MemoryUsage}"/>
                         </StackPanel>
                         <StackPanel Grid.Column="4">
-                            <TextBlock FontSize="17" FontWeight="Bold" Text="Storage"/>
-                            <TextBlock Margin="0,12,0,6" FontSize="22" FontWeight="Bold"
+                            <DockPanel>
+                                <TextBlock FontSize="17" FontWeight="Bold" Text="Storage"/>
+                                <TextBlock DockPanel.Dock="Right"
+                                           FontWeight="SemiBold"
+                                           Foreground="{Binding StorageHealthColour}"
+                                           Text="{Binding StorageHealthText}"/>
+                            </DockPanel>
+                            <ProgressBar Height="16" Margin="0,12,0,6"
+                                         Minimum="0" Maximum="100"
+                                         Value="{Binding StoragePercentage}"/>
+                            <TextBlock FontSize="17" FontWeight="Bold"
                                        Text="{Binding StorageUsage}"/>
-                            <TextBlock Foreground="#667085" Text="Router storage usage"/>
+                            <UniformGrid Margin="0,9,0,0" Columns="3">
+                                <StackPanel>
+                                    <TextBlock Foreground="#667085" Text="Used"/>
+                                    <TextBlock FontWeight="SemiBold" Text="{Binding StorageUsed}"/>
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Foreground="#667085" Text="Available"/>
+                                    <TextBlock FontWeight="SemiBold" Text="{Binding StorageAvailable}"/>
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Foreground="#667085" Text="Total"/>
+                                    <TextBlock FontWeight="SemiBold" Text="{Binding StorageTotal}"/>
+                                </StackPanel>
+                            </UniformGrid>
                         </StackPanel>
                     </Grid>
                 </Border>

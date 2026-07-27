@@ -1,30 +1,77 @@
-﻿using System;
+using System;
 using System.Windows;
+using AdGuardTray.Models;
 using AdGuardTray.Services;
+using AdGuardTray.Views;
 
 namespace AdGuardTray
 {
     public partial class App : Application
     {
-        private MainWindow? mainWindow;
-
-        public static AdGuardService AdGuard { get; } = new AdGuardService();
-
-        protected override void OnStartup(StartupEventArgs e)
+        protected override void OnStartup(
+            StartupEventArgs e)
         {
             base.OnStartup(e);
 
-            mainWindow = new MainWindow();
+            ShutdownMode =
+                ShutdownMode.OnMainWindowClose;
 
-            // Start hidden in tray
-            mainWindow.Hide();
+            Window startupWindow =
+                HasUsableSavedSettings()
+                    ? new DashboardWindow()
+                    : CreateFirstRunSettingsWindow();
+
+            MainWindow = startupWindow;
+            startupWindow.Show();
         }
 
-        protected override void OnExit(ExitEventArgs e)
+        private static bool HasUsableSavedSettings()
         {
-            mainWindow?.DisposeTrayIcon();
+            try
+            {
+                var settingsService =
+                    new SettingsService();
 
-            base.OnExit(e);
+                AppSettings settings =
+                    settingsService.Load();
+
+                if (string.IsNullOrWhiteSpace(settings.RouterIp) ||
+                    string.IsNullOrWhiteSpace(settings.Username))
+                {
+                    return false;
+                }
+
+                if (!settings.RememberPassword ||
+                    string.IsNullOrWhiteSpace(settings.EncryptedPassword))
+                {
+                    return false;
+                }
+
+                string password =
+                    settingsService.DecryptPassword(
+                        settings.EncryptedPassword);
+
+                return !string.IsNullOrWhiteSpace(password);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static Window CreateFirstRunSettingsWindow()
+        {
+            return new Window
+            {
+                Title = "AdGuardTray Setup",
+                Width = 920,
+                Height = 700,
+                MinWidth = 760,
+                MinHeight = 560,
+                WindowStartupLocation =
+                    WindowStartupLocation.CenterScreen,
+                Content = new SettingsView()
+            };
         }
     }
 }

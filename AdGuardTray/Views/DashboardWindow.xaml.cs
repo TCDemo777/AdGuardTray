@@ -131,8 +131,8 @@ namespace AdGuardTray.Views
                 _viewModel.MemoryUsage =
                     info.MemoryUsage;
 
-                _viewModel.StorageUsage =
-                    info.StorageUsage;
+                _viewModel.UpdateStorageUsage(
+                    info.StorageUsage);
 
                 AdGuardStatus adGuard =
                     await router.GetAdGuardStatusAsync();
@@ -316,8 +316,8 @@ namespace AdGuardTray.Views
             _viewModel.MemoryUsage =
                 "-";
 
-            _viewModel.StorageUsage =
-                "-";
+            _viewModel.UpdateStorageUsage(
+                null);
 
             _viewModel.AdGuardVersion =
                 "-";

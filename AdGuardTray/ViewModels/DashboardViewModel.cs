@@ -45,6 +45,72 @@ namespace AdGuardTray.ViewModels
         [ObservableProperty]
         private string storageUsage = "-";
 
+        [ObservableProperty]
+        private double storagePercentage;
+
+        [ObservableProperty]
+        private string storageUsed = "-";
+
+        [ObservableProperty]
+        private string storageAvailable = "-";
+
+        [ObservableProperty]
+        private string storageTotal = "-";
+
+        public string CpuHealthText =>
+            CpuPercentage >= 90
+                ? "High load"
+                : CpuPercentage >= 70
+                    ? "Elevated"
+                    : CpuPercentage > 0
+                        ? "Healthy"
+                        : "Unavailable";
+
+        public string CpuHealthColour =>
+            CpuPercentage >= 90
+                ? "#C62828"
+                : CpuPercentage >= 70
+                    ? "#B26A00"
+                    : CpuPercentage > 0
+                        ? "#16803C"
+                        : "#687386";
+
+        public string MemoryHealthText =>
+            MemoryPercentage >= 90
+                ? "High usage"
+                : MemoryPercentage >= 75
+                    ? "Elevated"
+                    : MemoryPercentage > 0
+                        ? "Healthy"
+                        : "Unavailable";
+
+        public string MemoryHealthColour =>
+            MemoryPercentage >= 90
+                ? "#C62828"
+                : MemoryPercentage >= 75
+                    ? "#B26A00"
+                    : MemoryPercentage > 0
+                        ? "#16803C"
+                        : "#687386";
+
+        public string StorageHealthText =>
+            StoragePercentage >= 90
+                ? "Nearly full"
+                : StoragePercentage >= 75
+                    ? "Elevated"
+                    : StoragePercentage > 0
+                        ? "Healthy"
+                        : "Unavailable";
+
+        public string StorageHealthColour =>
+            StoragePercentage >= 90
+                ? "#C62828"
+                : StoragePercentage >= 75
+                    ? "#B26A00"
+                    : StoragePercentage > 0
+                        ? "#16803C"
+                        : "#687386";
+
 
         //
         // AdGuard summary
@@ -388,5 +454,119 @@ namespace AdGuardTray.ViewModels
         {
             RefreshStatusIndicators();
         }
+
+        public void UpdateStorageUsage(string? rawStorage)
+        {
+            StorageUsage = string.IsNullOrWhiteSpace(rawStorage)
+                ? "-"
+                : rawStorage.Trim();
+
+            StoragePercentage = 0;
+            StorageUsed = "-";
+            StorageAvailable = "-";
+            StorageTotal = "-";
+
+            if (string.IsNullOrWhiteSpace(rawStorage))
+            {
+                NotifyResourceHealthChanged();
+                return;
+            }
+
+            string[] lines = rawStorage
+                .Replace("\r", string.Empty)
+                .Split(
+                    '\n',
+                    StringSplitOptions.RemoveEmptyEntries |
+                    StringSplitOptions.TrimEntries);
+
+            string? candidate = lines
+                .FirstOrDefault(line =>
+                    line.Contains("/overlay", StringComparison.OrdinalIgnoreCase) ||
+                    line.EndsWith(" /", StringComparison.OrdinalIgnoreCase))
+                ?? lines.LastOrDefault();
+
+            if (string.IsNullOrWhiteSpace(candidate))
+            {
+                NotifyResourceHealthChanged();
+                return;
+            }
+
+            string[] parts = candidate.Split(
+                ' ',
+                StringSplitOptions.RemoveEmptyEntries |
+                StringSplitOptions.TrimEntries);
+
+            int percentIndex = Array.FindIndex(
+                parts,
+                part => part.EndsWith("%", StringComparison.Ordinal));
+
+            if (percentIndex >= 0 &&
+                double.TryParse(
+                    parts[percentIndex].TrimEnd('%'),
+                    out double percent))
+            {
+                StoragePercentage = Math.Clamp(percent, 0, 100);
+
+                // Typical df output:
+                // Filesystem 1K-blocks Used Available Use% Mounted-on
+                if (percentIndex >= 3)
+                {
+                    StorageTotal = FormatStorageSize(parts[percentIndex - 3]);
+                    StorageUsed = FormatStorageSize(parts[percentIndex - 2]);
+                    StorageAvailable = FormatStorageSize(parts[percentIndex - 1]);
+                }
+
+                StorageUsage = $"{StoragePercentage:0.#}% used";
+            }
+
+            NotifyResourceHealthChanged();
+        }
+
+        private static string FormatStorageSize(string value)
+        {
+            if (!double.TryParse(value, out double number))
+            {
+                return value;
+            }
+
+            // df commonly reports 1K blocks.
+            double bytes = number * 1024d;
+            string[] units = { "B", "KB", "MB", "GB", "TB" };
+            int unit = 0;
+
+            while (bytes >= 1024d && unit < units.Length - 1)
+            {
+                bytes /= 1024d;
+                unit++;
+            }
+
+            return $"{bytes:0.#} {units[unit]}";
+        }
+
+        private void NotifyResourceHealthChanged()
+        {
+            OnPropertyChanged(nameof(CpuHealthText));
+            OnPropertyChanged(nameof(CpuHealthColour));
+            OnPropertyChanged(nameof(MemoryHealthText));
+            OnPropertyChanged(nameof(MemoryHealthColour));
+            OnPropertyChanged(nameof(StorageHealthText));
+            OnPropertyChanged(nameof(StorageHealthColour));
+        }
+
+        partial void OnCpuPercentageChanged(double value)
+        {
+            NotifyResourceHealthChanged();
+        }
+
+        partial void OnMemoryPercentageChanged(double value)
+        {
+            NotifyResourceHealthChanged();
+        }
+
+        partial void OnStoragePercentageChanged(double value)
+        {
+            NotifyResourceHealthChanged();
+        }
+
     }
 }
