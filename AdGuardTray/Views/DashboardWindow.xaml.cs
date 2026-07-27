@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -48,10 +48,11 @@ namespace AdGuardTray.Views
                 DashboardWindow_Loaded;
 
             _refreshTimer =
-                new DispatcherTimer();
-
-            _refreshTimer.Interval =
-                TimeSpan.FromSeconds(30);
+                new DispatcherTimer
+                {
+                    Interval =
+                        TimeSpan.FromSeconds(30)
+                };
 
             _refreshTimer.Tick += async (s, e) =>
             {
@@ -72,8 +73,18 @@ namespace AdGuardTray.Views
         {
             try
             {
-                var settings =
+                AppSettings settings =
                     _settingsService.Load();
+
+                int refreshSeconds =
+                    Math.Clamp(
+                        settings.RefreshIntervalSeconds,
+                        5,
+                        3600);
+
+                _refreshTimer.Interval =
+                    TimeSpan.FromSeconds(
+                        refreshSeconds);
 
                 if (string.IsNullOrWhiteSpace(
                         settings.RouterIp) ||
@@ -317,21 +328,6 @@ namespace AdGuardTray.Views
             await RefreshDashboard();
         }
 
-        private void Settings_Click(
-            object sender,
-            RoutedEventArgs e)
-        {
-            var settings =
-                new SettingsWindow
-                {
-                    Owner = this
-                };
-
-            settings.ShowDialog();
-
-            _ = RefreshDashboard();
-        }
-
         private void Overview_Click(
             object sender,
             RoutedEventArgs e)
@@ -388,8 +384,8 @@ namespace AdGuardTray.Views
         }
 
         private void NavigationSettings_Click(
-    object sender,
-    RoutedEventArgs e)
+            object sender,
+            RoutedEventArgs e)
         {
             PageContent.Content =
                 new SettingsView();
@@ -399,17 +395,17 @@ namespace AdGuardTray.Views
         }
 
         private void SelectNavigationButton(
-    Button selectedButton)
+            Button selectedButton)
         {
             Button[] navigationButtons =
             {
-        OverviewButton,
-        AnalyticsButton,
-        NetworkButton,
-        ClientsButton,
-        LogsButton,
-        NavigationSettingsButton
-    };
+                OverviewButton,
+                AnalyticsButton,
+                NetworkButton,
+                ClientsButton,
+                LogsButton,
+                NavigationSettingsButton
+            };
 
             foreach (Button button in navigationButtons)
             {

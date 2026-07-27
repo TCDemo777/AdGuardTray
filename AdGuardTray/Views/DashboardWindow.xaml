@@ -9,9 +9,7 @@
         MinHeight="600"
         WindowStartupLocation="CenterScreen"
         Background="#F3F5F7">
-
     <Grid>
-
         <Grid.RowDefinitions>
             <RowDefinition Height="72"/>
             <RowDefinition Height="*"/>
@@ -23,209 +21,148 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <!-- Header -->
-
-        <Border
-            Grid.Row="0"
-            Grid.Column="0"
-            Grid.ColumnSpan="2"
-            Background="White"
-            BorderBrush="#DDDDDD"
-            BorderThickness="0,0,0,1">
-
+        <Border Grid.Row="0"
+                Grid.Column="0"
+                Grid.ColumnSpan="2"
+                Background="White"
+                BorderBrush="#DDDDDD"
+                BorderThickness="0,0,0,1">
             <Grid Margin="20,0">
-
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <StackPanel
-                    Grid.Column="0"
-                    VerticalAlignment="Center">
+                <StackPanel Grid.Column="0"
+                            VerticalAlignment="Center">
+                    <TextBlock FontSize="24"
+                               FontWeight="Bold"
+                               Text="GL.iNet Router Manager"/>
 
-                    <TextBlock
-                        FontSize="24"
-                        FontWeight="Bold"
-                        Text="GL.iNet Router Manager"/>
-
-                    <TextBlock
-                        Margin="0,4,0,0"
-                        FontSize="14"
-                        FontWeight="SemiBold"
-                        Foreground="#555555"
-                        Text="{Binding RouterStatusText}"/>
-
+                    <TextBlock Margin="0,4,0,0"
+                               FontSize="14"
+                               FontWeight="SemiBold"
+                               Foreground="#555555"
+                               Text="{Binding RouterStatusText}"/>
                 </StackPanel>
 
-                <StackPanel
-                    Grid.Column="1"
-                    Orientation="Horizontal"
-                    VerticalAlignment="Center">
-
-                    <Button
-                        x:Name="RefreshButton"
+                <Button x:Name="RefreshButton"
+                        Grid.Column="1"
                         Width="110"
                         Height="36"
-                        Margin="5,0"
+                        VerticalAlignment="Center"
                         Content="Refresh"
                         Click="Refresh_Click"/>
-
-                    <Button
-                        x:Name="SettingsButton"
-                        Width="110"
-                        Height="36"
-                        Margin="5,0"
-                        Content="Settings"
-                        Click="Settings_Click"/>
-
-                </StackPanel>
-
             </Grid>
-
         </Border>
 
-        <!-- Navigation -->
-
-        <Border
-            Grid.Row="1"
-            Grid.Column="0"
-            Background="#20262E"
-            BorderBrush="#15191E"
-            BorderThickness="0,0,1,0">
-
+        <Border Grid.Row="1"
+                Grid.Column="0"
+                Background="#20262E"
+                BorderBrush="#15191E"
+                BorderThickness="0,0,1,0">
             <Grid>
-
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <TextBlock
-                    Grid.Row="0"
-                    Margin="20,22,20,14"
-                    FontSize="12"
-                    FontWeight="SemiBold"
-                    Foreground="#AAB2BC"
-                    Text="NAVIGATION"/>
+                <TextBlock Grid.Row="0"
+                           Margin="20,22,20,14"
+                           FontSize="12"
+                           FontWeight="SemiBold"
+                           Foreground="#AAB2BC"
+                           Text="NAVIGATION"/>
 
                 <StackPanel Grid.Row="1">
+                    <Button x:Name="OverviewButton"
+                            Height="48"
+                            Margin="10,2"
+                            Padding="16,0"
+                            HorizontalContentAlignment="Left"
+                            Background="#35404D"
+                            Foreground="White"
+                            BorderThickness="0"
+                            Content="Overview"
+                            Click="Overview_Click"/>
 
-                    <Button
-                        x:Name="OverviewButton"
-                        Height="48"
-                        Margin="10,2"
-                        Padding="16,0"
-                        HorizontalContentAlignment="Left"
-                        Background="#35404D"
-                        Foreground="White"
-                        BorderThickness="0"
-                        Content="Overview"
-                        Click="Overview_Click"/>
+                    <Button x:Name="AnalyticsButton"
+                            Height="48"
+                            Margin="10,2"
+                            Padding="16,0"
+                            HorizontalContentAlignment="Left"
+                            Background="Transparent"
+                            Foreground="#D7DCE2"
+                            BorderThickness="0"
+                            Content="Analytics"
+                            Click="Analytics_Click"/>
 
-                    <Button
-                        x:Name="AnalyticsButton"
-                        Height="48"
-                        Margin="10,2"
-                        Padding="16,0"
-                        HorizontalContentAlignment="Left"
-                        Background="Transparent"
-                        Foreground="#D7DCE2"
-                        BorderThickness="0"
-                        Content="Analytics"
-                        Click="Analytics_Click"/>
+                    <Button x:Name="NetworkButton"
+                            Height="48"
+                            Margin="10,2"
+                            Padding="16,0"
+                            HorizontalContentAlignment="Left"
+                            Background="Transparent"
+                            Foreground="#D7DCE2"
+                            BorderThickness="0"
+                            Content="Network"
+                            Click="Network_Click"/>
 
-                    <Button
-                        x:Name="NetworkButton"
-                        Height="48"
-                        Margin="10,2"
-                        Padding="16,0"
-                        HorizontalContentAlignment="Left"
-                        Background="Transparent"
-                        Foreground="#D7DCE2"
-                        BorderThickness="0"
-                        Content="Network"
-                        Click="Network_Click"/>
+                    <Button x:Name="ClientsButton"
+                            Height="48"
+                            Margin="10,2"
+                            Padding="16,0"
+                            HorizontalContentAlignment="Left"
+                            Background="Transparent"
+                            Foreground="#D7DCE2"
+                            BorderThickness="0"
+                            Content="Clients"
+                            Click="Clients_Click"/>
 
-                    <Button
-                        x:Name="ClientsButton"
-                        Height="48"
-                        Margin="10,2"
-                        Padding="16,0"
-                        HorizontalContentAlignment="Left"
-                        Background="Transparent"
-                        Foreground="#D7DCE2"
-                        BorderThickness="0"
-                        Content="Clients"
-                        Click="Clients_Click"/>
+                    <Button x:Name="LogsButton"
+                            Height="48"
+                            Margin="10,2"
+                            Padding="16,0"
+                            HorizontalContentAlignment="Left"
+                            Background="Transparent"
+                            Foreground="#D7DCE2"
+                            BorderThickness="0"
+                            Content="Logs"
+                            Click="Logs_Click"/>
 
-                    <Button
-                        x:Name="LogsButton"
-                        Height="48"
-                        Margin="10,2"
-                        Padding="16,0"
-                        HorizontalContentAlignment="Left"
-                        Background="Transparent"
-                        Foreground="#D7DCE2"
-                        BorderThickness="0"
-                        Content="Logs"
-                        Click="Logs_Click"/>
-
-                    <Button
-    x:Name="NavigationSettingsButton"
-    Height="48"
-    Margin="10,2"
-    Padding="16,0"
-    HorizontalContentAlignment="Left"
-    Background="Transparent"
-    Foreground="#D7DCE2"
-    BorderThickness="0"
-    Content="Settings"
-    Click="NavigationSettings_Click"/>
-
+                    <Button x:Name="NavigationSettingsButton"
+                            Height="48"
+                            Margin="10,2"
+                            Padding="16,0"
+                            HorizontalContentAlignment="Left"
+                            Background="Transparent"
+                            Foreground="#D7DCE2"
+                            BorderThickness="0"
+                            Content="Settings"
+                            Click="NavigationSettings_Click"/>
                 </StackPanel>
-
             </Grid>
-
         </Border>
 
-        <!-- Current page -->
-
-        <ContentControl
-            x:Name="PageContent"
-            Grid.Row="1"
-            Grid.Column="1"
-            Margin="20">
-
+        <ContentControl x:Name="PageContent"
+                        Grid.Row="1"
+                        Grid.Column="1"
+                        Margin="20">
             <views:OverviewView/>
-
         </ContentControl>
 
-        <!-- Status bar -->
-
-        <StatusBar
-            Grid.Row="2"
-            Grid.Column="0"
-            Grid.ColumnSpan="2">
-
+        <StatusBar Grid.Row="2"
+                   Grid.Column="0"
+                   Grid.ColumnSpan="2">
             <StatusBarItem>
-
-                <TextBlock
-                    Text="{Binding StatusMessage}"/>
-
+                <TextBlock Text="{Binding StatusMessage}"/>
             </StatusBarItem>
 
             <Separator/>
 
             <StatusBarItem>
-
-                <TextBlock
-                    Text="{Binding LastRefresh}"/>
-
+                <TextBlock Text="{Binding LastRefresh}"/>
             </StatusBarItem>
-
         </StatusBar>
-
     </Grid>
-
 </Window>

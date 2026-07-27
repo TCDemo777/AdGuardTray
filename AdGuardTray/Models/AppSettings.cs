@@ -1,4 +1,4 @@
-﻿namespace AdGuardTray.Models
+namespace AdGuardTray.Models
 {
     public class AppSettings
     {
@@ -11,5 +11,9 @@
         public bool RememberPassword { get; set; } = true;
 
         public bool StartWithWindows { get; set; } = false;
+
+        public int RefreshIntervalSeconds { get; set; } = 30;
+
+        public int DefaultPauseMinutes { get; set; } = 30;
     }
 }
