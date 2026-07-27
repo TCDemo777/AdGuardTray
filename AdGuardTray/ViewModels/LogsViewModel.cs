@@ -5,8 +5,8 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Threading;
 using AdGuardTray.Models;
 using AdGuardTray.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -18,9 +18,10 @@ namespace AdGuardTray.ViewModels
     public partial class LogsViewModel : ObservableObject
     {
         private readonly SettingsService _settingsService;
-        private readonly DispatcherTimer _refreshTimer;
         private readonly List<QueryLogEntry> _allEntries = new();
         private RouterManager? _routerManager;
+        private CancellationTokenSource? _refreshCancellation;
+        private Task? _refreshLoopTask;
 
         public ObservableCollection<QueryLogEntry> Entries { get; } = new();
 
@@ -62,14 +63,6 @@ namespace AdGuardTray.ViewModels
         public LogsViewModel()
         {
             _settingsService = new SettingsService();
-
-            _refreshTimer = new DispatcherTimer(
-                DispatcherPriority.Background)
-            {
-                Interval = TimeSpan.FromSeconds(SelectedRefreshInterval)
-            };
-
-            _refreshTimer.Tick += RefreshTimer_Tick;
         }
 
         public async Task StartAsync()
@@ -81,17 +74,79 @@ namespace AdGuardTray.ViewModels
                 return;
             }
 
-            if (!_refreshTimer.IsEnabled)
+            await LoadLogsAsync();
+
+            if (_refreshLoopTask is not null &&
+                !_refreshLoopTask.IsCompleted)
             {
-                _refreshTimer.Start();
+                return;
             }
 
-            await LoadLogsAsync();
+            _refreshCancellation?.Dispose();
+            _refreshCancellation =
+                new CancellationTokenSource();
+
+            _refreshLoopTask =
+                RunRefreshLoopAsync(
+                    _refreshCancellation.Token);
         }
 
         public void Stop()
         {
-            _refreshTimer.Stop();
+            if (_refreshCancellation is null)
+            {
+                return;
+            }
+
+            _refreshCancellation.Cancel();
+            _refreshCancellation.Dispose();
+            _refreshCancellation = null;
+            _refreshLoopTask = null;
+        }
+
+        private async Task RunRefreshLoopAsync(
+            CancellationToken cancellationToken)
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                try
+                {
+                    int delaySeconds =
+                        Math.Max(
+                            1,
+                            SelectedRefreshInterval);
+
+                    await Task.Delay(
+                        TimeSpan.FromSeconds(delaySeconds),
+                        cancellationToken);
+
+                    if (!cancellationToken.IsCancellationRequested)
+                    {
+                        await LoadLogsAsync();
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    StatusMessage =
+                        "Live refresh error: " +
+                        ex.Message;
+
+                    try
+                    {
+                        await Task.Delay(
+                            TimeSpan.FromSeconds(3),
+                            cancellationToken);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
+                }
+            }
         }
 
         private Task EnsureRouterManagerAsync()
@@ -131,7 +186,7 @@ namespace AdGuardTray.ViewModels
         [RelayCommand]
         public async Task LoadLogsAsync()
         {
-            if (IsLoading || IsPaused)
+            if (IsLoading)
             {
                 return;
             }
@@ -150,10 +205,23 @@ namespace AdGuardTray.ViewModels
                 List<QueryLogEntry> entries =
                     await _routerManager.GetQueryLogAsync();
 
-                ApplyEntries(entries);
+                if (IsPaused)
+                {
+                    _allEntries.Clear();
+                    _allEntries.AddRange(entries);
 
-                LastUpdatedText =
-                    $"Updated {DateTime.Now:HH:mm:ss}";
+                    LastUpdatedText =
+                        $"Buffered {DateTime.Now:HH:mm:ss}";
+                    StatusMessage =
+                        $"{entries.Count} entries buffered while paused.";
+                }
+                else
+                {
+                    ApplyEntries(entries);
+
+                    LastUpdatedText =
+                        $"Updated {DateTime.Now:HH:mm:ss}";
+                }
             }
             catch (Exception ex)
             {
@@ -170,11 +238,6 @@ namespace AdGuardTray.ViewModels
 
         public void ApplyEntries(IEnumerable<QueryLogEntry> entries)
         {
-            if (IsPaused)
-            {
-                return;
-            }
-
             _allEntries.Clear();
             _allEntries.AddRange(entries);
 
@@ -201,6 +264,7 @@ namespace AdGuardTray.ViewModels
             }
 
             StatusMessage = "Live updates resumed.";
+            ApplyFilter();
             await LoadLogsAsync();
         }
 
@@ -218,15 +282,8 @@ namespace AdGuardTray.ViewModels
 
         partial void OnSelectedRefreshIntervalChanged(int value)
         {
-            _refreshTimer.Interval =
-                TimeSpan.FromSeconds(Math.Max(1, value));
-        }
-
-        private async void RefreshTimer_Tick(
-            object? sender,
-            EventArgs e)
-        {
-            await LoadLogsAsync();
+            LastUpdatedText =
+                $"Refresh interval set to {Math.Max(1, value)} seconds";
         }
 
         private void ApplyFilter()

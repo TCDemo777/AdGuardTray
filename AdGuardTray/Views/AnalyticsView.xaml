@@ -121,8 +121,23 @@
                         <TextBlock FontSize="17"
                                    FontWeight="Bold"
                                    Text="Top Clients"/>
-                        <ListBox Grid.Row="2"
-                                 BorderThickness="0"
+                        <Grid Grid.Row="2">
+                            <TextBlock HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       Foreground="#667085"
+                                       Text="No client ranking data yet">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding TopClients.Count}" Value="0">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        <ListBox BorderThickness="0"
                                  ItemsSource="{Binding TopClients}">
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
@@ -131,11 +146,12 @@
                                                    FontWeight="Bold"
                                                    Text="{Binding Count}"/>
                                         <TextBlock TextTrimming="CharacterEllipsis"
-                                                   Text="{Binding Domain}"/>
+                                                   Text="{Binding Name}"/>
                                     </DockPanel>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
+                        </Grid>
                     </Grid>
                 </Border>
 
@@ -154,8 +170,23 @@
                         <TextBlock FontSize="17"
                                    FontWeight="Bold"
                                    Text="Top Requested Domains"/>
-                        <ListBox Grid.Row="2"
-                                 BorderThickness="0"
+                        <Grid Grid.Row="2">
+                            <TextBlock HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       Foreground="#667085"
+                                       Text="No requested-domain data yet">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding TopQueriedDomains.Count}" Value="0">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        <ListBox BorderThickness="0"
                                  ItemsSource="{Binding TopQueriedDomains}">
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
@@ -164,11 +195,12 @@
                                                    FontWeight="Bold"
                                                    Text="{Binding Count}"/>
                                         <TextBlock TextTrimming="CharacterEllipsis"
-                                                   Text="{Binding Domain}"/>
+                                                   Text="{Binding Name}"/>
                                     </DockPanel>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
+                        </Grid>
                     </Grid>
                 </Border>
 
@@ -187,8 +219,23 @@
                         <TextBlock FontSize="17"
                                    FontWeight="Bold"
                                    Text="Top Blocked Domains"/>
-                        <ListBox Grid.Row="2"
-                                 BorderThickness="0"
+                        <Grid Grid.Row="2">
+                            <TextBlock HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       Foreground="#667085"
+                                       Text="No blocked-domain data yet">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding TopBlockedDomains.Count}" Value="0">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        <ListBox BorderThickness="0"
                                  ItemsSource="{Binding TopBlockedDomains}">
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
@@ -198,11 +245,12 @@
                                                    Foreground="#C62828"
                                                    Text="{Binding Count}"/>
                                         <TextBlock TextTrimming="CharacterEllipsis"
-                                                   Text="{Binding Domain}"/>
+                                                   Text="{Binding Name}"/>
                                     </DockPanel>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
+                        </Grid>
                     </Grid>
                 </Border>
             </Grid>

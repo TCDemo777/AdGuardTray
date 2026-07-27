@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -164,6 +165,16 @@ namespace AdGuardTray.Views
 
                 _viewModel.UpdateAdGuardStatistics(
                     statistics);
+
+                // Several AdGuard Home builds omit ranking arrays from
+                // /control/stats. Build those Analytics lists from the
+                // current query-log window whenever the stats lists are empty.
+                List<QueryLogEntry> rankingEntries =
+                    await router.GetQueryLogAsync();
+
+                _viewModel.UpdateRankingsFromQueryLog(
+                    rankingEntries,
+                    onlyWhenEmpty: true);
 
                 // Protection state is authoritative from /control/status.
                 // Statistics responses are not reliable for this value on

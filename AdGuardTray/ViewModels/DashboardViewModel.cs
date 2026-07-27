@@ -327,6 +327,168 @@ namespace AdGuardTray.ViewModels
                 statistics.TopBlockedDomains);
         }
 
+        public void UpdateRankingsFromQueryLog(
+            IEnumerable<QueryLogEntry> entries,
+            bool onlyWhenEmpty = true)
+        {
+            List<QueryLogEntry> snapshot =
+                entries?.ToList() ??
+                new List<QueryLogEntry>();
+
+            if (snapshot.Count == 0)
+            {
+                return;
+            }
+
+            if (!onlyWhenEmpty ||
+                TopClients.Count == 0)
+            {
+                ReplaceCollection(
+                    TopClients,
+                    snapshot
+                        .Where(entry =>
+                            !string.IsNullOrWhiteSpace(entry.Client))
+                        .GroupBy(
+                            entry => entry.Client,
+                            StringComparer.OrdinalIgnoreCase)
+                        .Select(group =>
+                            new
+                            {
+                                Name = group.Key,
+                                Count = group.Count()
+                            })
+                        .OrderByDescending(item => item.Count)
+                        .ThenBy(item => item.Name)
+                        .Take(10)
+                        .Select(item =>
+                            CreateRankedItem(
+                                item.Name,
+                                item.Count)));
+            }
+
+            if (!onlyWhenEmpty ||
+                TopQueriedDomains.Count == 0)
+            {
+                ReplaceCollection(
+                    TopQueriedDomains,
+                    snapshot
+                        .Where(entry =>
+                            !string.IsNullOrWhiteSpace(entry.Domain))
+                        .GroupBy(
+                            entry => entry.Domain,
+                            StringComparer.OrdinalIgnoreCase)
+                        .Select(group =>
+                            new
+                            {
+                                Name = group.Key,
+                                Count = group.Count()
+                            })
+                        .OrderByDescending(item => item.Count)
+                        .ThenBy(item => item.Name)
+                        .Take(10)
+                        .Select(item =>
+                            CreateRankedItem(
+                                item.Name,
+                                item.Count)));
+            }
+
+            if (!onlyWhenEmpty ||
+                TopBlockedDomains.Count == 0)
+            {
+                ReplaceCollection(
+                    TopBlockedDomains,
+                    snapshot
+                        .Where(entry =>
+                            entry.IsBlocked &&
+                            !string.IsNullOrWhiteSpace(entry.Domain))
+                        .GroupBy(
+                            entry => entry.Domain,
+                            StringComparer.OrdinalIgnoreCase)
+                        .Select(group =>
+                            new
+                            {
+                                Name = group.Key,
+                                Count = group.Count()
+                            })
+                        .OrderByDescending(item => item.Count)
+                        .ThenBy(item => item.Name)
+                        .Take(10)
+                        .Select(item =>
+                            CreateRankedItem(
+                                item.Name,
+                                item.Count)));
+            }
+        }
+
+        private static AdGuardRankedItem CreateRankedItem(
+            string name,
+            int count)
+        {
+            var item =
+                new AdGuardRankedItem();
+
+            // AdGuardTray has used different display-property names for this
+            // model during development. Set whichever one exists without
+            // introducing another compile-time dependency.
+            Type itemType =
+                typeof(AdGuardRankedItem);
+
+            string[] namePropertyCandidates =
+            {
+                "Name",
+                "Domain",
+                "Label",
+                "Value",
+                "Client"
+            };
+
+            foreach (string propertyName in namePropertyCandidates)
+            {
+                var property =
+                    itemType.GetProperty(propertyName);
+
+                if (property?.CanWrite == true &&
+                    property.PropertyType == typeof(string))
+                {
+                    property.SetValue(item, name);
+                    break;
+                }
+            }
+
+            string[] countPropertyCandidates =
+            {
+                "Count",
+                "Queries",
+                "Total",
+                "ValueCount"
+            };
+
+            foreach (string propertyName in countPropertyCandidates)
+            {
+                var property =
+                    itemType.GetProperty(propertyName);
+
+                if (property?.CanWrite != true)
+                {
+                    continue;
+                }
+
+                if (property.PropertyType == typeof(int))
+                {
+                    property.SetValue(item, count);
+                    break;
+                }
+
+                if (property.PropertyType == typeof(long))
+                {
+                    property.SetValue(item, (long)count);
+                    break;
+                }
+            }
+
+            return item;
+        }
+
         public void ClearAdGuardStatistics()
         {
             AdGuardQueryHistory.Clear();
