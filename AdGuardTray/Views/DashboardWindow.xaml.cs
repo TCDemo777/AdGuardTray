@@ -405,6 +405,14 @@ namespace AdGuardTray.Views
                 NavigationSettingsButton);
         }
 
+        private void About_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            PageContent.Content = new AboutView();
+            SelectNavigationButton(AboutButton);
+        }
+
         private void SelectNavigationButton(
             Button selectedButton)
         {
@@ -416,7 +424,8 @@ namespace AdGuardTray.Views
                 NetworkButton,
                 ClientsButton,
                 LogsButton,
-                NavigationSettingsButton
+                NavigationSettingsButton,
+                AboutButton
             };
 
             foreach (Button button in navigationButtons)

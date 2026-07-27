@@ -24,6 +24,7 @@ namespace AdGuardTray.ViewModels
         private string _statusDetail = "Reading AdGuard Home settings.";
         private string _remaining = "";
         private string _message = "";
+        private string _blockedServicesStatus = "Loading available services...";
         private string _profileName = "Custom";
         private bool _filteringEnabled;
         private bool _safeBrowsingEnabled;
@@ -72,6 +73,7 @@ namespace AdGuardTray.ViewModels
         public string StatusDetail { get => _statusDetail; private set => SetProperty(ref _statusDetail, value); }
         public string Remaining { get => _remaining; private set => SetProperty(ref _remaining, value); }
         public string Message { get => _message; private set => SetProperty(ref _message, value); }
+        public string BlockedServicesStatus { get => _blockedServicesStatus; private set => SetProperty(ref _blockedServicesStatus, value); }
         public string ProfileName { get => _profileName; private set => SetProperty(ref _profileName, value); }
 
         public bool FilteringEnabled { get => _filteringEnabled; set { if (SetProperty(ref _filteringEnabled, value) && !_isInitialising) _ = UpdateOptionAsync("DNS filtering", r => r.SetFilteringEnabledAsync(value)); } }
@@ -139,13 +141,21 @@ namespace AdGuardTray.ViewModels
 
                 BlockedServices.Clear();
                 foreach (var service in services.OrderBy(s => s.Name)) BlockedServices.Add(service);
+                BlockedServicesStatus = BlockedServices.Count == 0
+                    ? "No blocked-service catalogue was returned by this AdGuard Home build."
+                    : $"{BlockedServices.Count} services available. Select services and save your changes.";
                 FilteringRules.Clear();
                 foreach (var rule in rules) FilteringRules.Add(rule);
                 DnsRewrites.Clear();
                 foreach (var rewrite in rewrites) DnsRewrites.Add(rewrite);
                 Message = "Protection settings refreshed.";
             }
-            catch (Exception ex) { Message = "Unable to refresh protection settings: " + ex.Message; }
+            catch (Exception ex)
+            {
+                if (BlockedServices.Count == 0)
+                    BlockedServicesStatus = "Blocked services could not be loaded. Use Refresh all to try again.";
+                Message = "Unable to refresh protection settings: " + ex.Message;
+            }
             finally { _isInitialising = false; IsBusy = false; }
         }
 

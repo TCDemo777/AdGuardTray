@@ -527,19 +527,75 @@ namespace AdGuardTray.Services
             foreach (string id in GetStringArray(configJson, "ids")) config.EnabledIds.Add(id);
 
             var result = new List<BlockedServiceItem>();
-            JsonElement array = all.ValueKind == JsonValueKind.Array ? all : (all.TryGetProperty("services", out JsonElement services) ? services : default);
+
+            JsonElement array = default;
+            if (all.ValueKind == JsonValueKind.Array)
+            {
+                array = all;
+            }
+            else if (all.ValueKind == JsonValueKind.Object)
+            {
+                // AdGuard Home versions have returned this catalogue under
+                // both "blocked_services" and "services".
+                if (!all.TryGetProperty("blocked_services", out array))
+                {
+                    all.TryGetProperty("services", out array);
+                }
+            }
+
             if (array.ValueKind == JsonValueKind.Array)
             {
                 foreach (JsonElement item in array.EnumerateArray())
                 {
-                    string id = GetString(item, "id");
-                    if (id.Length == 0) continue;
-                    string name = GetString(item, "name");
-                    if (name.Length == 0) name = id.Replace('_', ' ');
-                    result.Add(new BlockedServiceItem { Id = id, Name = name, IsBlocked = config.EnabledIds.Contains(id) });
+                    string id;
+                    string name;
+
+                    if (item.ValueKind == JsonValueKind.String)
+                    {
+                        id = item.GetString()?.Trim() ?? string.Empty;
+                        name = FormatBlockedServiceName(id);
+                    }
+                    else if (item.ValueKind == JsonValueKind.Object)
+                    {
+                        id = GetString(item, "id");
+                        if (id.Length == 0) id = GetString(item, "service_id");
+
+                        name = GetString(item, "name");
+                        if (name.Length == 0) name = GetString(item, "display_name");
+                        if (name.Length == 0) name = FormatBlockedServiceName(id);
+                    }
+                    else
+                    {
+                        continue;
+                    }
+
+                    if (id.Length == 0 || result.Any(service =>
+                        service.Id.Equals(id, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        continue;
+                    }
+
+                    result.Add(new BlockedServiceItem
+                    {
+                        Id = id,
+                        Name = name,
+                        IsBlocked = config.EnabledIds.Contains(id)
+                    });
                 }
             }
+
             return (result, config);
+        }
+
+        private static string FormatBlockedServiceName(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id)) return "Unknown service";
+
+            string text = id.Replace('_', ' ').Replace('-', ' ').Trim();
+            return string.Join(" ", text.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                .Select(word => word.Length == 1
+                    ? word.ToUpperInvariant()
+                    : char.ToUpperInvariant(word[0]) + word[1..]));
         }
 
         public Task UpdateBlockedServicesAsync(IEnumerable<string> ids, string scheduleJson)
