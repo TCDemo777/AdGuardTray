@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -73,6 +73,19 @@ namespace AdGuardTray.ViewModels
 
         [ObservableProperty]
         private string adGuardBlockRate = "-";
+
+
+        [ObservableProperty]
+        private string adGuardProtectionDetail = "Checking protection status...";
+
+        [ObservableProperty]
+        private string adGuardProtectionRemaining = "";
+
+        [ObservableProperty]
+        private string adGuardProtectionMessage = "";
+
+        [ObservableProperty]
+        private bool protectionControlsEnabled = true;
 
 
         //
@@ -187,9 +200,6 @@ namespace AdGuardTray.ViewModels
         public void UpdateAdGuardStatistics(
             AdGuardStatistics statistics)
         {
-            AdGuardProtectionEnabled =
-                statistics.ProtectionEnabled;
-
             ReplaceCollection(
                 AdGuardQueryHistory,
                 statistics.QueryHistory);

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
@@ -131,6 +131,319 @@ namespace AdGuardTray.Services
                 Version =
                     version.Trim()
             };
+        }
+
+
+        //
+        // AdGuard Protection
+        //
+
+        public async Task<AdGuardProtectionStatus>
+            GetAdGuardProtectionStatusAsync()
+        {
+            string token =
+                await GetAdminTokenAsync();
+
+            AdGuardControlResponse response =
+                await RequestAdGuardControlAsync(
+                    HttpMethod.Get,
+                    "status",
+                    token);
+
+            if (response.RequiresNewToken)
+            {
+                InvalidateAdminToken();
+
+                token =
+                    await GetAdminTokenAsync();
+
+                response =
+                    await RequestAdGuardControlAsync(
+                        HttpMethod.Get,
+                        "status",
+                        token);
+            }
+
+            if (!response.IsSuccess)
+            {
+                throw CreateAdGuardControlException(
+                    "read protection status",
+                    response);
+            }
+
+            return ParseAdGuardProtectionStatus(
+                response.Content);
+        }
+
+        public Task<AdGuardProtectionStatus>
+            EnableProtectionAsync()
+        {
+            return SetAdGuardProtectionAsync(
+                true,
+                TimeSpan.Zero);
+        }
+
+        public Task<AdGuardProtectionStatus>
+            ResumeProtectionAsync()
+        {
+            return SetAdGuardProtectionAsync(
+                true,
+                TimeSpan.Zero);
+        }
+
+        public Task<AdGuardProtectionStatus>
+            DisableProtectionAsync()
+        {
+            return SetAdGuardProtectionAsync(
+                false,
+                TimeSpan.Zero);
+        }
+
+        public Task<AdGuardProtectionStatus>
+            PauseProtectionAsync(
+                TimeSpan duration)
+        {
+            if (duration <= TimeSpan.Zero)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(duration),
+                    "Pause duration must be greater than zero.");
+            }
+
+            return SetAdGuardProtectionAsync(
+                false,
+                duration);
+        }
+
+        private async Task<AdGuardProtectionStatus>
+            SetAdGuardProtectionAsync(
+                bool enabled,
+                TimeSpan duration)
+        {
+            long durationMilliseconds =
+                enabled
+                    ? 0
+                    : Math.Max(
+                        0,
+                        (long)duration.TotalMilliseconds);
+
+            string requestJson =
+                JsonSerializer.Serialize(
+                    new
+                    {
+                        enabled,
+                        duration =
+                            durationMilliseconds
+                    });
+
+            string token =
+                await GetAdminTokenAsync();
+
+            AdGuardControlResponse response =
+                await RequestAdGuardControlAsync(
+                    HttpMethod.Post,
+                    "protection",
+                    token,
+                    requestJson);
+
+            if (response.RequiresNewToken)
+            {
+                InvalidateAdminToken();
+
+                token =
+                    await GetAdminTokenAsync();
+
+                response =
+                    await RequestAdGuardControlAsync(
+                        HttpMethod.Post,
+                        "protection",
+                        token,
+                        requestJson);
+            }
+
+            if (!response.IsSuccess)
+            {
+                throw CreateAdGuardControlException(
+                    enabled
+                        ? "enable protection"
+                        : "disable protection",
+                    response);
+            }
+
+            return await GetAdGuardProtectionStatusAsync();
+        }
+
+        private async Task<AdGuardControlResponse>
+            RequestAdGuardControlAsync(
+                HttpMethod method,
+                string endpoint,
+                string token,
+                string? json = null)
+        {
+            var cookieContainer =
+                new CookieContainer();
+
+            var adGuardBaseUri =
+                new Uri(
+                    $"http://{_routerIp}:3000");
+
+            cookieContainer.Add(
+                adGuardBaseUri,
+                new Cookie(
+                    "Admin-Token",
+                    token,
+                    "/"));
+
+            using var handler =
+                new HttpClientHandler
+                {
+                    CookieContainer =
+                        cookieContainer,
+
+                    UseCookies =
+                        true,
+
+                    AutomaticDecompression =
+                        DecompressionMethods.GZip |
+                        DecompressionMethods.Deflate
+                };
+
+            using var client =
+                new HttpClient(handler)
+                {
+                    Timeout =
+                        TimeSpan.FromSeconds(10)
+                };
+
+            client.DefaultRequestHeaders
+                .Accept
+                .ParseAdd(
+                    "application/json");
+
+            string safeEndpoint =
+                endpoint.TrimStart('/');
+
+            string url =
+                $"http://{_routerIp}:3000/control/" +
+                safeEndpoint;
+
+            using var request =
+                new HttpRequestMessage(
+                    method,
+                    url);
+
+            if (json is not null)
+            {
+                // Some GL.iNet AdGuard Home builds reject
+                // "application/json; charset=utf-8" and require the
+                // Content-Type value to be exactly "application/json".
+                //
+                // StringContent automatically appends the charset, so
+                // use ByteArrayContent and set the header explicitly.
+                request.Content =
+                    new ByteArrayContent(
+                        System.Text.Encoding.UTF8
+                            .GetBytes(
+                                json));
+
+                request.Content.Headers
+                    .TryAddWithoutValidation(
+                        "Content-Type",
+                        "application/json");
+            }
+
+            Debug.WriteLine(
+                $"Calling AdGuard {method}: {url}");
+
+            using HttpResponseMessage response =
+                await client.SendAsync(
+                    request);
+
+            string content =
+                await response.Content
+                    .ReadAsStringAsync();
+
+            Debug.WriteLine(
+                "AdGuard control status: " +
+                $"{(int)response.StatusCode} " +
+                response.StatusCode);
+
+            return new AdGuardControlResponse(
+                response.StatusCode,
+                content);
+        }
+
+        private static AdGuardProtectionStatus
+            ParseAdGuardProtectionStatus(
+                string json)
+        {
+            using JsonDocument document =
+                JsonDocument.Parse(
+                    json);
+
+            JsonElement root =
+                document.RootElement;
+
+            bool enabled =
+                root.TryGetProperty(
+                    "protection_enabled",
+                    out JsonElement enabledElement) &&
+                enabledElement.ValueKind ==
+                    JsonValueKind.True;
+
+            long remainingMilliseconds =
+                0;
+
+            if (root.TryGetProperty(
+                    "protection_disabled_duration",
+                    out JsonElement durationElement))
+            {
+                if (!durationElement.TryGetInt64(
+                        out remainingMilliseconds) &&
+                    durationElement.TryGetDouble(
+                        out double durationDouble))
+                {
+                    remainingMilliseconds =
+                        (long)durationDouble;
+                }
+            }
+
+            remainingMilliseconds =
+                Math.Max(
+                    0,
+                    remainingMilliseconds);
+
+            return new AdGuardProtectionStatus
+            {
+                IsEnabled =
+                    enabled,
+
+                IsPaused =
+                    !enabled &&
+                    remainingMilliseconds > 0,
+
+                RemainingPause =
+                    TimeSpan.FromMilliseconds(
+                        remainingMilliseconds)
+            };
+        }
+
+        private static Exception
+            CreateAdGuardControlException(
+                string action,
+                AdGuardControlResponse response)
+        {
+            string detail =
+                string.IsNullOrWhiteSpace(
+                    response.Content)
+                    ? "No response body was returned."
+                    : response.Content.Trim();
+
+            return new InvalidOperationException(
+                $"Unable to {action}. " +
+                $"AdGuard Home returned HTTP " +
+                $"{(int)response.StatusCode} " +
+                $"{response.StatusCode}. {detail}");
         }
 
         //
@@ -1597,6 +1910,40 @@ namespace AdGuardTray.Services
         {
             return _ssh.RunCommandAsync(
                 "reboot");
+        }
+
+        private sealed class AdGuardControlResponse
+        {
+            public AdGuardControlResponse(
+                HttpStatusCode statusCode,
+                string content)
+            {
+                StatusCode =
+                    statusCode;
+
+                Content =
+                    content;
+            }
+
+            public HttpStatusCode StatusCode
+            {
+                get;
+            }
+
+            public string Content
+            {
+                get;
+            }
+
+            public bool IsSuccess =>
+                (int)StatusCode >= 200 &&
+                (int)StatusCode <= 299;
+
+            public bool RequiresNewToken =>
+                StatusCode ==
+                    HttpStatusCode.Unauthorized ||
+                StatusCode ==
+                    HttpStatusCode.Forbidden;
         }
 
         private sealed class AdGuardClientsResponse
