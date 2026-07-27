@@ -19,16 +19,41 @@
 
         <Border Grid.Row="2" Padding="14" Background="White" CornerRadius="10"
                 BorderBrush="#DDE3EA" BorderThickness="1">
-            <DockPanel>
-                <TextBox Width="300" Height="36" Margin="0,0,10,0"
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="12"/>
+                    <ColumnDefinition Width="180"/>
+                    <ColumnDefinition Width="10"/>
+                    <ColumnDefinition Width="115"/>
+                    <ColumnDefinition Width="10"/>
+                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="10"/>
+                    <ColumnDefinition Width="120"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBox Height="36"
                          VerticalContentAlignment="Center"
                          Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                          ToolTip="Search by name, IP address, or MAC address"/>
-                <Button DockPanel.Dock="Right" MinWidth="120" Height="36"
-                        Click="ViewDetailsButton_Click" Content="View Details"/>
-                <Button DockPanel.Dock="Right" MinWidth="100" Height="36" Margin="0,0,10,0"
-                        Command="{Binding LoadClientsCommand}" Content="Refresh"/>
-            </DockPanel>
+
+                <ComboBox Grid.Column="2" Height="36"
+                          VerticalContentAlignment="Center"
+                          ItemsSource="{Binding SortOptions}"
+                          SelectedItem="{Binding SelectedSortOption}"/>
+
+                <Button Grid.Column="4" Height="36"
+                        Command="{Binding ToggleSortDirectionCommand}"
+                        Content="{Binding SortDirectionText}"/>
+
+                <Button Grid.Column="6" Height="36"
+                        Command="{Binding LoadClientsCommand}"
+                        Content="Refresh"/>
+
+                <Button Grid.Column="8" Height="36"
+                        Click="ViewDetailsButton_Click"
+                        Content="View Details"/>
+            </Grid>
         </Border>
 
         <Border Grid.Row="4" Padding="10" Background="#F8FAFC" CornerRadius="10"
@@ -43,7 +68,7 @@
                      MouseDoubleClick="ClientsGrid_MouseDoubleClick">
                 <ListBox.ItemsPanel>
                     <ItemsPanelTemplate>
-                        <WrapPanel Orientation="Horizontal"/>
+                        <UniformGrid Columns="3"/>
                     </ItemsPanelTemplate>
                 </ListBox.ItemsPanel>
                 <ListBox.ItemContainerStyle>
@@ -51,11 +76,12 @@
                         <Setter Property="Margin" Value="6"/>
                         <Setter Property="Padding" Value="0"/>
                         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                        <Setter Property="VerticalContentAlignment" Value="Stretch"/>
                     </Style>
                 </ListBox.ItemContainerStyle>
                 <ListBox.ItemTemplate>
                     <DataTemplate>
-                        <Border Width="260" MinHeight="168" Padding="16" Background="White"
+                        <Border MinHeight="168" Padding="16" Background="White"
                                 CornerRadius="10" BorderBrush="#DDE3EA" BorderThickness="1">
                             <Grid>
                                 <Grid.RowDefinitions>
@@ -71,18 +97,24 @@
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     <Border Width="36" Height="36" Background="#EAF2FF" CornerRadius="18">
-                                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center"
+                                        <TextBlock HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"
                                                    FontSize="18" Text="●"/>
                                     </Border>
                                     <StackPanel Grid.Column="1">
-                                        <TextBlock FontSize="16" FontWeight="Bold" TextTrimming="CharacterEllipsis"
+                                        <TextBlock FontSize="16" FontWeight="Bold"
+                                                   TextTrimming="CharacterEllipsis"
                                                    Text="{Binding Name}"/>
-                                        <TextBlock Margin="0,3,0,0" Foreground="#667085" Text="{Binding IpAddress}"/>
+                                        <TextBlock Margin="0,3,0,0" Foreground="#667085"
+                                                   Text="{Binding IpAddress}"/>
                                     </StackPanel>
                                 </Grid>
                                 <StackPanel Grid.Row="2">
-                                    <TextBlock Foreground="#667085" Text="{Binding MacAddress}"/>
+                                    <TextBlock Foreground="#667085"
+                                               TextTrimming="CharacterEllipsis"
+                                               Text="{Binding MacAddress}"/>
                                     <TextBlock Margin="0,4,0,0" Foreground="#667085"
+                                               TextTrimming="CharacterEllipsis"
                                                Text="{Binding LastSeen, StringFormat=Last seen: {0}}"/>
                                 </StackPanel>
                                 <Grid Grid.Row="4">
@@ -92,11 +124,13 @@
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     <StackPanel>
-                                        <TextBlock FontSize="17" FontWeight="Bold" Text="{Binding TotalQueries}"/>
+                                        <TextBlock FontSize="17" FontWeight="Bold"
+                                                   Text="{Binding TotalQueries}"/>
                                         <TextBlock FontSize="11" Foreground="#667085" Text="Queries"/>
                                     </StackPanel>
                                     <StackPanel Grid.Column="1">
-                                        <TextBlock FontSize="17" FontWeight="Bold" Foreground="#C62828"
+                                        <TextBlock FontSize="17" FontWeight="Bold"
+                                                   Foreground="#C62828"
                                                    Text="{Binding BlockedQueries}"/>
                                         <TextBlock FontSize="11" Foreground="#667085" Text="Blocked"/>
                                     </StackPanel>

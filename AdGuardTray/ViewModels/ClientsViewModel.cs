@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -13,31 +13,46 @@ namespace AdGuardTray.ViewModels
     public partial class ClientsViewModel : ObservableObject
     {
         private readonly SettingsService _settingsService;
+        private readonly List<ClientInfo> _allClients = new();
+        private RouterManager? _routerManager;
 
-        private readonly List<ClientInfo> _allClients =
-            new();
+        public ObservableCollection<ClientInfo> Clients { get; } = new();
 
-        public ObservableCollection<ClientInfo> Clients { get; } =
-            new();
+        public IReadOnlyList<string> SortOptions { get; } =
+            new[]
+            {
+                "IP address",
+                "Blocked queries",
+                "Last seen",
+                "Total queries",
+                "Block rate",
+                "Name"
+            };
 
         [ObservableProperty]
-        private string searchText =
-            string.Empty;
+        private string searchText = string.Empty;
+
+        [ObservableProperty]
+        private string selectedSortOption = "IP address";
+
+        [ObservableProperty]
+        private bool sortDescending;
 
         [ObservableProperty]
         private ClientInfo? selectedClient;
 
         [ObservableProperty]
-        private bool isLoading;
+        private string statusMessage = "No client data loaded.";
 
         [ObservableProperty]
-        private string statusMessage =
-            "No client data loaded.";
+        private bool isLoading;
+
+        public string SortDirectionText =>
+            SortDescending ? "Descending" : "Ascending";
 
         public ClientsViewModel()
         {
-            _settingsService =
-                new SettingsService();
+            _settingsService = new SettingsService();
         }
 
         [RelayCommand]
@@ -48,160 +63,182 @@ namespace AdGuardTray.ViewModels
                 return;
             }
 
-            IsLoading =
-                true;
-
-            StatusMessage =
-                "Loading clients...";
+            IsLoading = true;
+            StatusMessage = "Loading clients...";
 
             try
             {
-                var settings =
-                    _settingsService.Load();
-
-                if (string.IsNullOrWhiteSpace(
-                        settings.RouterIp) ||
-                    string.IsNullOrWhiteSpace(
-                        settings.Username))
+                if (_routerManager is null)
                 {
-                    ClearClients();
+                    var settings = _settingsService.Load();
 
-                    StatusMessage =
-                        "Router settings are incomplete.";
+                    if (string.IsNullOrWhiteSpace(settings.RouterIp) ||
+                        string.IsNullOrWhiteSpace(settings.Username))
+                    {
+                        StatusMessage = "Router settings are incomplete.";
+                        return;
+                    }
 
-                    return;
-                }
+                    string password =
+                        _settingsService.DecryptPassword(
+                            settings.EncryptedPassword);
 
-                string password =
-                    _settingsService.DecryptPassword(
-                        settings.EncryptedPassword);
+                    if (string.IsNullOrWhiteSpace(password))
+                    {
+                        StatusMessage = "The router password is missing.";
+                        return;
+                    }
 
-                if (string.IsNullOrWhiteSpace(
-                        password))
-                {
-                    ClearClients();
-
-                    StatusMessage =
-                        "The router password is missing.";
-
-                    return;
-                }
-
-                var routerManager =
-                    new RouterManager(
+                    _routerManager = new RouterManager(
                         settings.RouterIp,
                         settings.Username,
                         password);
+                }
 
                 List<ClientInfo> clients =
-                    await routerManager
-                        .GetAdGuardClientsAsync();
+                    await _routerManager.GetAdGuardClientsAsync();
 
                 _allClients.Clear();
+                _allClients.AddRange(clients);
 
-                _allClients.AddRange(
-                    clients);
+                ApplyFilterAndSort();
 
-                ApplyFilter();
-
-                StatusMessage =
-                    _allClients.Count switch
-                    {
-                        0 =>
-                            "No AdGuard clients were found.",
-
-                        1 =>
-                            "1 client loaded.",
-
-                        _ =>
-                            $"{_allClients.Count} clients loaded."
-                    };
+                StatusMessage = _allClients.Count switch
+                {
+                    0 => "No clients were returned by AdGuard Home.",
+                    1 => "1 client loaded.",
+                    _ => $"{_allClients.Count} clients loaded."
+                };
             }
             catch (Exception ex)
             {
-                ClearClients();
-
-                StatusMessage =
-                    "Unable to load clients: " +
-                    ex.Message;
+                StatusMessage = "Unable to load clients: " + ex.Message;
             }
             finally
             {
-                IsLoading =
-                    false;
+                IsLoading = false;
             }
         }
 
-        partial void OnSearchTextChanged(
-            string value)
+        [RelayCommand]
+        private void ToggleSortDirection()
         {
-            ApplyFilter();
+            SortDescending = !SortDescending;
+            OnPropertyChanged(nameof(SortDirectionText));
+            ApplyFilterAndSort();
         }
 
-        private void ApplyFilter()
+        partial void OnSearchTextChanged(string value)
         {
-            string search =
-                SearchText.Trim();
+            ApplyFilterAndSort();
+        }
 
-            IEnumerable<ClientInfo> filteredClients =
-                _allClients;
+        partial void OnSelectedSortOptionChanged(string value)
+        {
+            ApplyFilterAndSort();
+        }
 
-            if (!string.IsNullOrWhiteSpace(
-                    search))
+        partial void OnSortDescendingChanged(bool value)
+        {
+            OnPropertyChanged(nameof(SortDirectionText));
+        }
+
+        private void ApplyFilterAndSort()
+        {
+            string search = SearchText.Trim();
+
+            IEnumerable<ClientInfo> query = _allClients;
+
+            if (!string.IsNullOrWhiteSpace(search))
             {
-                filteredClients =
-                    _allClients.Where(
-                        client =>
-                            ContainsText(
-                                client.Name,
-                                search) ||
-                            ContainsText(
-                                client.IpAddress,
-                                search) ||
-                            ContainsText(
-                                client.MacAddress,
-                                search));
+                query = query.Where(client =>
+                    Contains(client.Name, search) ||
+                    Contains(client.IpAddress, search) ||
+                    Contains(client.MacAddress, search));
             }
+
+            query = SelectedSortOption switch
+            {
+                "Blocked queries" => SortDescending
+                    ? query.OrderByDescending(x => x.BlockedQueries)
+                           .ThenBy(x => IpSortKey(x.IpAddress))
+                    : query.OrderBy(x => x.BlockedQueries)
+                           .ThenBy(x => IpSortKey(x.IpAddress)),
+
+                "Last seen" => SortDescending
+                    ? query.OrderByDescending(x => LastSeenSortKey(x.LastSeen))
+                           .ThenBy(x => IpSortKey(x.IpAddress))
+                    : query.OrderBy(x => LastSeenSortKey(x.LastSeen))
+                           .ThenBy(x => IpSortKey(x.IpAddress)),
+
+                "Total queries" => SortDescending
+                    ? query.OrderByDescending(x => x.TotalQueries)
+                           .ThenBy(x => IpSortKey(x.IpAddress))
+                    : query.OrderBy(x => x.TotalQueries)
+                           .ThenBy(x => IpSortKey(x.IpAddress)),
+
+                "Block rate" => SortDescending
+                    ? query.OrderByDescending(x => x.BlockRate)
+                           .ThenBy(x => IpSortKey(x.IpAddress))
+                    : query.OrderBy(x => x.BlockRate)
+                           .ThenBy(x => IpSortKey(x.IpAddress)),
+
+                "Name" => SortDescending
+                    ? query.OrderByDescending(x => x.Name, StringComparer.OrdinalIgnoreCase)
+                           .ThenBy(x => IpSortKey(x.IpAddress))
+                    : query.OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
+                           .ThenBy(x => IpSortKey(x.IpAddress)),
+
+                _ => SortDescending
+                    ? query.OrderByDescending(x => IpSortKey(x.IpAddress))
+                    : query.OrderBy(x => IpSortKey(x.IpAddress))
+            };
 
             Clients.Clear();
 
-            foreach (ClientInfo client
-                     in filteredClients)
+            foreach (ClientInfo client in query)
             {
-                Clients.Add(
-                    client);
+                Clients.Add(client);
             }
 
-            if (!IsLoading &&
-                _allClients.Count > 0)
+            if (!IsLoading && _allClients.Count > 0)
             {
                 StatusMessage =
-                    string.IsNullOrWhiteSpace(
-                        search)
-                        ? _allClients.Count == 1
-                            ? "1 client loaded."
-                            : $"{_allClients.Count} clients loaded."
-                        : $"{Clients.Count} of " +
-                          $"{_allClients.Count} clients shown.";
+                    $"{Clients.Count} of {_allClients.Count} clients shown · " +
+                    $"sorted by {SelectedSortOption.ToLowerInvariant()} " +
+                    $"({SortDirectionText.ToLowerInvariant()}).";
             }
         }
 
-        private void ClearClients()
+        private static bool Contains(string? value, string search) =>
+            !string.IsNullOrWhiteSpace(value) &&
+            value.Contains(search, StringComparison.OrdinalIgnoreCase);
+
+        private static long IpSortKey(string? value)
         {
-            _allClients.Clear();
-            Clients.Clear();
-            SelectedClient = null;
+            if (!System.Net.IPAddress.TryParse(value, out var address))
+            {
+                return long.MaxValue;
+            }
+
+            byte[] bytes = address.GetAddressBytes();
+
+            if (bytes.Length != 4)
+            {
+                return long.MaxValue - 1;
+            }
+
+            return ((long)bytes[0] << 24) |
+                   ((long)bytes[1] << 16) |
+                   ((long)bytes[2] << 8) |
+                   bytes[3];
         }
 
-        private static bool ContainsText(
-            string? value,
-            string search)
+        private static DateTime LastSeenSortKey(string? value)
         {
-            return !string.IsNullOrWhiteSpace(
-                       value) &&
-                   value.Contains(
-                       search,
-                       StringComparison.OrdinalIgnoreCase);
+            return DateTime.TryParse(value, out DateTime parsed)
+                ? parsed
+                : DateTime.MinValue;
         }
     }
 }

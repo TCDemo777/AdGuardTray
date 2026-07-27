@@ -11,48 +11,109 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <StackPanel>
-            <TextBlock FontSize="24" FontWeight="Bold" Text="Logs"/>
-            <TextBlock Margin="0,5,0,0" FontSize="14" Foreground="#667085"
-                       Text="Live AdGuard Home query activity"/>
-        </StackPanel>
+        <DockPanel>
+            <StackPanel>
+                <TextBlock FontSize="24" FontWeight="Bold" Text="Logs"/>
+                <TextBlock Margin="0,5,0,0" FontSize="14" Foreground="#667085"
+                           Text="Live AdGuard Home query activity"/>
+            </StackPanel>
+            <StackPanel DockPanel.Dock="Right" HorizontalAlignment="Right">
+                <TextBlock HorizontalAlignment="Right" Foreground="#667085"
+                           Text="{Binding LastUpdatedText}"/>
+                <TextBlock Margin="0,4,0,0" HorizontalAlignment="Right"
+                           Foreground="#667085"
+                           Text="{Binding SelectedRefreshInterval, StringFormat=Refresh every {0}s}"/>
+            </StackPanel>
+        </DockPanel>
 
         <Border Grid.Row="2" Padding="14" Background="White" CornerRadius="10"
                 BorderBrush="#DDE3EA" BorderThickness="1">
             <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <TextBox Height="36" Padding="10,6"
-                         Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                         ToolTip="Search client, domain, or status"/>
-                <Button Grid.Column="1" MinWidth="100" Margin="10,0,0,0"
-                        Command="{Binding TogglePauseCommand}" Content="{Binding PauseButtonText}"/>
-                <Button Grid.Column="2" MinWidth="105" Margin="10,0,0,0"
-                        Command="{Binding ExportCsvCommand}" Content="Export CSV"/>
-                <Button Grid.Column="3" MinWidth="110" Margin="10,0,0,0"
-                        Command="{Binding ExportJsonCommand}" Content="Export JSON"/>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="10"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition Width="100"/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition Width="105"/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition Width="110"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox Height="36" Padding="10,6"
+                             Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                             ToolTip="Search client, domain, or status"/>
+                    <Button Grid.Column="2" Height="36"
+                            Command="{Binding TogglePauseCommand}"
+                            Content="{Binding PauseButtonText}"/>
+                    <Button Grid.Column="4" Height="36"
+                            Command="{Binding ExportCsvCommand}"
+                            Content="Export CSV"/>
+                    <Button Grid.Column="6" Height="36"
+                            Command="{Binding ExportJsonCommand}"
+                            Content="Export JSON"/>
+                </Grid>
+
+                <StackPanel Grid.Row="2" Orientation="Horizontal">
+                    <CheckBox Margin="0,0,18,0"
+                              VerticalAlignment="Center"
+                              FontWeight="SemiBold"
+                              IsChecked="{Binding ShowBlocked}"
+                              Content="Blocked"/>
+                    <CheckBox Margin="0,0,24,0"
+                              VerticalAlignment="Center"
+                              FontWeight="SemiBold"
+                              IsChecked="{Binding ShowAllowed}"
+                              Content="Allowed"/>
+                    <TextBlock Margin="0,0,8,0"
+                               VerticalAlignment="Center"
+                               Foreground="#667085"
+                               Text="Refresh interval"/>
+                    <ComboBox Width="80" Height="32"
+                              ItemsSource="{Binding RefreshIntervals}"
+                              SelectedItem="{Binding SelectedRefreshInterval}"/>
+                    <TextBlock Margin="7,0,0,0"
+                               VerticalAlignment="Center"
+                               Foreground="#667085"
+                               Text="seconds"/>
+                    <Button Margin="18,0,0,0" MinWidth="100" Height="32"
+                            Command="{Binding LoadLogsCommand}"
+                            Content="Refresh now"/>
+                </StackPanel>
             </Grid>
         </Border>
 
         <Border Grid.Row="4" Padding="10" Background="White" CornerRadius="10"
                 BorderBrush="#DDE3EA" BorderThickness="1">
-            <DataGrid AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
-                      CanUserResizeRows="False" IsReadOnly="True" HeadersVisibility="Column"
-                      GridLinesVisibility="None" RowHeight="42" AlternatingRowBackground="#F8FAFC"
-                      ItemsSource="{Binding Entries}" SelectedItem="{Binding SelectedEntry}">
+            <DataGrid AutoGenerateColumns="False"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      CanUserResizeRows="False"
+                      IsReadOnly="True"
+                      HeadersVisibility="Column"
+                      GridLinesVisibility="None"
+                      RowHeight="42"
+                      AlternatingRowBackground="#F8FAFC"
+                      ItemsSource="{Binding Entries}"
+                      SelectedItem="{Binding SelectedEntry}">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Width="155" Header="Time" Binding="{Binding Time}"/>
-                    <DataGridTextColumn Width="180" Header="Client" Binding="{Binding Client}"/>
-                    <DataGridTextColumn Width="*" Header="Domain" Binding="{Binding Domain}"/>
+                    <DataGridTextColumn Width="155" Header="Time"
+                                        Binding="{Binding Time}"/>
+                    <DataGridTextColumn Width="180" Header="Client"
+                                        Binding="{Binding Client}"/>
+                    <DataGridTextColumn Width="*" Header="Domain"
+                                        Binding="{Binding Domain}"/>
                     <DataGridTemplateColumn Width="110" Header="Result">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <Border Padding="9,4" HorizontalAlignment="Left" CornerRadius="10"
-                                        Background="#E8F5E9">
+                                <Border Padding="9,4"
+                                        HorizontalAlignment="Left"
+                                        CornerRadius="10">
                                     <Border.Style>
                                         <Style TargetType="Border">
                                             <Setter Property="Background" Value="#E8F5E9"/>
@@ -63,7 +124,7 @@
                                             </Style.Triggers>
                                         </Style>
                                     </Border.Style>
-                                    <TextBlock FontWeight="SemiBold" Foreground="#16803C"
+                                    <TextBlock FontWeight="SemiBold"
                                                Text="{Binding Status}">
                                         <TextBlock.Style>
                                             <Style TargetType="TextBlock">
