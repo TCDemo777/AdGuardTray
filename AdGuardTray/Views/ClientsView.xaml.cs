@@ -2,6 +2,7 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Threading;
 using AdGuardTray.Models;
 using AdGuardTray.ViewModels;
 
@@ -43,14 +44,30 @@ namespace AdGuardTray.Views
             object sender,
             SelectionChangedEventArgs e)
         {
-            if (_viewModel is null ||
-                SortOptionComboBox.SelectedItem is not string selectedSort)
+            if (e.AddedItems.Count == 0 ||
+                e.AddedItems[0] is not string selectedSort)
             {
                 return;
             }
 
-            _viewModel.SelectedSortOption = selectedSort;
-            _viewModel.RefreshSort();
+            // Run after WPF finishes changing the selection. This removes
+            // the previous requirement to press Ascending/Descending.
+            Dispatcher.BeginInvoke(
+                new Action(() =>
+                    _viewModel.SelectSortOption(selectedSort)),
+                DispatcherPriority.DataBind);
+        }
+
+        private void FavoriteButton_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            if (sender is Button button &&
+                button.Tag is ClientInfo client)
+            {
+                _viewModel.ToggleFavorite(client);
+                e.Handled = true;
+            }
         }
 
         private void ViewDetailsButton_Click(

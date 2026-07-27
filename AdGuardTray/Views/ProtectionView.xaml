@@ -31,15 +31,15 @@
         <TextBlock FontSize="18" FontWeight="Bold" Text="Blocked services"/>
         <TextBlock Margin="0,4,0,0" Foreground="#667085" Text="Choose services to block across the network."/>
        </StackPanel>
-       <Button DockPanel.Dock="Right" Width="120" Height="36" Content="Save changes" Command="{Binding SaveBlockedServicesCommand}"/>
       </DockPanel>
       <Separator Margin="0,10"/>
       <Grid Margin="0,0,0,10">
-       <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+       <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
        <TextBox Height="36" Padding="10,6" Text="{Binding BlockedServicesSearch, UpdateSourceTrigger=PropertyChanged}" ToolTip="Search blocked services"/>
        <CheckBox Grid.Column="1" Margin="14,0,12,0" VerticalAlignment="Center" Content="Blocked only" IsChecked="{Binding ShowBlockedOnly}"/>
        <Button Grid.Column="2" Width="90" Margin="0,0,8,0" Content="Select all" Command="{Binding SelectAllServicesCommand}"/>
-       <Button Grid.Column="3" Width="90" Content="Clear all" Command="{Binding ClearAllServicesCommand}"/>
+       <Button Grid.Column="3" Width="90" Margin="0,0,8,0" Content="Clear all" Command="{Binding ClearAllServicesCommand}"/>
+       <Button Grid.Column="4" MinWidth="125" Content="Save changes" Command="{Binding SaveBlockedServicesCommand}"/>
       </Grid>
       <DockPanel Margin="0,0,0,8">
        <TextBlock Foreground="#555" TextWrapping="Wrap" Text="{Binding BlockedServicesStatus}"/>

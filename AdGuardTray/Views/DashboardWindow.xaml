@@ -38,25 +38,11 @@
                 BorderBrush="#DDDDDD"
                 BorderThickness="0,0,0,1">
             <Grid Margin="20,0">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-
-                <StackPanel Grid.Column="0"
-                            VerticalAlignment="Center">
+                <StackPanel VerticalAlignment="Center">
                     <TextBlock FontSize="24"
                                FontWeight="Bold"
                                Text="AdGuardTray"/>
                 </StackPanel>
-
-                <Button x:Name="RefreshButton"
-                        Grid.Column="1"
-                        Width="110"
-                        Height="36"
-                        VerticalAlignment="Center"
-                        Content="Refresh"
-                        Click="Refresh_Click"/>
             </Grid>
         </Border>
 

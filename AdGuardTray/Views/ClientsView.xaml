@@ -14,7 +14,7 @@
         <StackPanel>
             <TextBlock FontSize="24" FontWeight="Bold" Text="Clients"/>
             <TextBlock Margin="0,5,0,0" FontSize="14" Foreground="#667085"
-                       Text="Connected devices and DNS activity"/>
+                       Text="Connected devices, identity and DNS activity"/>
         </StackPanel>
 
         <Border Grid.Row="2" Padding="14" Background="White" CornerRadius="10"
@@ -23,10 +23,12 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="12"/>
-                    <ColumnDefinition Width="180"/>
+                    <ColumnDefinition Width="170"/>
                     <ColumnDefinition Width="10"/>
                     <ColumnDefinition Width="115"/>
-                    <ColumnDefinition Width="10"/>
+                    <ColumnDefinition Width="14"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="14"/>
                     <ColumnDefinition Width="100"/>
                     <ColumnDefinition Width="10"/>
                     <ColumnDefinition Width="120"/>
@@ -34,8 +36,9 @@
 
                 <TextBox Height="36"
                          VerticalContentAlignment="Center"
-                         Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                         ToolTip="Search by name, IP address, or MAC address"/>
+                         Text="{Binding SearchText,
+                                        UpdateSourceTrigger=PropertyChanged}"
+                         ToolTip="Search name, address, manufacturer, device type or health"/>
 
                 <ComboBox x:Name="SortOptionComboBox"
                           Grid.Column="2"
@@ -43,19 +46,27 @@
                           VerticalContentAlignment="Center"
                           ItemsSource="{Binding SortOptions}"
                           SelectedItem="{Binding SelectedSortOption,
-                                                 Mode=TwoWay,
-                                                 UpdateSourceTrigger=PropertyChanged}"
+                                                 Mode=OneWay}"
                           SelectionChanged="SortOptionComboBox_SelectionChanged"/>
 
-                <Button Grid.Column="4" Height="36"
+                <Button Grid.Column="4"
+                        Height="36"
                         Command="{Binding ToggleSortDirectionCommand}"
                         Content="{Binding SortDirectionText}"/>
 
-                <Button Grid.Column="6" Height="36"
+                <CheckBox Grid.Column="6"
+                          VerticalAlignment="Center"
+                          FontWeight="SemiBold"
+                          IsChecked="{Binding ShowFavoritesOnly}"
+                          Content="Favourites only"/>
+
+                <Button Grid.Column="8"
+                        Height="36"
                         Command="{Binding LoadClientsCommand}"
                         Content="Refresh"/>
 
-                <Button Grid.Column="8" Height="36"
+                <Button Grid.Column="10"
+                        Height="36"
                         Click="ViewDetailsButton_Click"
                         Content="View Details"/>
             </Grid>
@@ -76,6 +87,7 @@
                         <UniformGrid Columns="3"/>
                     </ItemsPanelTemplate>
                 </ListBox.ItemsPanel>
+
                 <ListBox.ItemContainerStyle>
                     <Style TargetType="ListBoxItem">
                         <Setter Property="Margin" Value="6"/>
@@ -84,65 +96,138 @@
                         <Setter Property="VerticalContentAlignment" Value="Stretch"/>
                     </Style>
                 </ListBox.ItemContainerStyle>
+
                 <ListBox.ItemTemplate>
                     <DataTemplate>
-                        <Border MinHeight="168" Padding="16" Background="White"
-                                CornerRadius="10" BorderBrush="#DDE3EA" BorderThickness="1">
+                        <Border MinHeight="205"
+                                Padding="15"
+                                Background="White"
+                                CornerRadius="10"
+                                BorderBrush="#DDE3EA"
+                                BorderThickness="1">
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="8"/>
+                                    <RowDefinition Height="9"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="10"/>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="12"/>
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
+
                                 <Grid>
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="42"/>
+                                        <ColumnDefinition Width="44"/>
                                         <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <Border Width="36" Height="36" Background="#EAF2FF" CornerRadius="18">
+
+                                    <Border Width="38"
+                                            Height="38"
+                                            Background="#EAF2FF"
+                                            CornerRadius="19">
                                         <TextBlock HorizontalAlignment="Center"
                                                    VerticalAlignment="Center"
-                                                   FontSize="18" Text="●"/>
+                                                   FontFamily="Segoe UI Emoji"
+                                                   FontSize="18"
+                                                   Text="{Binding DeviceIcon}"/>
                                     </Border>
+
                                     <StackPanel Grid.Column="1">
-                                        <TextBlock FontSize="16" FontWeight="Bold"
+                                        <TextBlock FontSize="16"
+                                                   FontWeight="Bold"
                                                    TextTrimming="CharacterEllipsis"
                                                    Text="{Binding Name}"/>
-                                        <TextBlock Margin="0,3,0,0" Foreground="#667085"
+                                        <TextBlock Margin="0,3,0,0"
+                                                   Foreground="#667085"
                                                    Text="{Binding IpAddress}"/>
                                     </StackPanel>
+
+                                    <Button Grid.Column="2"
+                                            Width="34"
+                                            Height="32"
+                                            Padding="0"
+                                            FontSize="19"
+                                            Foreground="#B26A00"
+                                            ToolTip="{Binding FavoriteToolTip}"
+                                            Tag="{Binding}"
+                                            Click="FavoriteButton_Click"
+                                            Content="{Binding FavoriteGlyph}"/>
                                 </Grid>
-                                <StackPanel Grid.Row="2">
+
+                                <Grid Grid.Row="2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock FontWeight="SemiBold"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   Text="{Binding DeviceType}"/>
+                                        <TextBlock Margin="0,3,0,0"
+                                                   Foreground="#667085"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   Text="{Binding Manufacturer}"/>
+                                    </StackPanel>
+
+                                    <Border Grid.Column="1"
+                                            Margin="8,0,0,0"
+                                            Padding="9,4"
+                                            VerticalAlignment="Top"
+                                            Background="#F6F8FA"
+                                            CornerRadius="10">
+                                        <TextBlock FontWeight="SemiBold"
+                                                   Foreground="{Binding HealthColour}"
+                                                   Text="{Binding HealthText}"/>
+                                    </Border>
+                                </Grid>
+
+                                <StackPanel Grid.Row="4">
                                     <TextBlock Foreground="#667085"
                                                TextTrimming="CharacterEllipsis"
                                                Text="{Binding MacAddress}"/>
-                                    <TextBlock Margin="0,4,0,0" Foreground="#667085"
+                                    <TextBlock Margin="0,4,0,0"
+                                               Foreground="#667085"
                                                TextTrimming="CharacterEllipsis"
-                                               Text="{Binding LastSeen, StringFormat=Last seen: {0}}"/>
+                                               Text="{Binding LastSeen,
+                                                              StringFormat=Last seen: {0}}"/>
                                 </StackPanel>
-                                <Grid Grid.Row="4">
+
+                                <Grid Grid.Row="6">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
+
                                     <StackPanel>
-                                        <TextBlock FontSize="17" FontWeight="Bold"
+                                        <TextBlock FontSize="17"
+                                                   FontWeight="Bold"
                                                    Text="{Binding TotalQueries}"/>
-                                        <TextBlock FontSize="11" Foreground="#667085" Text="Queries"/>
+                                        <TextBlock FontSize="11"
+                                                   Foreground="#667085"
+                                                   Text="Queries"/>
                                     </StackPanel>
+
                                     <StackPanel Grid.Column="1">
-                                        <TextBlock FontSize="17" FontWeight="Bold"
+                                        <TextBlock FontSize="17"
+                                                   FontWeight="Bold"
                                                    Foreground="#C62828"
                                                    Text="{Binding BlockedQueries}"/>
-                                        <TextBlock FontSize="11" Foreground="#667085" Text="Blocked"/>
+                                        <TextBlock FontSize="11"
+                                                   Foreground="#667085"
+                                                   Text="Blocked"/>
                                     </StackPanel>
+
                                     <StackPanel Grid.Column="2">
-                                        <TextBlock FontSize="17" FontWeight="Bold"
-                                                   Text="{Binding BlockRate, StringFormat={}{0:F1}%}"/>
-                                        <TextBlock FontSize="11" Foreground="#667085" Text="Block rate"/>
+                                        <TextBlock FontSize="17"
+                                                   FontWeight="Bold"
+                                                   Text="{Binding BlockRate,
+                                                                  StringFormat={}{0:F1}%}"/>
+                                        <TextBlock FontSize="11"
+                                                   Foreground="#667085"
+                                                   Text="Block rate"/>
                                     </StackPanel>
                                 </Grid>
                             </Grid>
@@ -152,7 +237,9 @@
             </ListBox>
         </Border>
 
-        <TextBlock Grid.Row="5" Margin="2,9,0,0" Foreground="#667085"
+        <TextBlock Grid.Row="5"
+                   Margin="2,9,0,0"
+                   Foreground="#667085"
                    Text="{Binding StatusMessage}"/>
     </Grid>
 </UserControl>
