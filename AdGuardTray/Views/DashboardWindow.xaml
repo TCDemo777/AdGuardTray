@@ -86,6 +86,17 @@
                             Content="Overview"
                             Click="Overview_Click"/>
 
+                    <Button x:Name="ProtectionButton"
+                            Height="48"
+                            Margin="10,2"
+                            Padding="16,0"
+                            HorizontalContentAlignment="Left"
+                            Background="Transparent"
+                            Foreground="#D7DCE2"
+                            BorderThickness="0"
+                            Content="Protection"
+                            Click="Protection_Click"/>
+
                     <Button x:Name="AnalyticsButton"
                             Height="48"
                             Margin="10,2"

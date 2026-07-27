@@ -339,6 +339,17 @@ namespace AdGuardTray.Views
                 OverviewButton);
         }
 
+        private void Protection_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            PageContent.Content =
+                new ProtectionView();
+
+            SelectNavigationButton(
+                ProtectionButton);
+        }
+
         private void Analytics_Click(
             object sender,
             RoutedEventArgs e)
@@ -400,6 +411,7 @@ namespace AdGuardTray.Views
             Button[] navigationButtons =
             {
                 OverviewButton,
+                ProtectionButton,
                 AnalyticsButton,
                 NetworkButton,
                 ClientsButton,
