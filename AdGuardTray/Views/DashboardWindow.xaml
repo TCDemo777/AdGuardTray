@@ -132,6 +132,18 @@
                             Content="Logs"
                             Click="Logs_Click"/>
 
+
+                    <Button x:Name="SearchButton"
+                            Height="48"
+                            Margin="10,2"
+                            Padding="16,0"
+                            HorizontalContentAlignment="Left"
+                            Background="Transparent"
+                            Foreground="#D7DCE2"
+                            BorderThickness="0"
+                            Content="Search"
+                            Click="Search_Click"/>
+
                     <Button x:Name="NavigationSettingsButton"
                             Height="48"
                             Margin="10,2"

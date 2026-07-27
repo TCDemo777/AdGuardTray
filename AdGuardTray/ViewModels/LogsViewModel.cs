@@ -54,6 +54,9 @@ namespace AdGuardTray.ViewModels
         [ObservableProperty]
         private QueryLogEntry? selectedEntry;
 
+        [ObservableProperty]
+        private DomainInsight? selectedDomainInsight;
+
         public string PauseButtonText => IsPaused ? "Resume" : "Pause";
 
         public LogsViewModel()
@@ -205,6 +208,14 @@ namespace AdGuardTray.ViewModels
         partial void OnShowBlockedChanged(bool value) => ApplyFilter();
         partial void OnShowAllowedChanged(bool value) => ApplyFilter();
 
+        partial void OnSelectedEntryChanged(QueryLogEntry? value)
+        {
+            SelectedDomainInsight =
+                value is null
+                    ? null
+                    : BuildDomainInsight(value.Domain);
+        }
+
         partial void OnSelectedRefreshIntervalChanged(int value)
         {
             _refreshTimer.Interval =
@@ -248,6 +259,65 @@ namespace AdGuardTray.ViewModels
                 StatusMessage =
                     $"{Entries.Count} of {_allEntries.Count} entries shown.";
             }
+        }
+
+
+        [RelayCommand]
+        private void ClearSelection()
+        {
+            SelectedEntry = null;
+            SelectedDomainInsight = null;
+        }
+
+        private DomainInsight BuildDomainInsight(string domain)
+        {
+            List<QueryLogEntry> matches =
+                _allEntries
+                    .Where(entry =>
+                        string.Equals(
+                            entry.Domain,
+                            domain,
+                            StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+            int blocked =
+                matches.Count(entry => entry.IsBlocked);
+
+            List<DateTime> parsedTimes =
+                matches
+                    .Select(entry =>
+                        DateTime.TryParse(
+                            entry.Time,
+                            out DateTime parsed)
+                                ? parsed
+                                : DateTime.MinValue)
+                    .Where(value => value != DateTime.MinValue)
+                    .OrderBy(value => value)
+                    .ToList();
+
+            return new DomainInsight
+            {
+                Domain = domain,
+                TotalQueries = matches.Count,
+                BlockedQueries = blocked,
+                FirstSeen = parsedTimes.Count == 0
+                    ? "-"
+                    : parsedTimes.First().ToString("dd MMM yyyy HH:mm:ss"),
+                LastSeen = parsedTimes.Count == 0
+                    ? "-"
+                    : parsedTimes.Last().ToString("dd MMM yyyy HH:mm:ss"),
+                ResultSummary = blocked == matches.Count && matches.Count > 0
+                    ? "Always blocked"
+                    : blocked == 0
+                        ? "Always allowed"
+                        : "Mixed results",
+                Clients = matches
+                    .Select(entry => entry.Client)
+                    .Where(client => !string.IsNullOrWhiteSpace(client))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(client => client)
+                    .ToList()
+            };
         }
 
         [RelayCommand]

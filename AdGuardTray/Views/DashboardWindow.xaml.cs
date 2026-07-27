@@ -436,6 +436,17 @@ namespace AdGuardTray.Views
                 LogsButton);
         }
 
+        private void Search_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            PageContent.Content =
+                new GlobalSearchView();
+
+            SelectNavigationButton(
+                SearchButton);
+        }
+
         private void NavigationSettings_Click(
             object sender,
             RoutedEventArgs e)
@@ -466,6 +477,7 @@ namespace AdGuardTray.Views
                 NetworkButton,
                 ClientsButton,
                 LogsButton,
+                SearchButton,
                 NavigationSettingsButton,
                 AboutButton
             };
