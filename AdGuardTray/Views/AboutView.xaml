@@ -75,7 +75,29 @@
                   RequestNavigate="GitHubLink_RequestNavigate">github.com/TCDemo777</Hyperlink>
       </TextBlock>
      </StackPanel>
-    </Grid>
+    
+   <Border Grid.Row="6"
+           Margin="0,14,0,0"
+           Padding="20"
+           Background="White"
+           CornerRadius="12"
+           BorderBrush="#DDE3EA"
+           BorderThickness="1">
+    <StackPanel>
+      <TextBlock FontSize="18" FontWeight="Bold" Text="Release Notes"/>
+      <TextBlock Margin="0,8,0,0" Foreground="#667085"
+                 TextWrapping="Wrap"
+                 Text="A full CHANGELOG.md is now included with the application source."/>
+      <TextBlock Margin="0,10,0,0" FontWeight="SemiBold" Text="Current Version (1.0 RC)"/>
+      <TextBlock Margin="0,6,0,0" TextWrapping="Wrap"
+                 Text="• Global Search&#x0a;• Analytics Dashboard&#x0a;• Live DNS Logs&#x0a;• Client Intelligence&#x0a;• Network Monitoring&#x0a;• CSV / JSON Export&#x0a;• UI Polish"/>
+      <TextBlock Margin="0,12,0,0" FontWeight="SemiBold" Text="Previous Milestones"/>
+      <TextBlock Margin="0,6,0,0" TextWrapping="Wrap"
+                 Text="0.9 – Protection, Clients, Settings redesign&#x0a;0.8 – Dashboard, statistics and charts&#x0a;0.7 – SSH connectivity and router integration&#x0a;Prototype – Initial GL.iNet and AdGuard Home support"/>
+    </StackPanel>
+   </Border>
+
+ </Grid>
    </Border>
 
    <Grid Grid.Row="4">
