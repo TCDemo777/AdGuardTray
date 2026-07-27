@@ -143,6 +143,11 @@ namespace AdGuardTray.ViewModels
             OnPropertyChanged(nameof(SortDirectionText));
         }
 
+        public void RefreshSort()
+        {
+            ApplyFilterAndSort();
+        }
+
         private void ApplyFilterAndSort()
         {
             string search = SearchText.Trim();

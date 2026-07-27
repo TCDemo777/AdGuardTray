@@ -94,37 +94,38 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <StackPanel>
-                            <DockPanel>
-                                <TextBlock FontSize="17" FontWeight="Bold" Text="CPU"/>
-                                <TextBlock DockPanel.Dock="Right"
-                                           FontWeight="SemiBold"
-                                           Foreground="{Binding CpuHealthColour}"
-                                           Text="{Binding CpuHealthText}"/>
-                            </DockPanel>
-                            <ProgressBar Height="16" Margin="0,12,0,6" Minimum="0" Maximum="100"
+                            <TextBlock FontSize="17" FontWeight="Bold" Text="CPU"/>
+                            <TextBlock Margin="0,4,0,0"
+                                       HorizontalAlignment="Left"
+                                       FontWeight="SemiBold"
+                                       Foreground="{Binding CpuHealthColour}"
+                                       Text="{Binding CpuHealthText}"/>
+                            <ProgressBar Height="16" Margin="0,12,0,6"
+                                         Minimum="0" Maximum="100"
                                          Value="{Binding CpuPercentage}"/>
-                            <TextBlock FontWeight="SemiBold" Text="{Binding CpuUsage}"/>
+                            <TextBlock FontSize="17" FontWeight="Bold"
+                                       Text="{Binding CpuUsage}"/>
                         </StackPanel>
                         <StackPanel Grid.Column="2">
-                            <DockPanel>
-                                <TextBlock FontSize="17" FontWeight="Bold" Text="Memory"/>
-                                <TextBlock DockPanel.Dock="Right"
-                                           FontWeight="SemiBold"
-                                           Foreground="{Binding MemoryHealthColour}"
-                                           Text="{Binding MemoryHealthText}"/>
-                            </DockPanel>
-                            <ProgressBar Height="16" Margin="0,12,0,6" Minimum="0" Maximum="100"
+                            <TextBlock FontSize="17" FontWeight="Bold" Text="Memory"/>
+                            <TextBlock Margin="0,4,0,0"
+                                       HorizontalAlignment="Left"
+                                       FontWeight="SemiBold"
+                                       Foreground="{Binding MemoryHealthColour}"
+                                       Text="{Binding MemoryHealthText}"/>
+                            <ProgressBar Height="16" Margin="0,12,0,6"
+                                         Minimum="0" Maximum="100"
                                          Value="{Binding MemoryPercentage}"/>
-                            <TextBlock FontWeight="SemiBold" Text="{Binding MemoryUsage}"/>
+                            <TextBlock FontSize="17" FontWeight="Bold"
+                                       Text="{Binding MemoryUsage}"/>
                         </StackPanel>
                         <StackPanel Grid.Column="4">
-                            <DockPanel>
-                                <TextBlock FontSize="17" FontWeight="Bold" Text="Storage"/>
-                                <TextBlock DockPanel.Dock="Right"
-                                           FontWeight="SemiBold"
-                                           Foreground="{Binding StorageHealthColour}"
-                                           Text="{Binding StorageHealthText}"/>
-                            </DockPanel>
+                            <TextBlock FontSize="17" FontWeight="Bold" Text="Storage"/>
+                            <TextBlock Margin="0,4,0,0"
+                                       HorizontalAlignment="Left"
+                                       FontWeight="SemiBold"
+                                       Foreground="{Binding StorageHealthColour}"
+                                       Text="{Binding StorageHealthText}"/>
                             <ProgressBar Height="16" Margin="0,12,0,6"
                                          Minimum="0" Maximum="100"
                                          Value="{Binding StoragePercentage}"/>

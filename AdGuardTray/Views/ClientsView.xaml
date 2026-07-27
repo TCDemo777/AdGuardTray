@@ -37,10 +37,15 @@
                          Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                          ToolTip="Search by name, IP address, or MAC address"/>
 
-                <ComboBox Grid.Column="2" Height="36"
+                <ComboBox x:Name="SortOptionComboBox"
+                          Grid.Column="2"
+                          Height="36"
                           VerticalContentAlignment="Center"
                           ItemsSource="{Binding SortOptions}"
-                          SelectedItem="{Binding SelectedSortOption}"/>
+                          SelectedItem="{Binding SelectedSortOption,
+                                                 Mode=TwoWay,
+                                                 UpdateSourceTrigger=PropertyChanged}"
+                          SelectionChanged="SortOptionComboBox_SelectionChanged"/>
 
                 <Button Grid.Column="4" Height="36"
                         Command="{Binding ToggleSortDirectionCommand}"

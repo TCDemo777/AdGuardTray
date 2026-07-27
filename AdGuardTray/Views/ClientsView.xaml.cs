@@ -39,6 +39,20 @@ namespace AdGuardTray.Views
             }
         }
 
+        private void SortOptionComboBox_SelectionChanged(
+            object sender,
+            SelectionChangedEventArgs e)
+        {
+            if (_viewModel is null ||
+                SortOptionComboBox.SelectedItem is not string selectedSort)
+            {
+                return;
+            }
+
+            _viewModel.SelectedSortOption = selectedSort;
+            _viewModel.RefreshSort();
+        }
+
         private void ViewDetailsButton_Click(
             object sender,
             RoutedEventArgs e)
