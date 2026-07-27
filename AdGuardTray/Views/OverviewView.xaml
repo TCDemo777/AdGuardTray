@@ -4,7 +4,9 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="16"/>
+            <RowDefinition Height="12"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="12"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
@@ -19,7 +21,55 @@
                        Text="Current router, AdGuard Home and internet status"/>
         </StackPanel>
 
-        <ScrollViewer Grid.Row="2"
+        <UniformGrid Grid.Row="2" Columns="5">
+            <Border Margin="0,0,6,0" Padding="11" Background="White"
+                    CornerRadius="9" BorderBrush="#DDE3EA" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock FontSize="12" Foreground="#667085" Text="ROUTER"/>
+                    <TextBlock Margin="0,4,0,0" FontWeight="SemiBold"
+                               Foreground="{Binding RouterStatusColour}"
+                               Text="{Binding RouterStatusText}"/>
+                </StackPanel>
+            </Border>
+            <Border Margin="3,0" Padding="11" Background="White"
+                    CornerRadius="9" BorderBrush="#DDE3EA" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock FontSize="12" Foreground="#667085" Text="ADGUARD"/>
+                    <TextBlock Margin="0,4,0,0" FontWeight="SemiBold"
+                               Foreground="{Binding AdGuardStatusColour}"
+                               Text="{Binding AdGuardStatusText}"/>
+                </StackPanel>
+            </Border>
+            <Border Margin="3,0" Padding="11" Background="White"
+                    CornerRadius="9" BorderBrush="#DDE3EA" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock FontSize="12" Foreground="#667085" Text="INTERNET"/>
+                    <TextBlock Margin="0,4,0,0" FontWeight="SemiBold"
+                               Foreground="{Binding InternetStatusColour}"
+                               Text="{Binding InternetStatusText}"/>
+                </StackPanel>
+            </Border>
+            <Border Margin="3,0" Padding="11" Background="White"
+                    CornerRadius="9" BorderBrush="#DDE3EA" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock FontSize="12" Foreground="#667085" Text="CPU"/>
+                    <TextBlock Margin="0,4,0,0" FontWeight="SemiBold"
+                               Foreground="{Binding CpuHealthColour}"
+                               Text="{Binding CpuHealthText}"/>
+                </StackPanel>
+            </Border>
+            <Border Margin="6,0,0,0" Padding="11" Background="White"
+                    CornerRadius="9" BorderBrush="#DDE3EA" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock FontSize="12" Foreground="#667085" Text="MEMORY"/>
+                    <TextBlock Margin="0,4,0,0" FontWeight="SemiBold"
+                               Foreground="{Binding MemoryHealthColour}"
+                               Text="{Binding MemoryHealthText}"/>
+                </StackPanel>
+            </Border>
+        </UniformGrid>
+
+        <ScrollViewer Grid.Row="4"
                       VerticalScrollBarVisibility="Auto">
             <StackPanel>
                 <UniformGrid Columns="3">

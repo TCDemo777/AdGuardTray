@@ -881,7 +881,7 @@ namespace AdGuardTray.Services
                 AdGuardQueryLogResponse response =
                     await RequestAdGuardQueryLogAsync(
                         token,
-                        500);
+                        1000);
 
                 if (response.RequiresNewToken)
                 {
@@ -893,7 +893,7 @@ namespace AdGuardTray.Services
                     response =
                         await RequestAdGuardQueryLogAsync(
                             token,
-                            500);
+                            1000);
                 }
 
                 if (!response.IsSuccess)
@@ -985,9 +985,27 @@ namespace AdGuardTray.Services
                 "Calling AdGuard clients: " +
                 url);
 
-            using HttpResponseMessage response =
-                await client.GetAsync(
+            client.DefaultRequestHeaders.CacheControl =
+                new System.Net.Http.Headers.CacheControlHeaderValue
+                {
+                    NoCache = true,
+                    NoStore = true,
+                    MaxAge = TimeSpan.Zero
+                };
+
+            using var request =
+                new HttpRequestMessage(
+                    HttpMethod.Get,
                     url);
+
+            request.Headers.TryAddWithoutValidation(
+                "Pragma",
+                "no-cache");
+
+            using HttpResponseMessage response =
+                await client.SendAsync(
+                    request,
+                    HttpCompletionOption.ResponseContentRead);
 
             string content =
                 await response.Content
@@ -1054,9 +1072,12 @@ namespace AdGuardTray.Services
                     1,
                     5000);
 
+            long cacheBust =
+                DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
             string url =
                 $"http://{_routerIp}:3000/control/querylog" +
-                $"?limit={safeLimit}";
+                $"?limit={safeLimit}&_={cacheBust}";
 
             Debug.WriteLine(
                 "Calling AdGuard query log: " +

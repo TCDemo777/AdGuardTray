@@ -21,53 +21,99 @@
                        Text="AdGuard Home query trends, clients and domains"/>
         </StackPanel>
 
-        <UniformGrid Grid.Row="2"
-                     Columns="3">
+        <UniformGrid Grid.Row="2" Columns="3">
             <Border Margin="0,0,8,0"
-                    Padding="16"
+                    MinHeight="112"
+                    Padding="16,13"
                     Background="White"
                     CornerRadius="10"
                     BorderBrush="#DDE3EA"
                     BorderThickness="1">
-                <StackPanel>
-                    <TextBlock Foreground="#667085"
-                               Text="Total queries"/>
-                    <TextBlock Margin="0,6,0,0"
-                               FontSize="24"
-                               FontWeight="Bold"
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock FontSize="13"
+                               FontWeight="SemiBold"
+                               Foreground="#475467"
+                               Text="TOTAL DNS QUERIES"/>
+                    <TextBlock Grid.Row="1"
+                               Margin="0,5,0,3"
+                               VerticalAlignment="Center"
+                               FontSize="25"
+                               FontWeight="SemiBold"
+                               TextTrimming="CharacterEllipsis"
                                Text="{Binding AdGuardQueries}"/>
-                </StackPanel>
+                    <TextBlock Grid.Row="2"
+                               FontSize="12"
+                               Foreground="#667085"
+                               Text="Requests processed by AdGuard Home"/>
+                </Grid>
             </Border>
+
             <Border Margin="4,0"
-                    Padding="16"
+                    MinHeight="112"
+                    Padding="16,13"
                     Background="White"
                     CornerRadius="10"
                     BorderBrush="#DDE3EA"
                     BorderThickness="1">
-                <StackPanel>
-                    <TextBlock Foreground="#667085"
-                               Text="Blocked queries"/>
-                    <TextBlock Margin="0,6,0,0"
-                               FontSize="24"
-                               FontWeight="Bold"
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock FontSize="13"
+                               FontWeight="SemiBold"
+                               Foreground="#475467"
+                               Text="BLOCKED DNS QUERIES"/>
+                    <TextBlock Grid.Row="1"
+                               Margin="0,5,0,3"
+                               VerticalAlignment="Center"
+                               FontSize="25"
+                               FontWeight="SemiBold"
                                Foreground="#C62828"
+                               TextTrimming="CharacterEllipsis"
                                Text="{Binding AdGuardBlocked}"/>
-                </StackPanel>
+                    <TextBlock Grid.Row="2"
+                               FontSize="12"
+                               Foreground="#667085"
+                               Text="Requests stopped by protection rules"/>
+                </Grid>
             </Border>
+
             <Border Margin="8,0,0,0"
-                    Padding="16"
+                    MinHeight="112"
+                    Padding="16,13"
                     Background="White"
                     CornerRadius="10"
                     BorderBrush="#DDE3EA"
                     BorderThickness="1">
-                <StackPanel>
-                    <TextBlock Foreground="#667085"
-                               Text="Blocking rate"/>
-                    <TextBlock Margin="0,6,0,0"
-                               FontSize="24"
-                               FontWeight="Bold"
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock FontSize="13"
+                               FontWeight="SemiBold"
+                               Foreground="#475467"
+                               Text="OVERALL BLOCKING RATE"/>
+                    <TextBlock Grid.Row="1"
+                               Margin="0,5,0,3"
+                               VerticalAlignment="Center"
+                               FontSize="25"
+                               FontWeight="SemiBold"
+                               TextTrimming="CharacterEllipsis"
                                Text="{Binding AdGuardBlockRate}"/>
-                </StackPanel>
+                    <TextBlock Grid.Row="2"
+                               FontSize="12"
+                               Foreground="#667085"
+                               Text="Share of DNS traffic that was blocked"/>
+                </Grid>
             </Border>
         </UniformGrid>
 

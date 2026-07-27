@@ -20,14 +20,24 @@
                            Text="Live AdGuard Home query activity and domain intelligence"/>
             </StackPanel>
             <StackPanel DockPanel.Dock="Right" HorizontalAlignment="Right">
-                <TextBlock HorizontalAlignment="Right"
-                           Foreground="#667085"
-                           Text="{Binding LastUpdatedText}"/>
-                <TextBlock Margin="0,4,0,0"
+                <Border Padding="10,5"
+                        HorizontalAlignment="Right"
+                        Background="#F6F8FA"
+                        CornerRadius="12">
+                    <TextBlock FontWeight="SemiBold"
+                               Foreground="{Binding LiveStatusColour}"
+                               Text="{Binding LiveStatusText}"/>
+                </Border>
+                <TextBlock Margin="0,5,0,0"
                            HorizontalAlignment="Right"
                            Foreground="#667085"
+                           Text="{Binding LastUpdatedText}"/>
+                <TextBlock Margin="0,3,0,0"
+                           HorizontalAlignment="Right"
+                           FontSize="12"
+                           Foreground="#667085"
                            Text="{Binding SelectedRefreshInterval,
-                                          StringFormat=Refresh every {0}s}"/>
+                                          StringFormat=Automatic check every {0}s}"/>
             </StackPanel>
         </DockPanel>
 

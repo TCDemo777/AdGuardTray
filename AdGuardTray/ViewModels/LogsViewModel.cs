@@ -22,6 +22,9 @@ namespace AdGuardTray.ViewModels
         private RouterManager? _routerManager;
         private CancellationTokenSource? _refreshCancellation;
         private Task? _refreshLoopTask;
+        private readonly SemaphoreSlim _loadGate = new(1, 1);
+        private string _lastSnapshotSignature = string.Empty;
+        private int _successfulRefreshes;
 
         public ObservableCollection<QueryLogEntry> Entries { get; } = new();
 
@@ -42,6 +45,12 @@ namespace AdGuardTray.ViewModels
 
         [ObservableProperty]
         private bool isPaused;
+
+        [ObservableProperty]
+        private string liveStatusText = "Starting...";
+
+        [ObservableProperty]
+        private string liveStatusColour = "#B26A00";
 
         [ObservableProperty]
         private bool showBlocked = true;
@@ -74,21 +83,19 @@ namespace AdGuardTray.ViewModels
                 return;
             }
 
-            await LoadLogsAsync();
-
-            if (_refreshLoopTask is not null &&
-                !_refreshLoopTask.IsCompleted)
+            if (_refreshLoopTask is null ||
+                _refreshLoopTask.IsCompleted)
             {
-                return;
+                _refreshCancellation?.Dispose();
+                _refreshCancellation =
+                    new CancellationTokenSource();
+
+                _refreshLoopTask =
+                    RunRefreshLoopAsync(
+                        _refreshCancellation.Token);
             }
 
-            _refreshCancellation?.Dispose();
-            _refreshCancellation =
-                new CancellationTokenSource();
-
-            _refreshLoopTask =
-                RunRefreshLoopAsync(
-                    _refreshCancellation.Token);
+            await LoadLogsAsync();
         }
 
         public void Stop()
@@ -186,24 +193,45 @@ namespace AdGuardTray.ViewModels
         [RelayCommand]
         public async Task LoadLogsAsync()
         {
-            if (IsLoading)
+            if (!await _loadGate.WaitAsync(0))
             {
                 return;
             }
-
-            await EnsureRouterManagerAsync();
-
-            if (_routerManager is null)
-            {
-                return;
-            }
-
-            IsLoading = true;
 
             try
             {
+                await EnsureRouterManagerAsync();
+
+                if (_routerManager is null)
+                {
+                    LiveStatusText = "Configuration required";
+                    LiveStatusColour = "#C62828";
+                    return;
+                }
+
+                IsLoading = true;
+                LiveStatusText = IsPaused ? "Live · buffering" : "Live · checking";
+                LiveStatusColour = IsPaused ? "#B26A00" : "#16803C";
                 List<QueryLogEntry> entries =
                     await _routerManager.GetQueryLogAsync();
+
+                string signature =
+                    string.Join(
+                        "|",
+                        entries
+                            .Take(20)
+                            .Select(entry =>
+                                $"{entry.Time}>{entry.Client}>{entry.Domain}>{entry.IsBlocked}"));
+
+                bool changed =
+                    !string.Equals(
+                        signature,
+                        _lastSnapshotSignature,
+                        StringComparison.Ordinal);
+
+                _lastSnapshotSignature =
+                    signature;
+                _successfulRefreshes++;
 
                 if (IsPaused)
                 {
@@ -211,16 +239,30 @@ namespace AdGuardTray.ViewModels
                     _allEntries.AddRange(entries);
 
                     LastUpdatedText =
-                        $"Buffered {DateTime.Now:HH:mm:ss}";
+                        $"Checked {DateTime.Now:HH:mm:ss}";
                     StatusMessage =
                         $"{entries.Count} entries buffered while paused.";
+                    LiveStatusText = "Live · buffering";
+                    LiveStatusColour = "#B26A00";
                 }
                 else
                 {
                     ApplyEntries(entries);
 
                     LastUpdatedText =
-                        $"Updated {DateTime.Now:HH:mm:ss}";
+                        $"Checked {DateTime.Now:HH:mm:ss}";
+                    LiveStatusText =
+                        changed
+                            ? "Live · new activity"
+                            : "Live · up to date";
+                    LiveStatusColour = "#16803C";
+
+                    StatusMessage =
+                        entries.Count == 0
+                            ? "Connected, but AdGuard Home returned no query-log entries."
+                            : changed
+                                ? $"{entries.Count} entries loaded; new activity detected."
+                                : $"{entries.Count} entries loaded; no new activity yet.";
                 }
             }
             catch (Exception ex)
@@ -229,10 +271,13 @@ namespace AdGuardTray.ViewModels
                     "Unable to load query log: " + ex.Message;
                 LastUpdatedText =
                     $"Update failed {DateTime.Now:HH:mm:ss}";
+                LiveStatusText = "Live refresh failed";
+                LiveStatusColour = "#C62828";
             }
             finally
             {
                 IsLoading = false;
+                _loadGate.Release();
             }
         }
 
@@ -243,12 +288,15 @@ namespace AdGuardTray.ViewModels
 
             ApplyFilter();
 
-            StatusMessage = _allEntries.Count switch
+            if (_successfulRefreshes == 0)
             {
-                0 => "No query-log entries found.",
-                1 => "1 query-log entry loaded.",
-                _ => $"{_allEntries.Count} query-log entries loaded."
-            };
+                StatusMessage = _allEntries.Count switch
+                {
+                    0 => "No query-log entries found.",
+                    1 => "1 query-log entry loaded.",
+                    _ => $"{_allEntries.Count} query-log entries loaded."
+                };
+            }
         }
 
         [RelayCommand]
