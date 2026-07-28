@@ -1003,17 +1003,60 @@ namespace AdGuardTray.Services
                             token);
                 }
 
+                int matchedQueryLogEntries = 0;
+
                 if (queryLogResponse.IsSuccess)
                 {
-                    ApplyQueryLogStatistics(
-                        clients,
-                        queryLogResponse.Content);
+                    matchedQueryLogEntries =
+                        ApplyQueryLogStatistics(
+                            clients,
+                            queryLogResponse.Content);
                 }
                 else
                 {
                     LogFailedQueryLogResponse(
                         queryLogResponse);
                 }
+
+                // The query log and statistics store are independent in
+                // AdGuard Home.  A valid query-log response can be empty
+                // while /control/stats still contains live per-client totals.
+                // Always merge top_clients so the cards do not collapse back
+                // to zero merely because query-log retrieval is unavailable.
+                AdGuardStatsResponse statsResponse =
+                    await RequestAdGuardStatisticsAsync(
+                        token);
+
+                if (statsResponse.RequiresNewToken)
+                {
+                    InvalidateAdminToken();
+                    token =
+                        await GetAdminTokenAsync();
+
+                    statsResponse =
+                        await RequestAdGuardStatisticsAsync(
+                            token);
+                }
+
+                int matchedStatisticsClients = 0;
+
+                if (statsResponse.IsSuccess)
+                {
+                    matchedStatisticsClients =
+                        ApplyClientTotalsFromStatistics(
+                            clients,
+                            statsResponse.Content);
+                }
+                else
+                {
+                    LogFailedAdGuardResponse(
+                        statsResponse);
+                }
+
+                Debug.WriteLine(
+                    "Client activity merge complete. " +
+                    $"Query-log matches: {matchedQueryLogEntries}; " +
+                    $"statistics matches: {matchedStatisticsClients}.");
 
                 return clients;
             }
@@ -1042,6 +1085,346 @@ namespace AdGuardTray.Services
             }
 
             return new List<ClientInfo>();
+        }
+
+
+        public async Task<string> GetClientDiagnosticsAsync()
+        {
+            var report =
+                new System.Text.StringBuilder();
+
+            report.AppendLine("AdGuardTray Client Diagnostics");
+            report.AppendLine(
+                "Generated: " +
+                DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss zzz"));
+            report.AppendLine(
+                "Router: " +
+                _routerIp);
+            report.AppendLine();
+
+            try
+            {
+                string token =
+                    await GetAdminTokenAsync();
+
+                report.AppendLine("Authentication");
+                report.AppendLine("--------------");
+                report.AppendLine("Admin token received: Yes");
+                report.AppendLine(
+                    "Token length: " +
+                    token.Length);
+                report.AppendLine();
+
+                AdGuardClientsResponse clientsResponse =
+                    await RequestAdGuardClientsAsync(
+                        token);
+
+                report.AppendLine("Clients endpoint");
+                report.AppendLine("----------------");
+                report.AppendLine(
+                    $"HTTP {(int)clientsResponse.StatusCode} " +
+                    clientsResponse.StatusCode);
+
+                if (clientsResponse.IsSuccess)
+                {
+                    List<ClientInfo> clients =
+                        ParseAdGuardClients(
+                            clientsResponse.Content);
+
+                    report.AppendLine(
+                        "Configured clients parsed: " +
+                        clients.Count);
+
+                    string sampleClients =
+                        string.Join(
+                            ", ",
+                            clients
+                                .Take(8)
+                                .Select(client =>
+                                    $"{client.Name} [{client.IpAddress}]"));
+
+                    report.AppendLine(
+                        "Sample identifiers: " +
+                        (sampleClients.Length == 0
+                            ? "(none)"
+                            : sampleClients));
+                }
+
+                report.AppendLine();
+
+                AdGuardQueryLogResponse queryLogResponse =
+                    await RequestAdGuardQueryLogAsync(
+                        token,
+                        500);
+
+                report.AppendLine("Query-log endpoint");
+                report.AppendLine("------------------");
+                report.AppendLine(
+                    $"HTTP {(int)queryLogResponse.StatusCode} " +
+                    queryLogResponse.StatusCode);
+
+                AppendQueryLogDiagnosticSummary(
+                    report,
+                    queryLogResponse.Content);
+
+                report.AppendLine();
+
+                AdGuardStatsResponse statsResponse =
+                    await RequestAdGuardStatisticsAsync(
+                        token);
+
+                report.AppendLine("Statistics endpoint");
+                report.AppendLine("-------------------");
+                report.AppendLine(
+                    $"HTTP {(int)statsResponse.StatusCode} " +
+                    statsResponse.StatusCode);
+
+                AppendStatisticsDiagnosticSummary(
+                    report,
+                    statsResponse.Content);
+
+                report.AppendLine();
+
+                AdGuardControlResponse queryLogConfig =
+                    await RequestAdGuardControlAsync(
+                        HttpMethod.Get,
+                        "querylog/config",
+                        token);
+
+                report.AppendLine("Query-log configuration");
+                report.AppendLine("-----------------------");
+                report.AppendLine(
+                    $"HTTP {(int)queryLogConfig.StatusCode} " +
+                    queryLogConfig.StatusCode);
+
+                AppendConfigurationDiagnosticSummary(
+                    report,
+                    queryLogConfig.Content);
+
+                report.AppendLine();
+                report.AppendLine("Interpretation");
+                report.AppendLine("--------------");
+                report.AppendLine(
+                    "Queries are merged from statistics/top_clients. " +
+                    "Blocked and Last seen require matching query-log entries.");
+            }
+            catch (Exception ex)
+            {
+                report.AppendLine();
+                report.AppendLine("Diagnostics failed");
+                report.AppendLine("------------------");
+                report.AppendLine(ex.ToString());
+            }
+
+            return report.ToString();
+        }
+
+        private static void AppendQueryLogDiagnosticSummary(
+            System.Text.StringBuilder report,
+            string json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                report.AppendLine("Response body: empty");
+                return;
+            }
+
+            try
+            {
+                using JsonDocument document =
+                    JsonDocument.Parse(json);
+
+                JsonElement root =
+                    document.RootElement;
+
+                int count =
+                    root.TryGetProperty(
+                        "data",
+                        out JsonElement data) &&
+                    data.ValueKind == JsonValueKind.Array
+                        ? data.GetArrayLength()
+                        : -1;
+
+                report.AppendLine(
+                    "Entries returned: " +
+                    (count < 0
+                        ? "data array missing"
+                        : count));
+
+                report.AppendLine(
+                    "Oldest cursor: " +
+                    GetStringProperty(
+                        root,
+                        "oldest",
+                        "(missing)"));
+
+                if (count > 0)
+                {
+                    string sample =
+                        string.Join(
+                            ", ",
+                            data.EnumerateArray()
+                                .Take(8)
+                                .Select(entry =>
+                                    GetClientStringProperty(
+                                        entry,
+                                        "client"))
+                                .Where(value =>
+                                    !string.IsNullOrWhiteSpace(value)));
+
+                    report.AppendLine(
+                        "Sample client values: " +
+                        (sample.Length == 0
+                            ? "(none)"
+                            : sample));
+                }
+            }
+            catch (JsonException ex)
+            {
+                report.AppendLine(
+                    "Invalid JSON: " +
+                    ex.Message);
+            }
+        }
+
+        private static void AppendStatisticsDiagnosticSummary(
+            System.Text.StringBuilder report,
+            string json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                report.AppendLine("Response body: empty");
+                return;
+            }
+
+            try
+            {
+                using JsonDocument document =
+                    JsonDocument.Parse(json);
+
+                JsonElement root =
+                    document.RootElement;
+
+                report.AppendLine(
+                    "Total DNS queries: " +
+                    GetIntegerProperty(
+                        root,
+                        "num_dns_queries",
+                        -1));
+
+                report.AppendLine(
+                    "Blocked queries: " +
+                    GetIntegerProperty(
+                        root,
+                        "num_blocked_filtering",
+                        -1));
+
+                int topClientCount =
+                    root.TryGetProperty(
+                        "top_clients",
+                        out JsonElement topClients) &&
+                    topClients.ValueKind == JsonValueKind.Array
+                        ? topClients.GetArrayLength()
+                        : -1;
+
+                report.AppendLine(
+                    "top_clients entries: " +
+                    (topClientCount < 0
+                        ? "missing"
+                        : topClientCount));
+
+                if (topClientCount > 0)
+                {
+                    var samples =
+                        new List<string>();
+
+                    foreach (JsonElement item in
+                        topClients.EnumerateArray().Take(8))
+                    {
+                        if (item.ValueKind != JsonValueKind.Object)
+                        {
+                            continue;
+                        }
+
+                        foreach (JsonProperty property in
+                            item.EnumerateObject())
+                        {
+                            samples.Add(
+                                $"{property.Name}={property.Value}");
+                        }
+                    }
+
+                    report.AppendLine(
+                        "Sample top_clients: " +
+                        string.Join(", ", samples));
+                }
+            }
+            catch (JsonException ex)
+            {
+                report.AppendLine(
+                    "Invalid JSON: " +
+                    ex.Message);
+            }
+        }
+
+        private static void AppendConfigurationDiagnosticSummary(
+            System.Text.StringBuilder report,
+            string json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                report.AppendLine("Response body: empty");
+                return;
+            }
+
+            try
+            {
+                using JsonDocument document =
+                    JsonDocument.Parse(json);
+
+                JsonElement root =
+                    document.RootElement;
+
+                report.AppendLine(
+                    "Enabled: " +
+                    GetBoolean(
+                        root,
+                        "enabled"));
+
+                report.AppendLine(
+                    "Anonymise client IP: " +
+                    GetBoolean(
+                        root,
+                        "anonymize_client_ip"));
+
+                report.AppendLine(
+                    "Retention interval: " +
+                    GetDouble(
+                        root,
+                        "interval",
+                        -1));
+            }
+            catch (JsonException ex)
+            {
+                report.AppendLine(
+                    "Invalid JSON: " +
+                    ex.Message);
+            }
+        }
+
+        private static int GetIntegerProperty(
+            JsonElement root,
+            string name,
+            int fallback)
+        {
+            return root.TryGetProperty(
+                       name,
+                       out JsonElement value) &&
+                   TryGetInteger(
+                       value,
+                       out int result)
+                ? result
+                : fallback;
         }
 
         //
@@ -1219,38 +1602,94 @@ namespace AdGuardTray.Services
             client.DefaultRequestHeaders.Accept.ParseAdd(
                 "application/json");
 
-            // Restore the exact request shape used when live client
-            // statistics originally worked.  Later paging/cursor and
-            // cache-busting variants can return {"data":[],"oldest":""}
-            // on the GL.iNet AdGuard Home build even while DNS traffic
-            // is being recorded.
+            client.DefaultRequestHeaders.CacheControl =
+                new System.Net.Http.Headers.CacheControlHeaderValue
+                {
+                    NoCache = true,
+                    NoStore = true,
+                    MustRevalidate = true
+                };
+
+            client.DefaultRequestHeaders.Pragma.ParseAdd(
+                "no-cache");
+
             int safeLimit =
                 Math.Clamp(limit, 1, 5000);
 
-            string url =
+            long cacheBuster =
+                DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+            string futureCursor =
+                Uri.EscapeDataString(
+                    DateTimeOffset.UtcNow
+                        .AddMinutes(1)
+                        .ToString("O"));
+
+            string[] urls =
+            {
                 $"http://{_routerIp}:3000/control/querylog" +
-                $"?limit={safeLimit}";
+                $"?search=&response_status=&older_than=&limit={safeLimit}" +
+                $"&_={cacheBuster}",
 
-            Debug.WriteLine(
-                "Calling AdGuard query log (legacy working request): " +
-                url);
+                $"http://{_routerIp}:3000/control/querylog" +
+                $"?search=&response_status=&older_than={futureCursor}" +
+                $"&limit={safeLimit}&_={cacheBuster + 1}",
 
-            using HttpResponseMessage response =
-                await client.GetAsync(
-                    url);
+                $"http://{_routerIp}:3000/control/querylog" +
+                $"?limit={safeLimit}&_={cacheBuster + 2}"
+            };
 
-            string content =
-                await response.Content
-                    .ReadAsStringAsync();
+            AdGuardQueryLogResponse? lastResponse = null;
 
-            Debug.WriteLine(
-                "AdGuard query log status: " +
-                $"{(int)response.StatusCode} " +
-                response.StatusCode);
+            foreach (string url in urls)
+            {
+                Debug.WriteLine(
+                    "Calling AdGuard query log: " + url);
 
-            return new AdGuardQueryLogResponse(
-                response.StatusCode,
-                content);
+                using var request =
+                    new HttpRequestMessage(
+                        HttpMethod.Get,
+                        url);
+
+                request.Headers.CacheControl =
+                    new System.Net.Http.Headers.CacheControlHeaderValue
+                    {
+                        NoCache = true,
+                        NoStore = true,
+                        MustRevalidate = true
+                    };
+
+                request.Headers.Pragma.ParseAdd(
+                    "no-cache");
+
+                using HttpResponseMessage response =
+                    await client.SendAsync(
+                        request,
+                        HttpCompletionOption.ResponseHeadersRead);
+
+                string content =
+                    await response.Content.ReadAsStringAsync();
+
+                lastResponse =
+                    new AdGuardQueryLogResponse(
+                        response.StatusCode,
+                        content);
+
+                Debug.WriteLine(
+                    "AdGuard query log status: " +
+                    $"{(int)response.StatusCode} {response.StatusCode}");
+
+                if (response.IsSuccessStatusCode &&
+                    QueryLogResponseHasEntries(content))
+                {
+                    return lastResponse;
+                }
+            }
+
+            return lastResponse ??
+                new AdGuardQueryLogResponse(
+                    HttpStatusCode.ServiceUnavailable,
+                    string.Empty);
         }
 
         private static bool QueryLogResponseHasEntries(
@@ -1404,7 +1843,7 @@ namespace AdGuardTray.Services
                 "name");
         }
 
-        private static void ApplyQueryLogStatistics(
+        private static int ApplyQueryLogStatistics(
             List<ClientInfo> clients,
             string json)
         {
@@ -1441,8 +1880,10 @@ namespace AdGuardTray.Services
                     "AdGuard query log did not contain " +
                     "a data array.");
 
-                return;
+                return 0;
             }
+
+            int matchedEntries = 0;
 
             var mostRecentByClient =
                 new Dictionary<string, DateTimeOffset>(
@@ -1465,6 +1906,7 @@ namespace AdGuardTray.Services
                     continue;
                 }
 
+                matchedEntries++;
                 client.TotalQueries++;
 
                 string reason =
@@ -1516,7 +1958,116 @@ namespace AdGuardTray.Services
 
             Debug.WriteLine(
                 "Applied query-log statistics to " +
-                $"{mostRecentByClient.Count} clients.");
+                $"{mostRecentByClient.Count} clients " +
+                $"from {matchedEntries} matching entries.");
+
+            return matchedEntries;
+        }
+
+        private static int ApplyClientTotalsFromStatistics(
+            List<ClientInfo> clients,
+            string json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return 0;
+            }
+
+            var clientsByIdentifier =
+                new Dictionary<string, ClientInfo>(
+                    StringComparer.OrdinalIgnoreCase);
+
+            foreach (ClientInfo client in clients)
+            {
+                AddClientIdentifier(
+                    clientsByIdentifier,
+                    client.IpAddress,
+                    client);
+
+                AddClientIdentifier(
+                    clientsByIdentifier,
+                    client.Name,
+                    client);
+            }
+
+            using JsonDocument document =
+                JsonDocument.Parse(json);
+
+            JsonElement root =
+                document.RootElement;
+
+            if (!root.TryGetProperty(
+                    "top_clients",
+                    out JsonElement topClients) ||
+                topClients.ValueKind != JsonValueKind.Array)
+            {
+                Debug.WriteLine(
+                    "AdGuard statistics did not contain top_clients.");
+
+                return 0;
+            }
+
+            int matchedClients = 0;
+
+            foreach (JsonElement item in topClients.EnumerateArray())
+            {
+                if (item.ValueKind != JsonValueKind.Object)
+                {
+                    continue;
+                }
+
+                foreach (JsonProperty property in item.EnumerateObject())
+                {
+                    if (!TryGetInteger(
+                            property.Value,
+                            out int count))
+                    {
+                        continue;
+                    }
+
+                    string identifier =
+                        property.Name.Trim();
+
+                    if (!clientsByIdentifier.TryGetValue(
+                            identifier,
+                            out ClientInfo? client))
+                    {
+                        continue;
+                    }
+
+                    // Query-log counts describe the returned page, whereas
+                    // top_clients describes the configured statistics window.
+                    // Keep whichever source provides the larger real total.
+                    client.TotalQueries =
+                        Math.Max(
+                            client.TotalQueries,
+                            count);
+
+                    matchedClients++;
+                    break;
+                }
+            }
+
+            Debug.WriteLine(
+                "Applied statistics totals to " +
+                $"{matchedClients} clients.");
+
+            return matchedClients;
+        }
+
+        private static void AddClientIdentifier(
+            Dictionary<string, ClientInfo> lookup,
+            string? identifier,
+            ClientInfo client)
+        {
+            if (string.IsNullOrWhiteSpace(identifier) ||
+                identifier == "-")
+            {
+                return;
+            }
+
+            lookup[identifier.Trim()] =
+                client;
         }
 
         private static bool IsBlockedQueryReason(

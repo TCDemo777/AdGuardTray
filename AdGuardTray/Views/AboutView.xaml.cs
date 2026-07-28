@@ -5,11 +5,15 @@ using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Navigation;
+using AdGuardTray.Services;
 
 namespace AdGuardTray.Views
 {
     public partial class AboutView : UserControl
     {
+        private readonly SettingsService _settingsService =
+            new SettingsService();
+
         public AboutView()
         {
             InitializeComponent();
@@ -71,6 +75,53 @@ namespace AdGuardTray.Views
             RoutedEventArgs e)
         {
             LoadChangelog();
+        }
+
+        private async void RunDiagnostics_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            DiagnosticsTextBox.Text =
+                "Running diagnostics...";
+
+            try
+            {
+                var settings =
+                    _settingsService.Load();
+
+                string password =
+                    _settingsService.DecryptPassword(
+                        settings.EncryptedPassword);
+
+                var routerManager =
+                    new RouterManager(
+                        settings.RouterIp,
+                        settings.Username,
+                        password);
+
+                DiagnosticsTextBox.Text =
+                    await routerManager
+                        .GetClientDiagnosticsAsync();
+            }
+            catch (Exception ex)
+            {
+                DiagnosticsTextBox.Text =
+                    ex.ToString();
+            }
+        }
+
+        private void CopyDiagnostics_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(
+                    DiagnosticsTextBox.Text))
+            {
+                return;
+            }
+
+            Clipboard.SetText(
+                DiagnosticsTextBox.Text);
         }
 
         private void GitHubLink_RequestNavigate(

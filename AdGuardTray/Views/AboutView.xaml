@@ -128,6 +128,58 @@
                 </ScrollViewer>
             </TabItem>
 
+            <TabItem Header="Diagnostics">
+                <Border Margin="0,12,0,0"
+                        Padding="18"
+                        Background="White"
+                        CornerRadius="12"
+                        BorderBrush="#DDE3EA"
+                        BorderThickness="1">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="10"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <DockPanel>
+                            <StackPanel>
+                                <TextBlock FontSize="18"
+                                           FontWeight="Bold"
+                                           Text="Client and API diagnostics"/>
+                                <TextBlock Margin="0,4,0,0"
+                                           Foreground="#667085"
+                                           Text="Checks authentication, clients, query log, statistics and query-log configuration"/>
+                            </StackPanel>
+                            <StackPanel DockPanel.Dock="Right"
+                                        Orientation="Horizontal">
+                                <Button MinWidth="92"
+                                        Height="32"
+                                        Margin="0,0,8,0"
+                                        Click="CopyDiagnostics_Click"
+                                        Content="Copy"/>
+                                <Button MinWidth="110"
+                                        Height="32"
+                                        Click="RunDiagnostics_Click"
+                                        Content="Run diagnostics"/>
+                            </StackPanel>
+                        </DockPanel>
+                        <TextBox x:Name="DiagnosticsTextBox"
+                                 Grid.Row="2"
+                                 Padding="12"
+                                 Background="#F8FAFC"
+                                 BorderBrush="#E4E7EC"
+                                 BorderThickness="1"
+                                 FontFamily="Consolas"
+                                 FontSize="13"
+                                 IsReadOnly="True"
+                                 AcceptsReturn="True"
+                                 TextWrapping="NoWrap"
+                                 VerticalScrollBarVisibility="Auto"
+                                 HorizontalScrollBarVisibility="Auto"
+                                 Text="Select Run diagnostics to collect a redacted API health report. Passwords and token values are never shown."/>
+                    </Grid>
+                </Border>
+            </TabItem>
             <TabItem Header="Changelog">
                 <Border Margin="0,12,0,0"
                         Padding="18"
