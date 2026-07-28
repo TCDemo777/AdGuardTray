@@ -29,6 +29,7 @@ namespace AdGuardTray.ViewModels
         private string _blockedServicesStatus = "Loading available services...";
         private string _blockedServicesSearch = "";
         private bool _showBlockedOnly;
+        private string _selectedBlockedServiceCategory = "All categories";
         private string _profileName = "Custom";
         private bool _filteringEnabled;
         private bool _safeBrowsingEnabled;
@@ -62,15 +63,9 @@ namespace AdGuardTray.ViewModels
             SaveBlockedServicesCommand = new AsyncRelayCommand(SaveBlockedServicesAsync, () => !IsBusy);
             SelectAllServicesCommand = new RelayCommand(() => SetAllBlockedServices(true), () => !IsBusy);
             ClearAllServicesCommand = new RelayCommand(() => SetAllBlockedServices(false), () => !IsBusy);
+            BlockedServiceCategories.Add("All categories");
             BlockedServicesView = CollectionViewSource.GetDefaultView(BlockedServices);
             BlockedServicesView.Filter = FilterBlockedService;
-            BlockedServicesView.GroupDescriptions.Add(
-                new PropertyGroupDescription(
-                    nameof(BlockedServiceItem.Category)));
-            BlockedServicesView.SortDescriptions.Add(
-                new SortDescription(
-                    nameof(BlockedServiceItem.Category),
-                    ListSortDirection.Ascending));
             BlockedServicesView.SortDescriptions.Add(
                 new SortDescription(
                     nameof(BlockedServiceItem.Name),
@@ -83,6 +78,7 @@ namespace AdGuardTray.ViewModels
         }
 
         public ObservableCollection<BlockedServiceItem> BlockedServices { get; } = new();
+        public ObservableCollection<string> BlockedServiceCategories { get; } = new();
         public ICollectionView BlockedServicesView { get; }
         public ObservableCollection<CustomFilteringRule> FilteringRules { get; } = new();
         public ObservableCollection<DnsRewriteRule> DnsRewrites { get; } = new();
@@ -96,6 +92,15 @@ namespace AdGuardTray.ViewModels
         public string BlockedServicesStatus { get => _blockedServicesStatus; private set => SetProperty(ref _blockedServicesStatus, value); }
         public string BlockedServicesSearch { get => _blockedServicesSearch; set { if (SetProperty(ref _blockedServicesSearch, value)) BlockedServicesView.Refresh(); } }
         public bool ShowBlockedOnly { get => _showBlockedOnly; set { if (SetProperty(ref _showBlockedOnly, value)) BlockedServicesView.Refresh(); } }
+        public string SelectedBlockedServiceCategory
+        {
+            get => _selectedBlockedServiceCategory;
+            set
+            {
+                if (SetProperty(ref _selectedBlockedServiceCategory, value))
+                    BlockedServicesView.Refresh();
+            }
+        }
         public string BlockedServicesSelectionSummary => $"{BlockedServices.Count(s => s.IsBlocked)} selected";
         public string ProfileName { get => _profileName; private set => SetProperty(ref _profileName, value); }
 
@@ -171,6 +176,21 @@ namespace AdGuardTray.ViewModels
                     service.PropertyChanged += BlockedService_PropertyChanged;
                     BlockedServices.Add(service);
                 }
+
+                BlockedServiceCategories.Clear();
+                BlockedServiceCategories.Add("All categories");
+                foreach (string category in BlockedServices
+                    .Select(service => service.Category)
+                    .Where(category => !string.IsNullOrWhiteSpace(category))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(category => category))
+                {
+                    BlockedServiceCategories.Add(category);
+                }
+
+                if (!BlockedServiceCategories.Contains(SelectedBlockedServiceCategory))
+                    SelectedBlockedServiceCategory = "All categories";
+
                 BlockedServicesView.Refresh();
                 OnPropertyChanged(nameof(BlockedServicesSelectionSummary));
                 BlockedServicesStatus = BlockedServices.Count == 0
@@ -265,9 +285,23 @@ namespace AdGuardTray.ViewModels
         {
             if (item is not BlockedServiceItem service) return false;
             if (ShowBlockedOnly && !service.IsBlocked) return false;
+
+            if (!string.Equals(
+                    SelectedBlockedServiceCategory,
+                    "All categories",
+                    StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(
+                    service.Category,
+                    SelectedBlockedServiceCategory,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
             return string.IsNullOrWhiteSpace(BlockedServicesSearch) ||
                    service.Name.Contains(BlockedServicesSearch.Trim(), StringComparison.OrdinalIgnoreCase) ||
-                   service.Id.Contains(BlockedServicesSearch.Trim(), StringComparison.OrdinalIgnoreCase);
+                   service.Id.Contains(BlockedServicesSearch.Trim(), StringComparison.OrdinalIgnoreCase) ||
+                   service.Category.Contains(BlockedServicesSearch.Trim(), StringComparison.OrdinalIgnoreCase);
         }
 
         private void BlockedService_PropertyChanged(object? sender, PropertyChangedEventArgs e)

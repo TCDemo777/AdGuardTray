@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-07-28 — Blocked Services category-filter redesign
+
+### Changed
+- Replaced vertically stacked service-category sections with a category selector.
+- Displays one continuous three-column service grid with no inter-category gaps.
+- Added an `All categories` option and category-specific filtering.
+- Added compact category badges to service tiles.
+- Search now also matches category names.
+- Preserved blocked-only filtering, selection commands and save behaviour.
+
+## 2026-07-28 — Blocked Services pixel-scrolling fix
+
+### Fixed
+- Switched the grouped Blocked Services list from logical item scrolling to pixel scrolling.
+- Disabled grouped-list virtualization that could reserve or jump across oversized group containers.
+- Removed the remaining margin between category containers.
+- Tightened the category heading and first service row spacing.
+
 ## 2026-07-28 — Compact Blocked Services sections
 
 ### Changed

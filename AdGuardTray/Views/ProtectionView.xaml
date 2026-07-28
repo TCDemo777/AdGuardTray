@@ -35,9 +35,27 @@
       <Separator Margin="0,10"/>
       <StackPanel Margin="0,0,0,10">
        <Grid>
-        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-        <TextBox Height="36" Padding="10,6" Text="{Binding BlockedServicesSearch, UpdateSourceTrigger=PropertyChanged}" ToolTip="Search blocked services"/>
-        <CheckBox Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center" Content="Blocked only" IsChecked="{Binding ShowBlockedOnly}"/>
+        <Grid.ColumnDefinitions>
+         <ColumnDefinition Width="*"/>
+         <ColumnDefinition Width="12"/>
+         <ColumnDefinition Width="190"/>
+         <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        <TextBox Height="36"
+                 Padding="10,6"
+                 Text="{Binding BlockedServicesSearch, UpdateSourceTrigger=PropertyChanged}"
+                 ToolTip="Search blocked services"/>
+        <ComboBox Grid.Column="2"
+                  Height="36"
+                  Padding="8,4"
+                  ItemsSource="{Binding BlockedServiceCategories}"
+                  SelectedItem="{Binding SelectedBlockedServiceCategory, Mode=TwoWay}"
+                  ToolTip="Choose a service category"/>
+        <CheckBox Grid.Column="3"
+                  Margin="14,0,0,0"
+                  VerticalAlignment="Center"
+                  Content="Blocked only"
+                  IsChecked="{Binding ShowBlockedOnly}"/>
        </Grid>
        <StackPanel Margin="0,10,0,0" Orientation="Horizontal">
         <Button Width="90" Margin="0,0,8,0" Content="Select all" Command="{Binding SelectAllServicesCommand}"/>
@@ -56,60 +74,25 @@
               BorderBrush="#E2E8F0"
               BorderThickness="1">
        <ListBox ItemsSource="{Binding BlockedServicesView}"
-                Padding="0"
+                Padding="2"
                 BorderThickness="0"
                 Background="Transparent"
                 HorizontalContentAlignment="Stretch"
-                ScrollViewer.CanContentScroll="True"
+                ScrollViewer.CanContentScroll="False"
                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                 ScrollViewer.VerticalScrollBarVisibility="Auto"
-                VirtualizingPanel.IsVirtualizing="True"
-                VirtualizingPanel.VirtualizationMode="Recycling">
+                VirtualizingPanel.IsVirtualizing="False"
+                ScrollViewer.PanningMode="VerticalOnly">
         <ListBox.Resources>
          <Style TargetType="ScrollBar">
           <Setter Property="Width" Value="12"/>
          </Style>
         </ListBox.Resources>
-        <ListBox.GroupStyle>
-         <GroupStyle>
-          <GroupStyle.ContainerStyle>
-           <Style TargetType="{x:Type GroupItem}">
-            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-            <Setter Property="Margin" Value="0,0,0,2"/>
-            <Setter Property="Template">
-             <Setter.Value>
-              <ControlTemplate TargetType="{x:Type GroupItem}">
-               <StackPanel>
-                <Grid Margin="2,2,2,2">
-                 <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="Auto"/>
-                  <ColumnDefinition Width="*"/>
-                 </Grid.ColumnDefinitions>
-                 <TextBlock FontSize="12"
-                            FontWeight="Bold"
-                            Foreground="#344054"
-                            VerticalAlignment="Center"
-                            Text="{Binding Name}"/>
-                 <Border Grid.Column="1"
-                         Height="1"
-                         Margin="8,1,0,0"
-                         VerticalAlignment="Center"
-                         Background="#E4E7EC"/>
-                </Grid>
-                <ItemsPresenter/>
-               </StackPanel>
-              </ControlTemplate>
-             </Setter.Value>
-            </Setter>
-           </Style>
-          </GroupStyle.ContainerStyle>
-          <GroupStyle.Panel>
-           <ItemsPanelTemplate>
-            <UniformGrid Columns="3"/>
-           </ItemsPanelTemplate>
-          </GroupStyle.Panel>
-         </GroupStyle>
-        </ListBox.GroupStyle>
+        <ListBox.ItemsPanel>
+         <ItemsPanelTemplate>
+          <UniformGrid Columns="3"/>
+         </ItemsPanelTemplate>
+        </ListBox.ItemsPanel>
         <ListBox.ItemContainerStyle>
          <Style TargetType="ListBoxItem">
           <Setter Property="Padding" Value="0"/>
@@ -128,21 +111,37 @@
         </ListBox.ItemContainerStyle>
         <ListBox.ItemTemplate>
          <DataTemplate>
-          <Border Margin="2,1"
-                  MinHeight="34"
-                  Padding="8,4"
-                  Background="#FAFBFC"
-                  BorderBrush="#E4E7EC"
+          <Border Margin="3"
+                  MinHeight="42"
+                  Padding="10,7"
+                  Background="#FFFFFF"
+                  BorderBrush="#DDE3EA"
                   BorderThickness="1"
-                  CornerRadius="5">
-           <CheckBox VerticalAlignment="Center"
-                     HorizontalContentAlignment="Left"
-                     FontWeight="SemiBold"
-                     Foreground="#344054"
-                     Content="{Binding Name}"
-                     ToolTip="{Binding Name}"
-                     IsChecked="{Binding IsBlocked, Mode=TwoWay}"
-                     IsEnabled="{Binding DataContext.ControlsEnabled, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                  CornerRadius="7">
+           <Grid>
+            <Grid.ColumnDefinitions>
+             <ColumnDefinition Width="*"/>
+             <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <CheckBox VerticalAlignment="Center"
+                      HorizontalContentAlignment="Left"
+                      FontWeight="SemiBold"
+                      Foreground="#344054"
+                      Content="{Binding Name}"
+                      ToolTip="{Binding Name}"
+                      IsChecked="{Binding IsBlocked, Mode=TwoWay}"
+                      IsEnabled="{Binding DataContext.ControlsEnabled, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+            <Border Grid.Column="1"
+                    Margin="8,0,0,0"
+                    Padding="6,2"
+                    VerticalAlignment="Center"
+                    Background="#F2F4F7"
+                    CornerRadius="7">
+             <TextBlock FontSize="10"
+                        Foreground="#667085"
+                        Text="{Binding Category}"/>
+            </Border>
+           </Grid>
           </Border>
          </DataTemplate>
         </ListBox.ItemTemplate>
