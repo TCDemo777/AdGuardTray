@@ -1,6 +1,0 @@
-<PropertyGroup>
-  <ApplicationIcon>Assets\AdGuardTray.ico</ApplicationIcon>
-</PropertyGroup>
-<ItemGroup>
-  <Resource Include="Assets\AdGuardTrayLogo.png" />
-</ItemGroup>
