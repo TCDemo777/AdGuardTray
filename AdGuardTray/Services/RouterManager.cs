@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 using AdGuardTray.Models;
@@ -446,6 +448,187 @@ namespace AdGuardTray.Services
                 $"{response.StatusCode}. {detail}");
         }
 
+
+        //
+        // AdGuard Protection Management
+        //
+
+        public async Task<AdGuardProtectionOptions> GetProtectionOptionsAsync()
+        {
+            var filtering = await GetControlJsonAsync("filtering/status");
+            var safeBrowsing = await GetControlJsonAsync("safebrowsing/status");
+            var parental = await GetControlJsonAsync("parental/status");
+            var safeSearch = await GetControlJsonAsync("safesearch/status");
+            var queryLog = await GetControlJsonAsync("querylog/config");
+
+            return new AdGuardProtectionOptions
+            {
+                FilteringEnabled = GetBoolean(filtering, "enabled"),
+                FilteringIntervalHours = GetInteger(filtering, "interval", 24),
+                SafeBrowsingEnabled = GetBoolean(safeBrowsing, "enabled"),
+                ParentalEnabled = GetBoolean(parental, "enabled"),
+                SafeSearchEnabled = GetBoolean(safeSearch, "enabled"),
+                QueryLogEnabled = GetBoolean(queryLog, "enabled"),
+                QueryLogAnonymizeClientIp = GetBoolean(queryLog, "anonymize_client_ip"),
+                QueryLogInterval = GetDouble(queryLog, "interval", 24),
+                QueryLogIgnored = GetStringArray(queryLog, "ignored"),
+                SafeSearch = new AdGuardSafeSearchSettings
+                {
+                    Enabled = GetBoolean(safeSearch, "enabled"),
+                    Bing = GetBoolean(safeSearch, "bing", true),
+                    DuckDuckGo = GetBoolean(safeSearch, "duckduckgo", true),
+                    Ecosia = GetBoolean(safeSearch, "ecosia", true),
+                    Google = GetBoolean(safeSearch, "google", true),
+                    Pixabay = GetBoolean(safeSearch, "pixabay", true),
+                    Yandex = GetBoolean(safeSearch, "yandex", true),
+                    YouTube = GetBoolean(safeSearch, "youtube", true)
+                }
+            };
+        }
+
+        public Task SetFilteringEnabledAsync(bool enabled) => SendControlJsonAsync(HttpMethod.Post, "filtering/config", JsonSerializer.Serialize(new { enabled, interval = 24 }));
+        public Task SetSafeBrowsingEnabledAsync(bool enabled) => SendControlWithoutBodyAsync(HttpMethod.Post, enabled ? "safebrowsing/enable" : "safebrowsing/disable");
+        public Task SetParentalEnabledAsync(bool enabled) => SendControlWithoutBodyAsync(HttpMethod.Post, enabled ? "parental/enable" : "parental/disable");
+
+        public Task SetSafeSearchEnabledAsync(bool enabled, AdGuardSafeSearchSettings current)
+        {
+            string json = JsonSerializer.Serialize(new
+            {
+                enabled,
+                bing = current.Bing,
+                duckduckgo = current.DuckDuckGo,
+                ecosia = current.Ecosia,
+                google = current.Google,
+                pixabay = current.Pixabay,
+                yandex = current.Yandex,
+                youtube = current.YouTube
+            });
+            return SendControlJsonAsync(HttpMethod.Put, "safesearch/settings", json);
+        }
+
+        public Task SetQueryLogEnabledAsync(bool enabled, AdGuardProtectionOptions current)
+        {
+            string json = JsonSerializer.Serialize(new
+            {
+                enabled,
+                anonymize_client_ip = current.QueryLogAnonymizeClientIp,
+                interval = current.QueryLogInterval <= 0 ? 24 : current.QueryLogInterval,
+                ignored = current.QueryLogIgnored
+            });
+            return SendControlJsonAsync(HttpMethod.Put, "querylog/config/update", json);
+        }
+
+        public async Task<(List<BlockedServiceItem> Services, AdGuardBlockedServicesConfig Config)> GetBlockedServicesAsync()
+        {
+            JsonElement all = await GetControlJsonAsync("blocked_services/all");
+            JsonElement configJson = await GetControlJsonAsync("blocked_services/get");
+            var config = new AdGuardBlockedServicesConfig();
+            if (configJson.TryGetProperty("schedule", out JsonElement schedule)) config.ScheduleJson = schedule.GetRawText();
+            foreach (string id in GetStringArray(configJson, "ids")) config.EnabledIds.Add(id);
+
+            var result = new List<BlockedServiceItem>();
+            JsonElement array = all.ValueKind == JsonValueKind.Array ? all : (all.TryGetProperty("services", out JsonElement services) ? services : default);
+            if (array.ValueKind == JsonValueKind.Array)
+            {
+                foreach (JsonElement item in array.EnumerateArray())
+                {
+                    string id = GetString(item, "id");
+                    if (id.Length == 0) continue;
+                    string name = GetString(item, "name");
+                    if (name.Length == 0) name = id.Replace('_', ' ');
+                    result.Add(new BlockedServiceItem { Id = id, Name = name, IsBlocked = config.EnabledIds.Contains(id) });
+                }
+            }
+            return (result, config);
+        }
+
+        public Task UpdateBlockedServicesAsync(IEnumerable<string> ids, string scheduleJson)
+        {
+            JsonNode schedule = JsonNode.Parse(string.IsNullOrWhiteSpace(scheduleJson) ? "{}" : scheduleJson) ?? new JsonObject();
+            var idArray = new JsonArray();
+            foreach (string id in ids.Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                idArray.Add(id);
+            }
+            var root = new JsonObject { ["schedule"] = schedule, ["ids"] = idArray };
+            return SendControlJsonAsync(HttpMethod.Put, "blocked_services/update", root.ToJsonString());
+        }
+
+        public async Task<List<CustomFilteringRule>> GetCustomFilteringRulesAsync()
+        {
+            JsonElement status = await GetControlJsonAsync("filtering/status");
+            var result = new List<CustomFilteringRule>();
+            if (status.TryGetProperty("user_rules", out JsonElement rules) && rules.ValueKind == JsonValueKind.Array)
+            {
+                foreach (JsonElement item in rules.EnumerateArray())
+                {
+                    string rule = item.GetString()?.Trim() ?? "";
+                    if (rule.Length == 0) continue;
+                    string type = rule.StartsWith("@@", StringComparison.Ordinal) ? "Allow" : rule.StartsWith("||", StringComparison.Ordinal) ? "Block" : "Custom";
+                    result.Add(new CustomFilteringRule { Rule = rule, Type = type });
+                }
+            }
+            return result;
+        }
+
+        public Task SetCustomFilteringRulesAsync(IEnumerable<string> rules) => SendControlJsonAsync(HttpMethod.Post, "filtering/set_rules", JsonSerializer.Serialize(new { rules = rules.ToArray() }));
+
+        public async Task<List<DnsRewriteRule>> GetDnsRewritesAsync()
+        {
+            JsonElement root = await GetControlJsonAsync("rewrite/list");
+            var result = new List<DnsRewriteRule>();
+            JsonElement array = root.ValueKind == JsonValueKind.Array ? root : (root.TryGetProperty("rewrites", out JsonElement rewrites) ? rewrites : default);
+            if (array.ValueKind == JsonValueKind.Array)
+                foreach (JsonElement item in array.EnumerateArray()) result.Add(new DnsRewriteRule { Domain = GetString(item, "domain"), Answer = GetString(item, "answer") });
+            return result;
+        }
+
+        public Task AddDnsRewriteAsync(string domain, string answer) => SendControlJsonAsync(HttpMethod.Post, "rewrite/add", JsonSerializer.Serialize(new { domain, answer }));
+        public Task DeleteDnsRewriteAsync(string domain, string answer) => SendControlJsonAsync(HttpMethod.Post, "rewrite/delete", JsonSerializer.Serialize(new { domain, answer }));
+
+        private async Task<JsonElement> GetControlJsonAsync(string endpoint)
+        {
+            AdGuardControlResponse response = await SendAuthenticatedControlAsync(HttpMethod.Get, endpoint, null);
+            if (!response.IsSuccess) throw CreateAdGuardControlException("read " + endpoint, response);
+            using JsonDocument document = JsonDocument.Parse(response.Content);
+            return document.RootElement.Clone();
+        }
+
+        private async Task SendControlJsonAsync(HttpMethod method, string endpoint, string json)
+        {
+            AdGuardControlResponse response = await SendAuthenticatedControlAsync(method, endpoint, json);
+            if (!response.IsSuccess) throw CreateAdGuardControlException("update " + endpoint, response);
+        }
+
+        private async Task SendControlWithoutBodyAsync(HttpMethod method, string endpoint)
+        {
+            AdGuardControlResponse response = await SendAuthenticatedControlAsync(method, endpoint, null);
+            if (!response.IsSuccess) throw CreateAdGuardControlException("update " + endpoint, response);
+        }
+
+        private async Task<AdGuardControlResponse> SendAuthenticatedControlAsync(HttpMethod method, string endpoint, string? json)
+        {
+            string token = await GetAdminTokenAsync();
+            AdGuardControlResponse response = await RequestAdGuardControlAsync(method, endpoint, token, json);
+            if (response.RequiresNewToken)
+            {
+                InvalidateAdminToken();
+                token = await GetAdminTokenAsync();
+                response = await RequestAdGuardControlAsync(method, endpoint, token, json);
+            }
+            return response;
+        }
+
+        private static bool GetBoolean(JsonElement root, string name, bool fallback = false) => root.TryGetProperty(name, out JsonElement value) ? value.ValueKind == JsonValueKind.True : fallback;
+        private static int GetInteger(JsonElement root, string name, int fallback) => root.TryGetProperty(name, out JsonElement value) && value.TryGetInt32(out int result) ? result : fallback;
+        private static double GetDouble(JsonElement root, string name, double fallback) => root.TryGetProperty(name, out JsonElement value) && value.TryGetDouble(out double result) ? result : fallback;
+        private static string GetString(JsonElement root, string name) => root.TryGetProperty(name, out JsonElement value) && value.ValueKind == JsonValueKind.String ? value.GetString()?.Trim() ?? "" : "";
+        private static string[] GetStringArray(JsonElement root, string name)
+        {
+            if (!root.TryGetProperty(name, out JsonElement array) || array.ValueKind != JsonValueKind.Array) return [];
+            return array.EnumerateArray().Where(x => x.ValueKind == JsonValueKind.String).Select(x => x.GetString() ?? "").Where(x => x.Length > 0).ToArray();
+        }
+
         //
         // AdGuard Statistics
         //
@@ -654,7 +837,7 @@ namespace AdGuardTray.Services
                     response =
                         await RequestAdGuardQueryLogAsync(
                             token,
-                            5000);
+                            500);
                 }
 
                 if (!response.IsSuccess)
