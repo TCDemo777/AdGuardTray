@@ -19,16 +19,20 @@
         </Style>
     </UserControl.Resources>
 
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="12"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="12"/>
-            <RowDefinition Height="1.05*"/>
-            <RowDefinition Height="12"/>
-            <RowDefinition Height="0.95*"/>
-        </Grid.RowDefinitions>
+    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled"
+                  CanContentScroll="False"
+                  PanningMode="VerticalOnly">
+        <Grid Margin="0,0,10,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="12"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="12"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="12"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
 
         <StackPanel>
             <TextBlock FontSize="24" FontWeight="Bold" Text="Analytics"/>
@@ -60,7 +64,9 @@
             </Border>
         </UniformGrid>
 
-        <Border Grid.Row="4" Style="{StaticResource Card}">
+        <Border Grid.Row="4"
+                MinHeight="320"
+                Style="{StaticResource Card}">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -81,11 +87,15 @@
                         <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="#475467" Text="LIVE STATISTICS"/>
                     </Border>
                 </Grid>
-                <lvc:CartesianChart Grid.Row="2" MinHeight="210" Series="{Binding QueryHistorySeries}"/>
+                <lvc:CartesianChart Grid.Row="2"
+                                    Height="245"
+                                    MinHeight="245"
+                                    Series="{Binding QueryHistorySeries}"/>
             </Grid>
         </Border>
 
-        <Grid Grid.Row="6">
+        <Grid Grid.Row="6"
+              MinHeight="390">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="12"/>
@@ -227,5 +237,6 @@
                 </Grid>
             </Border>
         </Grid>
-    </Grid>
+        </Grid>
+    </ScrollViewer>
 </UserControl>

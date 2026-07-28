@@ -23,25 +23,39 @@ namespace AdGuardTray.Views
             _refreshTimer =
                 new DispatcherTimer
                 {
-                    Interval = TimeSpan.FromSeconds(10)
+                    Interval = TimeSpan.FromSeconds(5)
                 };
 
             _refreshTimer.Tick +=
                 ClientsRefreshTimer_Tick;
 
             Loaded += ClientsView_Loaded;
-            Unloaded += ClientsView_Unloaded;
+            IsVisibleChanged += ClientsView_IsVisibleChanged;
         }
 
         private async void ClientsView_Loaded(
             object sender,
             RoutedEventArgs e)
         {
-            await RefreshClientsAsync();
-
-            if (!_refreshTimer.IsEnabled)
+            if (IsVisible)
             {
-                _refreshTimer.Start();
+                await RefreshClientsAsync();
+                StartRefreshTimer();
+            }
+        }
+
+        private async void ClientsView_IsVisibleChanged(
+            object sender,
+            DependencyPropertyChangedEventArgs e)
+        {
+            if (IsVisible)
+            {
+                await RefreshClientsAsync();
+                StartRefreshTimer();
+            }
+            else
+            {
+                _refreshTimer.Stop();
             }
         }
 
@@ -58,11 +72,12 @@ namespace AdGuardTray.Views
             await RefreshClientsAsync();
         }
 
-        private void ClientsView_Unloaded(
-            object sender,
-            RoutedEventArgs e)
+        private void StartRefreshTimer()
         {
-            _refreshTimer.Stop();
+            if (!_refreshTimer.IsEnabled)
+            {
+                _refreshTimer.Start();
+            }
         }
 
         private async System.Threading.Tasks.Task RefreshClientsAsync()
@@ -70,6 +85,15 @@ namespace AdGuardTray.Views
             try
             {
                 await _viewModel.LoadClientsAsync();
+
+                if (!_viewModel.StatusMessage.StartsWith(
+                        "Unable",
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    _viewModel.StatusMessage +=
+                        " · updated " +
+                        DateTime.Now.ToString("HH:mm:ss");
+                }
             }
             catch (Exception ex)
             {

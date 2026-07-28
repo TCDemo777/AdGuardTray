@@ -1,16 +1,17 @@
 # Changelog
 
-## 2026-07-28 — Analytics ranks and live client-card refresh
+## 2026-07-28 — Analytics scrolling and reliable client refresh
 
 ### Fixed
-- Analytics Top Clients, Top Requested Domains and Top Blocked Domains now show 1 through 10.
-- Removed the invalid converter namespace approach that caused MC3000.
-- Added a one-based Rank property directly to Analytics ranking items.
-- Client cards refresh every 10 seconds while the Clients page is visible.
-- Client data refreshes immediately whenever the page is reopened.
-- Refresh stops when navigating away from the Clients page.
+- Restored the Analytics page's vertical side scrollbar.
+- Prevented the DNS Query History graph from being compressed or clipped.
+- Kept the existing 1–10 ranking display unchanged.
+- Client refresh is now driven by page visibility rather than relying only on Loaded/Unloaded events.
+- Client cards refresh every five seconds while the Clients page is visible.
+- Returning to the Clients page triggers an immediate refresh.
+- The Clients status line now shows the most recent refresh time.
 
 ### Scope
 - No RouterManager changes.
-- No client layout, sorting, filtering or favourites changes.
-- No Logs, Protection or Blocked Services files are replaced.
+- No Logs, Protection or Blocked Services changes.
+- No Analytics ranking or data-loading changes.
