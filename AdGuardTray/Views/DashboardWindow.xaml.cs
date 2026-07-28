@@ -174,7 +174,7 @@ namespace AdGuardTray.Views
 
                 _viewModel.UpdateRankingsFromQueryLog(
                     rankingEntries,
-                    onlyWhenEmpty: true);
+                    onlyWhenEmpty: false);
 
                 // Protection state is authoritative from /control/status.
                 // Statistics responses are not reliable for this value on

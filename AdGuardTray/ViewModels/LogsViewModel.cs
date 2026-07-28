@@ -28,8 +28,7 @@ namespace AdGuardTray.ViewModels
         private string _lastSnapshotSignature = string.Empty;
         private int _successfulRefreshes;
 
-        [ObservableProperty]
-        private ObservableCollection<QueryLogEntry> entries = new();
+        public ObservableCollection<QueryLogEntry> Entries { get; } = new();
 
         public IReadOnlyList<int> RefreshIntervals { get; } =
             new[] { 2, 3, 5, 10, 30 };
@@ -222,7 +221,8 @@ namespace AdGuardTray.ViewModels
                     string.Join(
                         "|",
                         entries
-                            .Take(20)
+                            .OrderByDescending(entry => ParseEntryTime(entry.Time))
+                            .Take(50)
                             .Select(entry =>
                                 $"{entry.Time}>{entry.Client}>{entry.Domain}>{entry.IsBlocked}"));
 
@@ -274,20 +274,12 @@ namespace AdGuardTray.ViewModels
                             : "Live · up to date";
                     LiveStatusColour = "#16803C";
 
-                    string newestEntryTime =
-                        entries.Count == 0
-                            ? "-"
-                            : entries
-                                .OrderByDescending(entry => ParseEntryTime(entry.Time))
-                                .First()
-                                .Time;
-
                     StatusMessage =
                         entries.Count == 0
                             ? "Connected, but AdGuard Home returned no query-log entries."
                             : changed
-                                ? $"{entries.Count} entries loaded; newest {newestEntryTime}."
-                                : $"{entries.Count} entries loaded; server newest {newestEntryTime}.";
+                                ? $"{entries.Count} entries loaded; new activity detected."
+                                : $"{entries.Count} entries loaded; no new activity yet.";
                 }
             }
             catch (Exception ex)
@@ -332,6 +324,8 @@ namespace AdGuardTray.ViewModels
                 CollectionViewSource
                     .GetDefaultView(Entries)?
                     .Refresh();
+
+                OnPropertyChanged(nameof(Entries));
 
                 if (!string.IsNullOrWhiteSpace(selectedKey))
                 {
@@ -440,13 +434,12 @@ namespace AdGuardTray.ViewModels
                     ContainsText(entry.Status, search));
             }
 
-            Entries =
-                new ObservableCollection<QueryLogEntry>(
-                    filtered.ToList());
+            Entries.Clear();
 
-            CollectionViewSource
-                .GetDefaultView(Entries)?
-                .Refresh();
+            foreach (QueryLogEntry entry in filtered)
+            {
+                Entries.Add(entry);
+            }
 
             if (!IsLoading && _allEntries.Count > 0)
             {

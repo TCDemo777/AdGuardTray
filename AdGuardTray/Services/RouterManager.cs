@@ -1015,13 +1015,12 @@ namespace AdGuardTray.Services
                 DateTimeOffset.UtcNow
                     .ToUnixTimeMilliseconds();
 
-            // AdGuard Home uses an explicitly empty older_than value for
-            // the first query-log page.  Supplying only limit can return a
-            // stale/paged snapshot on some 0.107 builds.
+            // Restore the request shape used by the earlier working
+            // Live Logs implementation.  Some AdGuard Home builds treat an
+            // explicitly empty older_than parameter as a fixed page cursor.
             string url =
                 $"http://{_routerIp}:3000/control/querylog" +
-                $"?search=&response_status=&older_than=&limit={safeLimit}" +
-                $"&_={cacheBuster}";
+                $"?limit={safeLimit}&_={cacheBuster}";
 
             Debug.WriteLine(
                 "Calling AdGuard query log: " +
@@ -1110,17 +1109,25 @@ namespace AdGuardTray.Services
                                 "dd MMM yyyy HH:mm:ss");
                 }
 
-                string client =
+                string clientAddress =
                     GetClientStringProperty(
                         item,
                         "client");
 
-                if (string.IsNullOrWhiteSpace(
-                        client))
-                {
-                    client =
-                        "-";
-                }
+                string clientName =
+                    GetNestedStringProperty(
+                        item,
+                        "client_info",
+                        "name");
+
+                string client =
+                    !string.IsNullOrWhiteSpace(clientName)
+                        ? string.IsNullOrWhiteSpace(clientAddress)
+                            ? clientName
+                            : $"{clientName} ({clientAddress})"
+                        : string.IsNullOrWhiteSpace(clientAddress)
+                            ? "-"
+                            : clientAddress;
 
                 string domain =
                     GetQueryDomain(
@@ -1566,6 +1573,24 @@ namespace AdGuardTray.Services
             }
 
             return string.Empty;
+        }
+
+        private static string GetNestedStringProperty(
+            JsonElement element,
+            string objectPropertyName,
+            string stringPropertyName)
+        {
+            if (!element.TryGetProperty(
+                    objectPropertyName,
+                    out JsonElement nestedObject) ||
+                nestedObject.ValueKind != JsonValueKind.Object)
+            {
+                return string.Empty;
+            }
+
+            return GetClientStringProperty(
+                nestedObject,
+                stringPropertyName);
         }
 
         private static bool LooksLikeMacAddress(
