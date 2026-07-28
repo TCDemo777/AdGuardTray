@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-07-28 — Responsive Blocked Services filter layout
+
+### Changed
+- Reduced the category selector to a compact 138-pixel filter.
+- Replaced the rigid service grid with a responsive wrapping layout.
+- Gave every filtered service tile a consistent width, height and spacing.
+- Removed repeated category badges from service tiles.
+- Added the active category beside the selection summary.
+- Preserved search, category filtering, blocked-only filtering and save behaviour.
+
 ## 2026-07-28 — Blocked Services category-filter redesign
 
 ### Changed

@@ -38,7 +38,7 @@
         <Grid.ColumnDefinitions>
          <ColumnDefinition Width="*"/>
          <ColumnDefinition Width="12"/>
-         <ColumnDefinition Width="190"/>
+         <ColumnDefinition Width="138"/>
          <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
         <TextBox Height="36"
@@ -46,11 +46,14 @@
                  Text="{Binding BlockedServicesSearch, UpdateSourceTrigger=PropertyChanged}"
                  ToolTip="Search blocked services"/>
         <ComboBox Grid.Column="2"
-                  Height="36"
-                  Padding="8,4"
+                  Height="32"
+                  MinWidth="0"
+                  Padding="7,2"
+                  VerticalAlignment="Center"
+                  FontSize="12"
                   ItemsSource="{Binding BlockedServiceCategories}"
                   SelectedItem="{Binding SelectedBlockedServiceCategory, Mode=TwoWay}"
-                  ToolTip="Choose a service category"/>
+                  ToolTip="Filter by category"/>
         <CheckBox Grid.Column="3"
                   Margin="14,0,0,0"
                   VerticalAlignment="Center"
@@ -64,8 +67,21 @@
        </StackPanel>
       </StackPanel>
       <DockPanel Margin="0,0,0,8">
-       <TextBlock Foreground="#555" TextWrapping="Wrap" Text="{Binding BlockedServicesStatus}"/>
-       <TextBlock DockPanel.Dock="Right" Foreground="#475467" FontWeight="SemiBold" Text="{Binding BlockedServicesSelectionSummary}"/>
+       <TextBlock Foreground="#555"
+                  TextWrapping="Wrap"
+                  Text="{Binding BlockedServicesStatus}"/>
+       <StackPanel DockPanel.Dock="Right"
+                   Margin="12,0,0,0"
+                   Orientation="Horizontal">
+        <TextBlock VerticalAlignment="Center"
+                   Foreground="#667085"
+                   Text="{Binding SelectedBlockedServiceCategory}"/>
+        <TextBlock Margin="8,0,0,0"
+                   VerticalAlignment="Center"
+                   Foreground="#475467"
+                   FontWeight="SemiBold"
+                   Text="{Binding BlockedServicesSelectionSummary}"/>
+       </StackPanel>
       </DockPanel>
       <Border Height="390"
               Padding="4"
@@ -90,7 +106,9 @@
         </ListBox.Resources>
         <ListBox.ItemsPanel>
          <ItemsPanelTemplate>
-          <UniformGrid Columns="3"/>
+          <WrapPanel Orientation="Horizontal"
+                     ItemWidth="250"
+                     ItemHeight="44"/>
          </ItemsPanelTemplate>
         </ListBox.ItemsPanel>
         <ListBox.ItemContainerStyle>
@@ -111,37 +129,22 @@
         </ListBox.ItemContainerStyle>
         <ListBox.ItemTemplate>
          <DataTemplate>
-          <Border Margin="3"
-                  MinHeight="42"
-                  Padding="10,7"
+          <Border Margin="3,2"
+                  Width="244"
+                  Height="40"
+                  Padding="10,6"
                   Background="#FFFFFF"
                   BorderBrush="#DDE3EA"
                   BorderThickness="1"
                   CornerRadius="7">
-           <Grid>
-            <Grid.ColumnDefinitions>
-             <ColumnDefinition Width="*"/>
-             <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <CheckBox VerticalAlignment="Center"
-                      HorizontalContentAlignment="Left"
-                      FontWeight="SemiBold"
-                      Foreground="#344054"
-                      Content="{Binding Name}"
-                      ToolTip="{Binding Name}"
-                      IsChecked="{Binding IsBlocked, Mode=TwoWay}"
-                      IsEnabled="{Binding DataContext.ControlsEnabled, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
-            <Border Grid.Column="1"
-                    Margin="8,0,0,0"
-                    Padding="6,2"
-                    VerticalAlignment="Center"
-                    Background="#F2F4F7"
-                    CornerRadius="7">
-             <TextBlock FontSize="10"
-                        Foreground="#667085"
-                        Text="{Binding Category}"/>
-            </Border>
-           </Grid>
+           <CheckBox VerticalAlignment="Center"
+                     HorizontalContentAlignment="Left"
+                     FontWeight="SemiBold"
+                     Foreground="#344054"
+                     Content="{Binding Name}"
+                     ToolTip="{Binding Name}"
+                     IsChecked="{Binding IsBlocked, Mode=TwoWay}"
+                     IsEnabled="{Binding DataContext.ControlsEnabled, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
           </Border>
          </DataTemplate>
         </ListBox.ItemTemplate>
