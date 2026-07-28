@@ -1,52 +1,125 @@
-# AdGuardTray v1.2
+# AdGuardTray Changelog
 
-## Client activity
-- Query totals are merged from `/control/stats` when the query log is empty.
-- Client cards now explain when Last seen, Blocked and Block rate are unavailable.
-- Disabled query-log values display as `Query log disabled` and em dashes rather than misleading zeroes.
-- A support-page action can refresh the Clients page immediately.
+This changelog consolidates the complete public GitHub history of AdGuardTray,
+from the initial project setup through the current v1.3 release.
 
-## Support and diagnostics
-- Renamed the About area to Support.
-- Added About, Diagnostics, System, Logs and Changelog tabs.
-- Added redacted router and AdGuard endpoint diagnostics.
-- Added query-log status detection and a one-click repair action.
-- Query-log repair preserves existing retention, anonymisation and ignored-client settings.
-- Added Copy and Export diagnostics actions.
-- Diagnostic exports include diagnostics, system information, build details and the support-session log.
-- Added system information for Windows, .NET, process architecture, memory and configured router details.
-- Added an in-session support log with copy and clear actions.
-
-## Safety
-- Passwords and Admin-Token values are never included in reports.
-- Existing Analytics, Protection, Logs, Network and client sorting layouts are preserved.
-
-# Unreleased
-
-## Fixed
-- Client cards now merge per-client query totals from `/control/stats`
-  when the query-log endpoint returns an empty page.
-- Query-log data remains authoritative for blocked counts and last-seen times.
-
-## Added
-- A Diagnostics tab on the About page.
-- Redacted checks for authentication, configured clients, query-log entries,
-  per-client statistics and query-log configuration.
-- Copy-to-clipboard support for diagnostic reports.
-
-# Changelog
-
-## 2026-07-28 — Analytics ranks and live client-card refresh
+## v1.3 — UI polish and historical changelog
 
 ### Fixed
-- Analytics Top Clients, Top Requested Domains and Top Blocked Domains now show 1 through 10.
-- Removed the invalid converter namespace approach that caused MC3000.
-- Added a one-based Rank property directly to Analytics ranking items.
-- Client cards refresh every 10 seconds while the Clients page is visible.
-- Client data refreshes immediately whenever the page is reopened.
-- Refresh stops when navigating away from the Clients page.
+- Restored vertical scrolling on Analytics.
+- Prevented the DNS Query History chart and ranking panels from being clipped.
+- Improved Top Clients rendering when a friendly name and IP address are both present.
 
-### Scope
-- No RouterManager changes.
-- No client layout, sorting, filtering or favourites changes.
-- No Logs, Protection or Blocked Services files are replaced.
+### Changed
+- Top Clients now displays friendly names and addresses on separate lines.
+- Clients opens sorted by **Blocked queries**, **Descending**.
+- Restyled Logs with a cleaner search area, alternating rows, hover states,
+  improved spacing and allowed/blocked status badges.
+- Rebuilt the changelog from the complete GitHub commit history.
+
+## v1.2 — Support diagnostics and client activity recovery
+
+### Added
+- Support area with About, Diagnostics, System, Logs and Changelog tabs.
+- Redacted router and AdGuard Home diagnostics.
+- One-click query-log repair while preserving retention and privacy settings.
+- Copy and ZIP export of diagnostic information.
+- Windows, .NET, architecture, memory and configured-router information.
+- In-session support logging and manual Clients refresh.
+
+### Fixed
+- Restored per-client query totals by merging `/control/stats` `top_clients`.
+- Added explicit unavailable states when query logging is disabled.
+- Preserved query-log data as the source for blocked counts and last-seen times.
+
+## 2026-07-28 — Logs, protection and layout stabilisation
+
+### Added
+- Live AdGuard Home log restoration and improved Protection status updates.
+- Refined Protection management controls and user feedback.
+
+### Fixed
+- Multiple live-log polling and refresh regressions.
+- Analytics scrolling, chart sizing and ranking layout regressions.
+- Blocked Services spacing and final layout issues.
+- Newest query-log page retrieval.
+- Missing Protection API paths in `RouterManager`.
+- Cumulative runtime changelog loading.
+- General view, analytics and log defects.
+
+## 2026-07-27 — Search, intelligence and application-wide polish
+
+### Added
+- Global search and domain-monitoring tools.
+- Client intelligence, details, favourites, manufacturer and device-type enrichment.
+- Client sorting and immediate sort refresh.
+- Reliable live log filters and polling.
+- Complete AdGuard Home protection-management suite.
+- Dedicated Protection view and navigation.
+- About page, branding and application polish.
+- Improved startup flow and router storage-health parsing.
+- Blocked Services management and dashboard integration.
+
+### Changed
+- Refined Network resource cards and analytics health presentation.
+- Populated Network page data.
+- Improved Settings, client details and dashboard presentation.
+- Moved AdGuard protection controls into their dedicated view.
+
+### Fixed
+- Dashboard protection state and health colours.
+- Analytics ranked-item compatibility.
+- Overview, Logs and Analytics layout issues.
+- Generated selected-sort property handling.
+- Client sorting responsiveness.
+- Live log polling reliability.
+
+## 2026-07-26 — Clients, logs and primary navigation
+
+### Added
+- Live AdGuard Home DNS query-log viewer.
+- Live AdGuard client statistics.
+- Clients model, view model, retrieval and complete page UI.
+- Settings page and settings navigation.
+- Logs page and navigation.
+- Clients page navigation.
+- Network page navigation.
+- Overview and Analytics navigation.
+- Analytics view and restored query-history chart.
+- Initial README project documentation.
+
+### Changed
+- Consolidated the Clients implementation through the main branch merge.
+
+## 2026-07-25 — Dashboard and analytics foundations
+
+### Added
+- Dashboard navigation shell.
+- Dashboard header actions.
+- LiveCharts query-history binding.
+- Query-history parsing from AdGuard Home.
+- Early graph implementations.
+- Router RPC hash authentication.
+- Initial dashboard statistics and data flow.
+
+## 2026-07-24 — Router and AdGuard connectivity
+
+### Added
+- Working GL.iNet router API access.
+- Working SSH connection and dashboard integration.
+- Settings-aware connection recovery.
+- AdGuard Home API connectivity.
+- Progressive RPC hash-authentication support.
+
+## 2026-07-23 — Application shell
+
+### Added
+- Successful router login page.
+- Working Windows tray application.
+
+## 2026-07-22 — Project creation
+
+### Added
+- Initial WPF project.
+- Base project files.
+- Repository attributes and ignore rules.

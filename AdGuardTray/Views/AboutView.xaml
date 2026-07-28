@@ -38,7 +38,7 @@
                                 <StackPanel Grid.Column="2">
                                     <TextBlock FontSize="25" FontWeight="Bold" Text="AdGuardTray"/>
                                     <TextBlock Margin="0,3,0,0" Foreground="#667085"
-                                               Text="Version 1.2"/>
+                                               Text="Version 1.3"/>
                                     <TextBlock Margin="0,11,0,0" FontSize="14"
                                                LineHeight="20" TextWrapping="Wrap"
                                                Text="A focused Windows desktop console for GL.iNet router health, AdGuard Home protection, analytics, clients, DNS logs and network administration."/>

@@ -41,10 +41,10 @@ namespace AdGuardTray.ViewModels
         private string searchText = string.Empty;
 
         [ObservableProperty]
-        private string selectedSortOption = "IP address";
+        private string selectedSortOption = "Blocked queries";
 
         [ObservableProperty]
-        private bool sortDescending;
+        private bool sortDescending = true;
 
         [ObservableProperty]
         private bool showFavoritesOnly;

@@ -286,7 +286,7 @@ namespace AdGuardTray.Views
 
             builder.AppendLine("Application");
             builder.AppendLine("-----------");
-            builder.AppendLine("Version: 1.2");
+            builder.AppendLine("Version: 1.3");
             builder.AppendLine(
                 "Assembly: " +
                 (Assembly.GetExecutingAssembly()
@@ -348,7 +348,7 @@ namespace AdGuardTray.Views
                 Assembly.GetExecutingAssembly();
 
             return
-                "AdGuardTray v1.2\n" +
+                "AdGuardTray v1.3\n" +
                 "Assembly version: " +
                 (assembly.GetName().Version?.ToString() ?? "unknown") +
                 "\nBuild location: " +
