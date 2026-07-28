@@ -227,14 +227,17 @@
                                          Value="{Binding MemoryPercentage}"/>
                             <Grid Margin="0,6,0,0">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="18"/>
+                                    <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Style="{StaticResource DetailLabel}" Text="Used"/>
-                                <TextBlock Grid.Column="1" Style="{StaticResource DetailValue}" Text="{Binding MemoryUsed}"/>
-                                <TextBlock Grid.Column="3" Style="{StaticResource DetailValue}" Text="{Binding MemoryCache, StringFormat=Cache: {0}}"/>
+                                <TextBlock Grid.Column="1" Margin="8,0,18,0"
+                                           Style="{StaticResource DetailValue}"
+                                           Text="{Binding MemoryUsed}"/>
+                                <TextBlock Grid.Column="2"
+                                           Style="{StaticResource DetailValue}"
+                                           Text="{Binding MemoryCache, StringFormat=Cache: {0}}"/>
                             </Grid>
                         </StackPanel>
                     </StackPanel>

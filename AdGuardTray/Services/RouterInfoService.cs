@@ -130,33 +130,44 @@ namespace AdGuardTray.Services
             {
                 string cpu =
                     await _ssh.RunCommandAsync(
-                        "LC_ALL=C top -bn1 | head -5");
+                        "top -bn1 | grep CPU");
 
-                // BusyBox/OpenWrt commonly reports either:
-                //   CPU:  3% usr  2% sys ... 95% idle
-                // or:
-                //   %Cpu(s): ... 95.0 id
-                var idleMatch =
-                    System.Text.RegularExpressions.Regex.Match(
-                        cpu,
-                        @"(?<idle>\d+(?:[\.,]\d+)?)\s*%?\s*(?:idle|id)\b",
-                        System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
-                if (idleMatch.Success &&
-                    double.TryParse(
-                        idleMatch.Groups["idle"].Value.Replace(',', '.'),
-                        System.Globalization.NumberStyles.Float,
-                        System.Globalization.CultureInfo.InvariantCulture,
-                        out double idle))
+                int idleIndex =
+                    cpu.IndexOf("idle");
+
+
+                if (idleIndex > 0)
                 {
-                    info.CpuUsage =
-                        Math.Round(
-                            Math.Clamp(100 - idle, 0, 100),
-                            1) + "%";
-                }
-                else
-                {
-                    info.CpuUsage = "-";
+                    string idleText =
+                        cpu.Substring(
+                            0,
+                            idleIndex);
+
+
+                    string[] parts =
+                        idleText.Split(
+                            ' ',
+                            StringSplitOptions.RemoveEmptyEntries);
+
+
+                    foreach (string part in parts)
+                    {
+                        if (part.EndsWith("%"))
+                        {
+                            if (double.TryParse(
+                                part.Replace("%", ""),
+                                out double idle))
+                            {
+                                info.CpuUsage =
+                                    Math.Round(
+                                        100 - idle,
+                                        1) + "%";
+                            }
+
+                            break;
+                        }
+                    }
                 }
             }
             catch
@@ -174,28 +185,67 @@ namespace AdGuardTray.Services
             {
                 string memory =
                     await _ssh.RunCommandAsync(
-                        "free -k | awk '/^Mem:/ {print $2, $3, $6, $7}'");
+                        "awk '/^(MemTotal|MemFree|Buffers|Cached|SReclaimable):/ {print $1 $2}' /proc/meminfo");
 
-                string[] parts =
+                double total = 0;
+                double free = 0;
+                double buffers = 0;
+                double cached = 0;
+                double reclaimable = 0;
+
+                foreach (string line in
                     memory.Split(
-                        ' ',
-                        StringSplitOptions.RemoveEmptyEntries);
-
-                if (parts.Length >= 3 &&
-                    double.TryParse(parts[0], out double total) &&
-                    double.TryParse(parts[1], out double used) &&
-                    double.TryParse(parts[2], out double cache) &&
-                    total > 0)
+                        new[] { '\r', '\n' },
+                        StringSplitOptions.RemoveEmptyEntries))
                 {
-                    double usedPercent =
-                        Math.Clamp(
-                            (used / total) * 100,
-                            0,
-                            100);
+                    string[] pair =
+                        line.Split(
+                            ':',
+                            StringSplitOptions.RemoveEmptyEntries);
 
+                    if (pair.Length != 2 ||
+                        !double.TryParse(
+                            pair[1].Trim(),
+                            System.Globalization.NumberStyles.Float,
+                            System.Globalization.CultureInfo.InvariantCulture,
+                            out double value))
+                    {
+                        continue;
+                    }
+
+                    switch (pair[0].Trim())
+                    {
+                        case "MemTotal":
+                            total = value;
+                            break;
+                        case "MemFree":
+                            free = value;
+                            break;
+                        case "Buffers":
+                            buffers = value;
+                            break;
+                        case "Cached":
+                            cached = value;
+                            break;
+                        case "SReclaimable":
+                            reclaimable = value;
+                            break;
+                    }
+                }
+
+                double cache =
+                    cached + reclaimable;
+
+                double used =
+                    Math.Max(
+                        0,
+                        total - free - buffers - cache);
+
+                if (total > 0)
+                {
                     info.MemoryUsage =
                         Math.Round(
-                            usedPercent,
+                            used / total * 100,
                             1) + "%";
 
                     info.MemoryUsed =
@@ -231,21 +281,15 @@ namespace AdGuardTray.Services
 
             return info;
         }
-
         private static string FormatKilobytes(
             double kilobytes)
         {
             double megabytes =
                 kilobytes / 1024d;
 
-            if (megabytes >= 1024d)
-            {
-                return
-                    $"{megabytes / 1024d:0.0} GB";
-            }
-
-            return
-                $"{megabytes:0} MB";
+            return megabytes >= 1024d
+                ? $"{megabytes / 1024d:0.0} GB"
+                : $"{megabytes:0} MB";
         }
 
     }

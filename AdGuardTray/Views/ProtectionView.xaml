@@ -31,25 +31,29 @@
         <TextBlock FontSize="18" FontWeight="Bold" Text="Blocked services"/>
         <TextBlock Margin="0,4,0,0" Foreground="#667085" Text="Choose services to block across the network."/>
        </StackPanel>
-       <Button DockPanel.Dock="Right" Width="120" Height="36" Content="Save changes" Command="{Binding SaveBlockedServicesCommand}"/>
       </DockPanel>
       <Separator Margin="0,10"/>
-      <Grid Margin="0,0,0,10">
-       <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-       <TextBox Height="36" Padding="10,6" Text="{Binding BlockedServicesSearch, UpdateSourceTrigger=PropertyChanged}" ToolTip="Search blocked services"/>
-       <CheckBox Grid.Column="1" Margin="14,0,12,0" VerticalAlignment="Center" Content="Blocked only" IsChecked="{Binding ShowBlockedOnly}"/>
-       <Button Grid.Column="2" Width="90" Margin="0,0,8,0" Content="Select all" Command="{Binding SelectAllServicesCommand}"/>
-       <Button Grid.Column="3" Width="90" Content="Clear all" Command="{Binding ClearAllServicesCommand}"/>
-      </Grid>
+      <StackPanel Margin="0,0,0,10">
+       <Grid>
+        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+        <TextBox Height="36" Padding="10,6" Text="{Binding BlockedServicesSearch, UpdateSourceTrigger=PropertyChanged}" ToolTip="Search blocked services"/>
+        <CheckBox Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center" Content="Blocked only" IsChecked="{Binding ShowBlockedOnly}"/>
+       </Grid>
+       <StackPanel Margin="0,10,0,0" Orientation="Horizontal">
+        <Button Width="90" Margin="0,0,8,0" Content="Select all" Command="{Binding SelectAllServicesCommand}"/>
+        <Button Width="90" Margin="0,0,8,0" Content="Clear all" Command="{Binding ClearAllServicesCommand}"/>
+        <Button MinWidth="125" Content="Save changes" Command="{Binding SaveBlockedServicesCommand}"/>
+       </StackPanel>
+      </StackPanel>
       <DockPanel Margin="0,0,0,8">
        <TextBlock Foreground="#555" TextWrapping="Wrap" Text="{Binding BlockedServicesStatus}"/>
        <TextBlock DockPanel.Dock="Right" Foreground="#475467" FontWeight="SemiBold" Text="{Binding BlockedServicesSelectionSummary}"/>
       </DockPanel>
       <Border Height="286" Padding="8" Background="#F8FAFC" CornerRadius="8" BorderBrush="#E2E8F0" BorderThickness="1">
-       <ListBox ItemsSource="{Binding BlockedServicesView}" BorderThickness="0" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Disabled">
+       <ListBox ItemsSource="{Binding BlockedServicesView}" BorderThickness="0" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto">
         <ListBox.ItemsPanel>
          <ItemsPanelTemplate>
-          <WrapPanel Orientation="Vertical" ItemWidth="220"/>
+          <VirtualizingStackPanel Orientation="Vertical"/>
          </ItemsPanelTemplate>
         </ListBox.ItemsPanel>
         <ListBox.ItemContainerStyle>
@@ -59,7 +63,7 @@
         </ListBox.ItemContainerStyle>
         <ListBox.ItemTemplate>
          <DataTemplate>
-          <Border Width="210" Margin="4" Padding="10,8" Background="White" CornerRadius="6" BorderBrush="#E2E8F0" BorderThickness="1">
+          <Border Margin="4" Padding="10,8" Background="White" CornerRadius="6" BorderBrush="#E2E8F0" BorderThickness="1">
            <CheckBox Content="{Binding Name}" IsChecked="{Binding IsBlocked, Mode=TwoWay}" IsEnabled="{Binding DataContext.ControlsEnabled, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
           </Border>
          </DataTemplate>
@@ -72,10 +76,10 @@
     <Grid>
      <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="12"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
      <Border Grid.Column="0" Style="{StaticResource Card}">
-      <StackPanel><TextBlock FontSize="18" FontWeight="Bold" Text="Allow and block rules"/><Separator Margin="0,8"/><TextBlock Foreground="#555" Text="Enter a domain without http:// or a path."/><Grid Margin="0,10,0,10"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBox Height="34" Padding="8,5" Text="{Binding NewRuleDomain, UpdateSourceTrigger=PropertyChanged}"/><Button Grid.Column="1" Margin="8,0,0,0" Width="85" Content="Block" Command="{Binding AddDenyRuleCommand}"/><Button Grid.Column="2" Margin="8,0,0,0" Width="85" Content="Allow" Command="{Binding AddAllowRuleCommand}"/></Grid><ListBox Height="190" ItemsSource="{Binding FilteringRules}" SelectedItem="{Binding SelectedRule}" DisplayMemberPath="Display"/><Button Margin="0,10,0,0" Width="110" Height="34" HorizontalAlignment="Left" Content="Delete selected" Command="{Binding DeleteRuleCommand}"/></StackPanel>
+      <StackPanel><TextBlock FontSize="18" FontWeight="Bold" Text="Allow and block rules"/><Separator Margin="0,8"/><TextBlock Foreground="#555" Text="Enter a domain without http:// or a path."/><Grid Margin="0,10,0,10"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBox Height="34" Padding="8,5" Text="{Binding NewRuleDomain, UpdateSourceTrigger=PropertyChanged}"/><Button Grid.Column="1" Margin="8,0,0,0" Width="85" Content="Block" Command="{Binding AddDenyRuleCommand}"/><Button Grid.Column="2" Margin="8,0,0,0" Width="85" Content="Allow" Command="{Binding AddAllowRuleCommand}"/></Grid><ListBox Height="190" ItemsSource="{Binding FilteringRules}" SelectedItem="{Binding SelectedRule}" DisplayMemberPath="Display"/><Button Margin="0,10,0,0" MinWidth="142" Padding="16,0" Height="36" HorizontalAlignment="Left" Content="Delete Selected" Command="{Binding DeleteRuleCommand}"/></StackPanel>
      </Border>
      <Border Grid.Column="2" Style="{StaticResource Card}">
-      <StackPanel><TextBlock FontSize="18" FontWeight="Bold" Text="DNS rewrites"/><Separator Margin="0,8"/><Grid Margin="0,0,0,8"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="8"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Domain"/><TextBox Height="34" Padding="8,5" Text="{Binding NewRewriteDomain, UpdateSourceTrigger=PropertyChanged}"/></StackPanel><StackPanel Grid.Column="2"><TextBlock Text="Answer (IP or domain)"/><TextBox Height="34" Padding="8,5" Text="{Binding NewRewriteAnswer, UpdateSourceTrigger=PropertyChanged}"/></StackPanel></Grid><Button Width="105" Height="34" HorizontalAlignment="Left" Content="Add rewrite" Command="{Binding AddRewriteCommand}"/><ListBox Margin="0,10,0,0" Height="190" ItemsSource="{Binding DnsRewrites}" SelectedItem="{Binding SelectedRewrite}" DisplayMemberPath="Display"/><Button Margin="0,10,0,0" Width="110" Height="34" HorizontalAlignment="Left" Content="Delete selected" Command="{Binding DeleteRewriteCommand}"/></StackPanel>
+      <StackPanel><TextBlock FontSize="18" FontWeight="Bold" Text="DNS rewrites"/><Separator Margin="0,8"/><Grid Margin="0,0,0,8"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="8"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Domain"/><TextBox Height="34" Padding="8,5" Text="{Binding NewRewriteDomain, UpdateSourceTrigger=PropertyChanged}"/></StackPanel><StackPanel Grid.Column="2"><TextBlock Text="Answer (IP or domain)"/><TextBox Height="34" Padding="8,5" Text="{Binding NewRewriteAnswer, UpdateSourceTrigger=PropertyChanged}"/></StackPanel></Grid><Button Width="105" Height="34" HorizontalAlignment="Left" Content="Add rewrite" Command="{Binding AddRewriteCommand}"/><ListBox Margin="0,10,0,0" Height="190" ItemsSource="{Binding DnsRewrites}" SelectedItem="{Binding SelectedRewrite}" DisplayMemberPath="Display"/><Button Margin="0,10,0,0" MinWidth="142" Padding="16,0" Height="36" HorizontalAlignment="Left" Content="Delete Selected" Command="{Binding DeleteRewriteCommand}"/></StackPanel>
      </Border>
     </Grid>
     <Border Margin="6,4,6,8" Padding="14" Background="#F8FAFC" CornerRadius="8" BorderBrush="#D7DDE5" BorderThickness="1"><TextBlock Foreground="#444" TextWrapping="Wrap" Text="{Binding Message}"/></Border>
