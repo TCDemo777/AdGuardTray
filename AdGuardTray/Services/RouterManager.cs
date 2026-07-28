@@ -1015,17 +1015,37 @@ namespace AdGuardTray.Services
                 DateTimeOffset.UtcNow
                     .ToUnixTimeMilliseconds();
 
+            // AdGuard Home uses an explicitly empty older_than value for
+            // the first query-log page.  Supplying only limit can return a
+            // stale/paged snapshot on some 0.107 builds.
             string url =
                 $"http://{_routerIp}:3000/control/querylog" +
-                $"?limit={safeLimit}&_={cacheBuster}";
+                $"?search=&response_status=&older_than=&limit={safeLimit}" +
+                $"&_={cacheBuster}";
 
             Debug.WriteLine(
                 "Calling AdGuard query log: " +
                 url);
 
-            using HttpResponseMessage response =
-                await client.GetAsync(
+            using var request =
+                new HttpRequestMessage(
+                    HttpMethod.Get,
                     url);
+
+            request.Headers.CacheControl =
+                new System.Net.Http.Headers.CacheControlHeaderValue
+                {
+                    NoCache = true,
+                    NoStore = true,
+                    MustRevalidate = true
+                };
+
+            request.Headers.Pragma.ParseAdd("no-cache");
+
+            using HttpResponseMessage response =
+                await client.SendAsync(
+                    request,
+                    HttpCompletionOption.ResponseHeadersRead);
 
             string content =
                 await response.Content

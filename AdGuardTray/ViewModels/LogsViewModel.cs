@@ -274,12 +274,20 @@ namespace AdGuardTray.ViewModels
                             : "Live · up to date";
                     LiveStatusColour = "#16803C";
 
+                    string newestEntryTime =
+                        entries.Count == 0
+                            ? "-"
+                            : entries
+                                .OrderByDescending(entry => ParseEntryTime(entry.Time))
+                                .First()
+                                .Time;
+
                     StatusMessage =
                         entries.Count == 0
                             ? "Connected, but AdGuard Home returned no query-log entries."
                             : changed
-                                ? $"{entries.Count} entries loaded; new activity detected."
-                                : $"{entries.Count} entries loaded; no new activity yet.";
+                                ? $"{entries.Count} entries loaded; newest {newestEntryTime}."
+                                : $"{entries.Count} entries loaded; server newest {newestEntryTime}.";
                 }
             }
             catch (Exception ex)
