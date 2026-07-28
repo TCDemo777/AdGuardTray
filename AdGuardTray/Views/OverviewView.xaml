@@ -225,6 +225,17 @@
                             </Grid>
                             <ProgressBar Style="{StaticResource CompactProgressBar}"
                                          Value="{Binding MemoryPercentage}"/>
+                            <Grid Margin="0,6,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="18"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Style="{StaticResource DetailLabel}" Text="Used"/>
+                                <TextBlock Grid.Column="1" Style="{StaticResource DetailValue}" Text="{Binding MemoryUsed}"/>
+                                <TextBlock Grid.Column="3" Style="{StaticResource DetailValue}" Text="{Binding MemoryCache, StringFormat=Cache: {0}}"/>
+                            </Grid>
                         </StackPanel>
                     </StackPanel>
                 </Grid>

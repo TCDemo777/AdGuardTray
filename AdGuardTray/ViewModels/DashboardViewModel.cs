@@ -43,6 +43,12 @@ namespace AdGuardTray.ViewModels
         private double memoryPercentage;
 
         [ObservableProperty]
+        private string memoryUsed = "-";
+
+        [ObservableProperty]
+        private string memoryCache = "-";
+
+        [ObservableProperty]
         private string storageUsage = "-";
 
         [ObservableProperty]

@@ -1,4 +1,4 @@
-﻿namespace AdGuardTray.Models
+namespace AdGuardTray.Models
 {
     public class RouterInfo
     {
@@ -13,6 +13,10 @@
         public string CpuUsage { get; set; } = "-";
 
         public string MemoryUsage { get; set; } = "-";
+
+        public string MemoryUsed { get; set; } = "-";
+
+        public string MemoryCache { get; set; } = "-";
 
         public string StorageUsage { get; set; } = "-";
 

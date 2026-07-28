@@ -1,3 +1,15 @@
+# Changelog
+
+## 2026-07-28 — Reliability restoration
+
+- Fixed Overview CPU parsing for BusyBox and standard `top` output.
+- Split memory information into used memory and cache.
+- Restored the working Blocked Services controls on Protection.
+- Restored the Analytics page scrollbar.
+- Preserved AdGuard Home top-list statistics instead of overwriting them with the query-log fallback.
+- Restored the known-working query-log view and UI-thread refresh implementation.
+- Added friendly client names to query-log rows when AdGuard Home provides them.
+
 # AdGuardTray Changelog
 
 > This changelog is cumulative. Earlier release information is retained when new updates are added.

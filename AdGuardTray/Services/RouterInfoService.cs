@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Text.Json;
 using System.Threading.Tasks;
 using AdGuardTray.Models;
@@ -130,44 +130,33 @@ namespace AdGuardTray.Services
             {
                 string cpu =
                     await _ssh.RunCommandAsync(
-                        "top -bn1 | grep CPU");
+                        "LC_ALL=C top -bn1 | head -5");
 
+                // BusyBox/OpenWrt commonly reports either:
+                //   CPU:  3% usr  2% sys ... 95% idle
+                // or:
+                //   %Cpu(s): ... 95.0 id
+                var idleMatch =
+                    System.Text.RegularExpressions.Regex.Match(
+                        cpu,
+                        @"(?<idle>\d+(?:[\.,]\d+)?)\s*%?\s*(?:idle|id)\b",
+                        System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
-                int idleIndex =
-                    cpu.IndexOf("idle");
-
-
-                if (idleIndex > 0)
+                if (idleMatch.Success &&
+                    double.TryParse(
+                        idleMatch.Groups["idle"].Value.Replace(',', '.'),
+                        System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture,
+                        out double idle))
                 {
-                    string idleText =
-                        cpu.Substring(
-                            0,
-                            idleIndex);
-
-
-                    string[] parts =
-                        idleText.Split(
-                            ' ',
-                            StringSplitOptions.RemoveEmptyEntries);
-
-
-                    foreach (string part in parts)
-                    {
-                        if (part.EndsWith("%"))
-                        {
-                            if (double.TryParse(
-                                part.Replace("%", ""),
-                                out double idle))
-                            {
-                                info.CpuUsage =
-                                    Math.Round(
-                                        100 - idle,
-                                        1) + "%";
-                            }
-
-                            break;
-                        }
-                    }
+                    info.CpuUsage =
+                        Math.Round(
+                            Math.Clamp(100 - idle, 0, 100),
+                            1) + "%";
+                }
+                else
+                {
+                    info.CpuUsage = "-";
                 }
             }
             catch
@@ -185,37 +174,48 @@ namespace AdGuardTray.Services
             {
                 string memory =
                     await _ssh.RunCommandAsync(
-                        "free | grep Mem");
-
+                        "free -k | awk '/^Mem:/ {print $2, $3, $6, $7}'");
 
                 string[] parts =
                     memory.Split(
                         ' ',
                         StringSplitOptions.RemoveEmptyEntries);
 
-
-                if (parts.Length >= 3)
+                if (parts.Length >= 3 &&
+                    double.TryParse(parts[0], out double total) &&
+                    double.TryParse(parts[1], out double used) &&
+                    double.TryParse(parts[2], out double cache) &&
+                    total > 0)
                 {
-                    double total =
-                        double.Parse(parts[1]);
-
-                    double used =
-                        double.Parse(parts[2]);
-
-
-                    double percent =
-                        (used / total) * 100;
-
+                    double usedPercent =
+                        Math.Clamp(
+                            (used / total) * 100,
+                            0,
+                            100);
 
                     info.MemoryUsage =
                         Math.Round(
-                            percent,
+                            usedPercent,
                             1) + "%";
+
+                    info.MemoryUsed =
+                        FormatKilobytes(used);
+
+                    info.MemoryCache =
+                        FormatKilobytes(cache);
+                }
+                else
+                {
+                    info.MemoryUsage = "-";
+                    info.MemoryUsed = "-";
+                    info.MemoryCache = "-";
                 }
             }
             catch
             {
                 info.MemoryUsage = "-";
+                info.MemoryUsed = "-";
+                info.MemoryCache = "-";
             }
 
 
@@ -231,5 +231,22 @@ namespace AdGuardTray.Services
 
             return info;
         }
+
+        private static string FormatKilobytes(
+            double kilobytes)
+        {
+            double megabytes =
+                kilobytes / 1024d;
+
+            if (megabytes >= 1024d)
+            {
+                return
+                    $"{megabytes / 1024d:0.0} GB";
+            }
+
+            return
+                $"{megabytes:0} MB";
+        }
+
     }
 }

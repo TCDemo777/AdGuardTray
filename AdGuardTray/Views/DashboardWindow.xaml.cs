@@ -132,6 +132,12 @@ namespace AdGuardTray.Views
                 _viewModel.MemoryUsage =
                     info.MemoryUsage;
 
+                _viewModel.MemoryUsed =
+                    info.MemoryUsed;
+
+                _viewModel.MemoryCache =
+                    info.MemoryCache;
+
                 _viewModel.UpdateStorageUsage(
                     info.StorageUsage);
 
@@ -174,7 +180,7 @@ namespace AdGuardTray.Views
 
                 _viewModel.UpdateRankingsFromQueryLog(
                     rankingEntries,
-                    onlyWhenEmpty: false);
+                    onlyWhenEmpty: true);
 
                 // Protection state is authoritative from /control/status.
                 // Statistics responses are not reliable for this value on
@@ -325,6 +331,12 @@ namespace AdGuardTray.Views
                 "-";
 
             _viewModel.MemoryUsage =
+                "-";
+
+            _viewModel.MemoryUsed =
+                "-";
+
+            _viewModel.MemoryCache =
                 "-";
 
             _viewModel.UpdateStorageUsage(
