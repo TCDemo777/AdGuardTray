@@ -1,0 +1,180 @@
+<UserControl x:Class="AdGuardTray.Views.AboutView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="14"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel>
+            <TextBlock FontSize="24"
+                       FontWeight="Bold"
+                       Text="About AdGuardTray"/>
+            <TextBlock Margin="0,5,0,0"
+                       FontSize="14"
+                       Foreground="#667085"
+                       Text="Application information, privacy details and release history"/>
+        </StackPanel>
+
+        <TabControl Grid.Row="2"
+                    Background="Transparent"
+                    BorderThickness="0">
+            <TabItem Header="About">
+                <ScrollViewer Margin="0,12,0,0"
+                              HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <Border Padding="20"
+                                Background="White"
+                                CornerRadius="12"
+                                BorderBrush="#DDE3EA"
+                                BorderThickness="1">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="90"/>
+                                    <ColumnDefinition Width="18"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <Image Width="82"
+                                       Height="82"
+                                       VerticalAlignment="Top"
+                                       Stretch="Uniform"
+                                       Source="/Assets/AdGuardTrayLogo.png"/>
+
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock FontSize="25"
+                                               FontWeight="Bold"
+                                               Text="AdGuardTray"/>
+                                    <TextBlock Margin="0,3,0,0"
+                                               Foreground="#667085"
+                                               Text="Version 1.0 Release Candidate"/>
+                                    <TextBlock Margin="0,11,0,0"
+                                               FontSize="14"
+                                               LineHeight="20"
+                                               TextWrapping="Wrap"
+                                               Text="A focused Windows desktop console for GL.iNet router health, AdGuard Home protection, analytics, clients, DNS logs and network administration."/>
+                                    <TextBlock Margin="0,11,0,0"
+                                               FontWeight="SemiBold"
+                                               Text="Created by Tristan Caldwell"/>
+                                    <TextBlock Margin="0,4,0,0">
+                                        <Hyperlink NavigateUri="https://github.com/TCDemo777/AdGuardTray"
+                                                   RequestNavigate="GitHubLink_RequestNavigate">View AdGuardTray on GitHub</Hyperlink>
+                                    </TextBlock>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <Grid Margin="0,12,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Border Padding="18"
+                                    Background="White"
+                                    CornerRadius="12"
+                                    BorderBrush="#DDE3EA"
+                                    BorderThickness="1">
+                                <StackPanel>
+                                    <TextBlock FontSize="17"
+                                               FontWeight="Bold"
+                                               Text="Key features"/>
+                                    <TextBlock Margin="0,9,0,0"
+                                               LineHeight="20"
+                                               TextWrapping="Wrap"
+                                               Text="• Live router, internet and AdGuard health&#x0a;• Protection controls and timed pauses&#x0a;• Blocked services, rewrites and custom rules&#x0a;• Client intelligence and favourites&#x0a;• Live DNS logs, search and data export"/>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Grid.Column="2"
+                                    Padding="18"
+                                    Background="White"
+                                    CornerRadius="12"
+                                    BorderBrush="#DDE3EA"
+                                    BorderThickness="1">
+                                <StackPanel>
+                                    <TextBlock FontSize="17"
+                                               FontWeight="Bold"
+                                               Text="Privacy and security"/>
+                                    <TextBlock Margin="0,9,0,0"
+                                               LineHeight="20"
+                                               TextWrapping="Wrap"
+                                               Text="AdGuardTray connects directly to the router configured in Settings. Saved passwords use Windows Data Protection and remain tied to the current Windows user. Search and manufacturer detection run locally."/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+
+                        <Border Margin="0,12,0,0"
+                                Padding="18"
+                                Background="#F8FAFC"
+                                CornerRadius="12"
+                                BorderBrush="#DDE3EA"
+                                BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock FontSize="17"
+                                           FontWeight="Bold"
+                                           Text="Acknowledgements"/>
+                                <TextBlock Margin="0,8,0,0"
+                                           LineHeight="20"
+                                           TextWrapping="Wrap"
+                                           Text="Built with WPF, .NET and CommunityToolkit.Mvvm. AdGuard Home is a product of AdGuard Software Ltd. GL.iNet is a trademark of GL Technologies. AdGuardTray is an independent project and is not affiliated with or endorsed by either company."/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Changelog">
+                <Border Margin="0,12,0,0"
+                        Padding="18"
+                        Background="White"
+                        CornerRadius="12"
+                        BorderBrush="#DDE3EA"
+                        BorderThickness="1">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="10"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <DockPanel>
+                            <StackPanel>
+                                <TextBlock FontSize="18"
+                                           FontWeight="Bold"
+                                           Text="Release history"/>
+                                <TextBlock Margin="0,4,0,0"
+                                           Foreground="#667085"
+                                           Text="Loaded directly from CHANGELOG.md"/>
+                            </StackPanel>
+                            <Button DockPanel.Dock="Right"
+                                    MinWidth="92"
+                                    Height="32"
+                                    VerticalAlignment="Center"
+                                    Click="ReloadChangelog_Click"
+                                    Content="Reload"/>
+                        </DockPanel>
+
+                        <TextBox x:Name="ChangelogTextBox"
+                                 Grid.Row="2"
+                                 Padding="12"
+                                 Background="#F8FAFC"
+                                 BorderBrush="#E4E7EC"
+                                 BorderThickness="1"
+                                 FontFamily="Consolas"
+                                 FontSize="13"
+                                 IsReadOnly="True"
+                                 AcceptsReturn="True"
+                                 TextWrapping="Wrap"
+                                 VerticalScrollBarVisibility="Auto"
+                                 HorizontalScrollBarVisibility="Disabled"/>
+                    </Grid>
+                </Border>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</UserControl>
