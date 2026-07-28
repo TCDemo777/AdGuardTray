@@ -15,6 +15,30 @@ namespace AdGuardTray.Models
 
         public string LastSeen { get; set; } = "-";
 
+        // Set by RouterManager when AdGuard Home query logging is available.
+        // Query totals may still be populated from /control/stats when false.
+        public bool QueryLogAvailable { get; set; } = true;
+
+        public string LastSeenDisplay =>
+            QueryLogAvailable
+                ? LastSeen
+                : "Query log disabled";
+
+        public string BlockedQueriesDisplay =>
+            QueryLogAvailable
+                ? BlockedQueries.ToString()
+                : "—";
+
+        public string BlockRateDisplay =>
+            QueryLogAvailable
+                ? $"{BlockRate:F1}%"
+                : "—";
+
+        public string ActivityAvailabilityToolTip =>
+            QueryLogAvailable
+                ? "Live values from the AdGuard Home query log."
+                : "Enable query logging in About > Diagnostics to collect blocked and last-seen activity.";
+
         // Presentation metadata populated by ClientsViewModel.
         public string DeviceIcon { get; set; } = "●";
         public string DeviceType { get; set; } = "Unknown device";

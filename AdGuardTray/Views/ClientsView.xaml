@@ -190,7 +190,8 @@
                                     <TextBlock Margin="0,4,0,0"
                                                Foreground="#667085"
                                                TextTrimming="CharacterEllipsis"
-                                               Text="{Binding LastSeen,
+                                               ToolTip="{Binding ActivityAvailabilityToolTip}"
+                                               Text="{Binding LastSeenDisplay,
                                                               StringFormat=Last seen: {0}}"/>
                                 </StackPanel>
 
@@ -214,7 +215,8 @@
                                         <TextBlock FontSize="17"
                                                    FontWeight="Bold"
                                                    Foreground="#C62828"
-                                                   Text="{Binding BlockedQueries}"/>
+                                                   ToolTip="{Binding ActivityAvailabilityToolTip}"
+                                                   Text="{Binding BlockedQueriesDisplay}"/>
                                         <TextBlock FontSize="11"
                                                    Foreground="#667085"
                                                    Text="Blocked"/>
@@ -223,8 +225,8 @@
                                     <StackPanel Grid.Column="2">
                                         <TextBlock FontSize="17"
                                                    FontWeight="Bold"
-                                                   Text="{Binding BlockRate,
-                                                                  StringFormat={}{0:F1}%}"/>
+                                                   ToolTip="{Binding ActivityAvailabilityToolTip}"
+                                                   Text="{Binding BlockRateDisplay}"/>
                                         <TextBlock FontSize="11"
                                                    Foreground="#667085"
                                                    Text="Block rate"/>

@@ -1004,9 +1004,14 @@ namespace AdGuardTray.Services
                 }
 
                 int matchedQueryLogEntries = 0;
+                bool queryLogAvailable = false;
 
                 if (queryLogResponse.IsSuccess)
                 {
+                    queryLogAvailable =
+                        QueryLogResponseHasEntries(
+                            queryLogResponse.Content);
+
                     matchedQueryLogEntries =
                         ApplyQueryLogStatistics(
                             clients,
@@ -1016,6 +1021,32 @@ namespace AdGuardTray.Services
                 {
                     LogFailedQueryLogResponse(
                         queryLogResponse);
+                }
+
+                // An empty log can also mean logging is disabled.  Confirm
+                // configuration so cards can explain unavailable fields.
+                try
+                {
+                    JsonElement queryLogConfig =
+                        await GetControlJsonAsync(
+                            "querylog/config");
+
+                    queryLogAvailable =
+                        GetBoolean(
+                            queryLogConfig,
+                            "enabled");
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(
+                        "Unable to read query-log configuration: " +
+                        ex.Message);
+                }
+
+                foreach (ClientInfo client in clients)
+                {
+                    client.QueryLogAvailable =
+                        queryLogAvailable;
                 }
 
                 // The query log and statistics store are independent in
@@ -1207,6 +1238,9 @@ namespace AdGuardTray.Services
                 report.AppendLine(
                     "Queries are merged from statistics/top_clients. " +
                     "Blocked and Last seen require matching query-log entries.");
+                report.AppendLine(
+                    "A disabled query log is safe to repair from this page; " +
+                    "the existing retention and privacy settings are preserved.");
             }
             catch (Exception ex)
             {

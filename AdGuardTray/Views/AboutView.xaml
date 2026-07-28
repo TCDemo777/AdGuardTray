@@ -11,11 +11,11 @@
         <StackPanel>
             <TextBlock FontSize="24"
                        FontWeight="Bold"
-                       Text="About AdGuardTray"/>
+                       Text="Support"/>
             <TextBlock Margin="0,5,0,0"
                        FontSize="14"
                        Foreground="#667085"
-                       Text="Application information, privacy details and release history"/>
+                       Text="Application information, diagnostics, system details, support logs and release history"/>
         </StackPanel>
 
         <TabControl Grid.Row="2"
@@ -23,41 +23,26 @@
                     BorderThickness="0">
             <TabItem Header="About">
                 <ScrollViewer Margin="0,12,0,0"
-                              HorizontalScrollBarVisibility="Disabled"
                               VerticalScrollBarVisibility="Auto">
                     <StackPanel>
-                        <Border Padding="20"
-                                Background="White"
-                                CornerRadius="12"
-                                BorderBrush="#DDE3EA"
-                                BorderThickness="1">
+                        <Border Padding="20" Background="White" CornerRadius="12"
+                                BorderBrush="#DDE3EA" BorderThickness="1">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="90"/>
                                     <ColumnDefinition Width="18"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-
-                                <Image Width="82"
-                                       Height="82"
-                                       VerticalAlignment="Top"
-                                       Stretch="Uniform"
+                                <Image Width="82" Height="82" Stretch="Uniform"
                                        Source="/Assets/AdGuardTrayLogo.png"/>
-
                                 <StackPanel Grid.Column="2">
-                                    <TextBlock FontSize="25"
-                                               FontWeight="Bold"
-                                               Text="AdGuardTray"/>
-                                    <TextBlock Margin="0,3,0,0"
-                                               Foreground="#667085"
-                                               Text="Version 1.0 Release Candidate"/>
-                                    <TextBlock Margin="0,11,0,0"
-                                               FontSize="14"
-                                               LineHeight="20"
-                                               TextWrapping="Wrap"
+                                    <TextBlock FontSize="25" FontWeight="Bold" Text="AdGuardTray"/>
+                                    <TextBlock Margin="0,3,0,0" Foreground="#667085"
+                                               Text="Version 1.2"/>
+                                    <TextBlock Margin="0,11,0,0" FontSize="14"
+                                               LineHeight="20" TextWrapping="Wrap"
                                                Text="A focused Windows desktop console for GL.iNet router health, AdGuard Home protection, analytics, clients, DNS logs and network administration."/>
-                                    <TextBlock Margin="0,11,0,0"
-                                               FontWeight="SemiBold"
+                                    <TextBlock Margin="0,11,0,0" FontWeight="SemiBold"
                                                Text="Created by Tristan Caldwell"/>
                                     <TextBlock Margin="0,4,0,0">
                                         <Hyperlink NavigateUri="https://github.com/TCDemo777/AdGuardTray"
@@ -66,75 +51,13 @@
                                 </StackPanel>
                             </Grid>
                         </Border>
-
-                        <Grid Margin="0,12,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="12"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-
-                            <Border Padding="18"
-                                    Background="White"
-                                    CornerRadius="12"
-                                    BorderBrush="#DDE3EA"
-                                    BorderThickness="1">
-                                <StackPanel>
-                                    <TextBlock FontSize="17"
-                                               FontWeight="Bold"
-                                               Text="Key features"/>
-                                    <TextBlock Margin="0,9,0,0"
-                                               LineHeight="20"
-                                               TextWrapping="Wrap"
-                                               Text="• Live router, internet and AdGuard health&#x0a;• Protection controls and timed pauses&#x0a;• Blocked services, rewrites and custom rules&#x0a;• Client intelligence and favourites&#x0a;• Live DNS logs, search and data export"/>
-                                </StackPanel>
-                            </Border>
-
-                            <Border Grid.Column="2"
-                                    Padding="18"
-                                    Background="White"
-                                    CornerRadius="12"
-                                    BorderBrush="#DDE3EA"
-                                    BorderThickness="1">
-                                <StackPanel>
-                                    <TextBlock FontSize="17"
-                                               FontWeight="Bold"
-                                               Text="Privacy and security"/>
-                                    <TextBlock Margin="0,9,0,0"
-                                               LineHeight="20"
-                                               TextWrapping="Wrap"
-                                               Text="AdGuardTray connects directly to the router configured in Settings. Saved passwords use Windows Data Protection and remain tied to the current Windows user. Search and manufacturer detection run locally."/>
-                                </StackPanel>
-                            </Border>
-                        </Grid>
-
-                        <Border Margin="0,12,0,0"
-                                Padding="18"
-                                Background="#F8FAFC"
-                                CornerRadius="12"
-                                BorderBrush="#DDE3EA"
-                                BorderThickness="1">
-                            <StackPanel>
-                                <TextBlock FontSize="17"
-                                           FontWeight="Bold"
-                                           Text="Acknowledgements"/>
-                                <TextBlock Margin="0,8,0,0"
-                                           LineHeight="20"
-                                           TextWrapping="Wrap"
-                                           Text="Built with WPF, .NET and CommunityToolkit.Mvvm. AdGuard Home is a product of AdGuard Software Ltd. GL.iNet is a trademark of GL Technologies. AdGuardTray is an independent project and is not affiliated with or endorsed by either company."/>
-                            </StackPanel>
-                        </Border>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
 
             <TabItem Header="Diagnostics">
-                <Border Margin="0,12,0,0"
-                        Padding="18"
-                        Background="White"
-                        CornerRadius="12"
-                        BorderBrush="#DDE3EA"
-                        BorderThickness="1">
+                <Border Margin="0,12,0,0" Padding="18" Background="White"
+                        CornerRadius="12" BorderBrush="#DDE3EA" BorderThickness="1">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -145,115 +68,143 @@
                         </Grid.RowDefinitions>
                         <DockPanel>
                             <StackPanel>
-                                <TextBlock FontSize="18"
-                                           FontWeight="Bold"
-                                           Text="Client and API diagnostics"/>
-                                <TextBlock Margin="0,4,0,0"
-                                           Foreground="#667085"
-                                           Text="Checks authentication, clients, query log, statistics and query-log configuration"/>
+                                <TextBlock FontSize="18" FontWeight="Bold"
+                                           Text="Router and AdGuard diagnostics"/>
+                                <TextBlock Margin="0,4,0,0" Foreground="#667085"
+                                           Text="Authentication, clients, statistics, query log, protection and endpoint health"/>
                             </StackPanel>
-                            <StackPanel DockPanel.Dock="Right"
-                                        Orientation="Horizontal">
-                                <Button MinWidth="92"
-                                        Height="32"
-                                        Margin="0,0,8,0"
-                                        Click="CopyDiagnostics_Click"
-                                        Content="Copy"/>
-                                <Button MinWidth="110"
-                                        Height="32"
-                                        Click="RunDiagnostics_Click"
-                                        Content="Run diagnostics"/>
-                            </StackPanel>
+                            <WrapPanel DockPanel.Dock="Right">
+                                <Button Margin="0,0,8,0" MinWidth="74" Height="32"
+                                        Click="CopyDiagnostics_Click" Content="Copy"/>
+                                <Button Margin="0,0,8,0" MinWidth="74" Height="32"
+                                        Click="ExportDiagnostics_Click" Content="Export"/>
+                                <Button Margin="0,0,8,0" MinWidth="104" Height="32"
+                                        Click="RefreshClients_Click" Content="Refresh clients"/>
+                                <Button MinWidth="110" Height="32"
+                                        Click="RunDiagnostics_Click" Content="Run diagnostics"/>
+                            </WrapPanel>
                         </DockPanel>
-                        <Border x:Name="QueryLogWarningBorder"
-                                Grid.Row="2"
-                                Padding="12"
-                                Background="#FFF7E6"
-                                BorderBrush="#F5C26B"
-                                BorderThickness="1"
-                                CornerRadius="8"
-                                Visibility="Collapsed">
-                            <DockPanel LastChildFill="True">
+
+                        <Border x:Name="QueryLogWarningBorder" Grid.Row="2"
+                                Padding="12" Background="#FFF7E6"
+                                BorderBrush="#F5C26B" BorderThickness="1"
+                                CornerRadius="8" Visibility="Collapsed">
+                            <DockPanel>
                                 <Button x:Name="EnableQueryLogButton"
                                         DockPanel.Dock="Right"
-                                        MinWidth="132"
-                                        Height="32"
-                                        Margin="12,0,0,0"
+                                        MinWidth="132" Height="32" Margin="12,0,0,0"
                                         Click="EnableQueryLog_Click"
                                         Content="Enable query log"/>
                                 <StackPanel>
-                                    <TextBlock FontWeight="Bold"
-                                               Foreground="#8A4B08"
+                                    <TextBlock FontWeight="Bold" Foreground="#8A4B08"
                                                Text="Query logging is disabled"/>
-                                    <TextBlock Margin="0,3,0,0"
-                                               Foreground="#8A4B08"
+                                    <TextBlock Margin="0,3,0,0" Foreground="#8A4B08"
                                                TextWrapping="Wrap"
-                                               Text="Queries can still come from statistics, but Blocked, Block rate and Last seen need query-log entries."/>
+                                               Text="Queries remain available from statistics. Blocked, Block rate and Last seen need new query-log entries."/>
                                 </StackPanel>
                             </DockPanel>
                         </Border>
 
-                        <TextBox x:Name="DiagnosticsTextBox"
-                                 Grid.Row="4"
-                                 Padding="12"
-                                 Background="#F8FAFC"
-                                 BorderBrush="#E4E7EC"
-                                 BorderThickness="1"
-                                 FontFamily="Consolas"
-                                 FontSize="13"
-                                 IsReadOnly="True"
-                                 AcceptsReturn="True"
+                        <TextBox x:Name="DiagnosticsTextBox" Grid.Row="4"
+                                 Padding="12" Background="#F8FAFC"
+                                 BorderBrush="#E4E7EC" BorderThickness="1"
+                                 FontFamily="Consolas" FontSize="13"
+                                 IsReadOnly="True" AcceptsReturn="True"
                                  TextWrapping="NoWrap"
                                  VerticalScrollBarVisibility="Auto"
                                  HorizontalScrollBarVisibility="Auto"
-                                 Text="Select Run diagnostics to collect a redacted API health report. Passwords and token values are never shown."/>
+                                 Text="Select Run diagnostics to collect a redacted support report."/>
                     </Grid>
                 </Border>
             </TabItem>
-            <TabItem Header="Changelog">
-                <Border Margin="0,12,0,0"
-                        Padding="18"
-                        Background="White"
-                        CornerRadius="12"
-                        BorderBrush="#DDE3EA"
-                        BorderThickness="1">
+
+            <TabItem Header="System">
+                <Border Margin="0,12,0,0" Padding="18" Background="White"
+                        CornerRadius="12" BorderBrush="#DDE3EA" BorderThickness="1">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="10"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
-
                         <DockPanel>
                             <StackPanel>
-                                <TextBlock FontSize="18"
-                                           FontWeight="Bold"
-                                           Text="Release history"/>
-                                <TextBlock Margin="0,4,0,0"
-                                           Foreground="#667085"
+                                <TextBlock FontSize="18" FontWeight="Bold" Text="System information"/>
+                                <TextBlock Margin="0,4,0,0" Foreground="#667085"
+                                           Text="Application, Windows, .NET, architecture, memory and router configuration"/>
+                            </StackPanel>
+                            <Button DockPanel.Dock="Right" MinWidth="92" Height="32"
+                                    Click="RefreshSystem_Click" Content="Refresh"/>
+                        </DockPanel>
+                        <TextBox x:Name="SystemTextBox" Grid.Row="2"
+                                 Padding="12" Background="#F8FAFC"
+                                 BorderBrush="#E4E7EC" BorderThickness="1"
+                                 FontFamily="Consolas" FontSize="13"
+                                 IsReadOnly="True" AcceptsReturn="True"
+                                 VerticalScrollBarVisibility="Auto"
+                                 HorizontalScrollBarVisibility="Auto"/>
+                    </Grid>
+                </Border>
+            </TabItem>
+
+            <TabItem Header="Logs">
+                <Border Margin="0,12,0,0" Padding="18" Background="White"
+                        CornerRadius="12" BorderBrush="#DDE3EA" BorderThickness="1">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="10"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <DockPanel>
+                            <StackPanel>
+                                <TextBlock FontSize="18" FontWeight="Bold" Text="Support log"/>
+                                <TextBlock Margin="0,4,0,0" Foreground="#667085"
+                                           Text="Actions and errors recorded during this support session"/>
+                            </StackPanel>
+                            <WrapPanel DockPanel.Dock="Right">
+                                <Button Margin="0,0,8,0" MinWidth="74" Height="32"
+                                        Click="CopyLog_Click" Content="Copy"/>
+                                <Button MinWidth="74" Height="32"
+                                        Click="ClearLog_Click" Content="Clear"/>
+                            </WrapPanel>
+                        </DockPanel>
+                        <TextBox x:Name="SupportLogTextBox" Grid.Row="2"
+                                 Padding="12" Background="#F8FAFC"
+                                 BorderBrush="#E4E7EC" BorderThickness="1"
+                                 FontFamily="Consolas" FontSize="13"
+                                 IsReadOnly="True" AcceptsReturn="True"
+                                 VerticalScrollBarVisibility="Auto"
+                                 HorizontalScrollBarVisibility="Auto"/>
+                    </Grid>
+                </Border>
+            </TabItem>
+
+            <TabItem Header="Changelog">
+                <Border Margin="0,12,0,0" Padding="18" Background="White"
+                        CornerRadius="12" BorderBrush="#DDE3EA" BorderThickness="1">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="10"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <DockPanel>
+                            <StackPanel>
+                                <TextBlock FontSize="18" FontWeight="Bold" Text="Release history"/>
+                                <TextBlock Margin="0,4,0,0" Foreground="#667085"
                                            Text="Loaded directly from CHANGELOG.md"/>
                             </StackPanel>
-                            <Button DockPanel.Dock="Right"
-                                    MinWidth="92"
-                                    Height="32"
-                                    VerticalAlignment="Center"
-                                    Click="ReloadChangelog_Click"
-                                    Content="Reload"/>
+                            <Button DockPanel.Dock="Right" MinWidth="92" Height="32"
+                                    Click="ReloadChangelog_Click" Content="Reload"/>
                         </DockPanel>
-
-                        <TextBox x:Name="ChangelogTextBox"
-                                 Grid.Row="2"
-                                 Padding="12"
-                                 Background="#F8FAFC"
-                                 BorderBrush="#E4E7EC"
-                                 BorderThickness="1"
-                                 FontFamily="Consolas"
-                                 FontSize="13"
-                                 IsReadOnly="True"
-                                 AcceptsReturn="True"
+                        <TextBox x:Name="ChangelogTextBox" Grid.Row="2"
+                                 Padding="12" Background="#F8FAFC"
+                                 BorderBrush="#E4E7EC" BorderThickness="1"
+                                 FontFamily="Consolas" FontSize="13"
+                                 IsReadOnly="True" AcceptsReturn="True"
                                  TextWrapping="Wrap"
-                                 VerticalScrollBarVisibility="Auto"
-                                 HorizontalScrollBarVisibility="Disabled"/>
+                                 VerticalScrollBarVisibility="Auto"/>
                     </Grid>
                 </Border>
             </TabItem>

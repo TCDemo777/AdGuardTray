@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
 using AdGuardTray.Models;
+using AdGuardTray.Services;
 using AdGuardTray.ViewModels;
 
 namespace AdGuardTray.Views
@@ -23,39 +24,28 @@ namespace AdGuardTray.Views
             _refreshTimer =
                 new DispatcherTimer
                 {
-                    Interval = TimeSpan.FromSeconds(5)
+                    Interval = TimeSpan.FromSeconds(10)
                 };
 
             _refreshTimer.Tick +=
                 ClientsRefreshTimer_Tick;
 
             Loaded += ClientsView_Loaded;
-            IsVisibleChanged += ClientsView_IsVisibleChanged;
+            Unloaded += ClientsView_Unloaded;
+
+            ClientRefreshNotifier.RefreshRequested +=
+                ClientRefreshNotifier_RefreshRequested;
         }
 
         private async void ClientsView_Loaded(
             object sender,
             RoutedEventArgs e)
         {
-            if (IsVisible)
-            {
-                await RefreshClientsAsync();
-                StartRefreshTimer();
-            }
-        }
+            await RefreshClientsAsync();
 
-        private async void ClientsView_IsVisibleChanged(
-            object sender,
-            DependencyPropertyChangedEventArgs e)
-        {
-            if (IsVisible)
+            if (!_refreshTimer.IsEnabled)
             {
-                await RefreshClientsAsync();
-                StartRefreshTimer();
-            }
-            else
-            {
-                _refreshTimer.Stop();
+                _refreshTimer.Start();
             }
         }
 
@@ -72,12 +62,26 @@ namespace AdGuardTray.Views
             await RefreshClientsAsync();
         }
 
-        private void StartRefreshTimer()
+        private void ClientsView_Unloaded(
+            object sender,
+            RoutedEventArgs e)
         {
-            if (!_refreshTimer.IsEnabled)
+            _refreshTimer.Stop();
+        }
+
+        private async void ClientRefreshNotifier_RefreshRequested(
+            object? sender,
+            EventArgs e)
+        {
+            if (!Dispatcher.CheckAccess())
             {
-                _refreshTimer.Start();
+                await Dispatcher.InvokeAsync(
+                    async () => await RefreshClientsAsync());
+
+                return;
             }
+
+            await RefreshClientsAsync();
         }
 
         private async System.Threading.Tasks.Task RefreshClientsAsync()
@@ -85,15 +89,6 @@ namespace AdGuardTray.Views
             try
             {
                 await _viewModel.LoadClientsAsync();
-
-                if (!_viewModel.StatusMessage.StartsWith(
-                        "Unable",
-                        StringComparison.OrdinalIgnoreCase))
-                {
-                    _viewModel.StatusMessage +=
-                        " · updated " +
-                        DateTime.Now.ToString("HH:mm:ss");
-                }
             }
             catch (Exception ex)
             {

@@ -1,16 +1,27 @@
+# AdGuardTray v1.2
+
+## Client activity
+- Query totals are merged from `/control/stats` when the query log is empty.
+- Client cards now explain when Last seen, Blocked and Block rate are unavailable.
+- Disabled query-log values display as `Query log disabled` and em dashes rather than misleading zeroes.
+- A support-page action can refresh the Clients page immediately.
+
+## Support and diagnostics
+- Renamed the About area to Support.
+- Added About, Diagnostics, System, Logs and Changelog tabs.
+- Added redacted router and AdGuard endpoint diagnostics.
+- Added query-log status detection and a one-click repair action.
+- Query-log repair preserves existing retention, anonymisation and ignored-client settings.
+- Added Copy and Export diagnostics actions.
+- Diagnostic exports include diagnostics, system information, build details and the support-session log.
+- Added system information for Windows, .NET, process architecture, memory and configured router details.
+- Added an in-session support log with copy and clear actions.
+
+## Safety
+- Passwords and Admin-Token values are never included in reports.
+- Existing Analytics, Protection, Logs, Network and client sorting layouts are preserved.
+
 # Unreleased
-
-## Added
-- Added a one-click **Enable query log** repair action to About > Diagnostics.
-- The action preserves the existing query-log retention, anonymisation and ignored-client settings.
-- Diagnostics now shows a clear warning when query logging is disabled.
-
-## Behaviour
-- Query totals continue to come from `/control/stats`.
-- Blocked, Block rate and Last seen begin populating from new query-log entries after logging is enabled.
-- Activity from while query logging was disabled cannot be reconstructed.
-
-# Previous unreleased
 
 ## Fixed
 - Client cards now merge per-client query totals from `/control/stats`
