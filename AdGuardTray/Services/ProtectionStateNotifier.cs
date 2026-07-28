@@ -7,14 +7,17 @@ namespace AdGuardTray.Services
     {
         public static event EventHandler<AdGuardProtectionStatus>? StateChanged;
 
-        public static void Publish(AdGuardProtectionStatus status)
+        public static void Publish(
+            AdGuardProtectionStatus status)
         {
             if (status is null)
             {
                 return;
             }
 
-            StateChanged?.Invoke(null, status);
+            StateChanged?.Invoke(
+                null,
+                status);
         }
     }
 }
