@@ -1,17 +1,15 @@
 # Changelog
 
-## 2026-07-28 — Analytics scrolling and reliable client refresh
+## 2026-07-28 — Restore original working client statistics request
 
 ### Fixed
-- Restored the Analytics page's vertical side scrollbar.
-- Prevented the DNS Query History graph from being compressed or clipped.
-- Kept the existing 1–10 ranking display unchanged.
-- Client refresh is now driven by page visibility rather than relying only on Loaded/Unloaded events.
-- Client cards refresh every five seconds while the Clients page is visible.
-- Returning to the Clients page triggers an immediate refresh.
-- The Clients status line now shows the most recent refresh time.
+- Reverted the AdGuard query-log request used for client-card statistics to
+  the exact request introduced in commit 42204c3:
+  `/control/querylog?limit=5000`.
+- Removed the newer paging/cursor/cache-busting request path from this method,
+  because it can return an empty data array on the target GL.iNet build.
 
-### Scope
-- No RouterManager changes.
-- No Logs, Protection or Blocked Services changes.
-- No Analytics ranking or data-loading changes.
+### Preserved
+- Current Clients UI and five-second refresh.
+- Current Analytics layout and rankings.
+- Current Logs UI, Protection and Blocked Services.

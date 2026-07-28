@@ -1219,94 +1219,38 @@ namespace AdGuardTray.Services
             client.DefaultRequestHeaders.Accept.ParseAdd(
                 "application/json");
 
-            client.DefaultRequestHeaders.CacheControl =
-                new System.Net.Http.Headers.CacheControlHeaderValue
-                {
-                    NoCache = true,
-                    NoStore = true,
-                    MustRevalidate = true
-                };
-
-            client.DefaultRequestHeaders.Pragma.ParseAdd(
-                "no-cache");
-
+            // Restore the exact request shape used when live client
+            // statistics originally worked.  Later paging/cursor and
+            // cache-busting variants can return {"data":[],"oldest":""}
+            // on the GL.iNet AdGuard Home build even while DNS traffic
+            // is being recorded.
             int safeLimit =
                 Math.Clamp(limit, 1, 5000);
 
-            long cacheBuster =
-                DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-
-            string futureCursor =
-                Uri.EscapeDataString(
-                    DateTimeOffset.UtcNow
-                        .AddMinutes(1)
-                        .ToString("O"));
-
-            string[] urls =
-            {
+            string url =
                 $"http://{_routerIp}:3000/control/querylog" +
-                $"?search=&response_status=&older_than=&limit={safeLimit}" +
-                $"&_={cacheBuster}",
+                $"?limit={safeLimit}";
 
-                $"http://{_routerIp}:3000/control/querylog" +
-                $"?search=&response_status=&older_than={futureCursor}" +
-                $"&limit={safeLimit}&_={cacheBuster + 1}",
+            Debug.WriteLine(
+                "Calling AdGuard query log (legacy working request): " +
+                url);
 
-                $"http://{_routerIp}:3000/control/querylog" +
-                $"?limit={safeLimit}&_={cacheBuster + 2}"
-            };
+            using HttpResponseMessage response =
+                await client.GetAsync(
+                    url);
 
-            AdGuardQueryLogResponse? lastResponse = null;
+            string content =
+                await response.Content
+                    .ReadAsStringAsync();
 
-            foreach (string url in urls)
-            {
-                Debug.WriteLine(
-                    "Calling AdGuard query log: " + url);
+            Debug.WriteLine(
+                "AdGuard query log status: " +
+                $"{(int)response.StatusCode} " +
+                response.StatusCode);
 
-                using var request =
-                    new HttpRequestMessage(
-                        HttpMethod.Get,
-                        url);
-
-                request.Headers.CacheControl =
-                    new System.Net.Http.Headers.CacheControlHeaderValue
-                    {
-                        NoCache = true,
-                        NoStore = true,
-                        MustRevalidate = true
-                    };
-
-                request.Headers.Pragma.ParseAdd(
-                    "no-cache");
-
-                using HttpResponseMessage response =
-                    await client.SendAsync(
-                        request,
-                        HttpCompletionOption.ResponseHeadersRead);
-
-                string content =
-                    await response.Content.ReadAsStringAsync();
-
-                lastResponse =
-                    new AdGuardQueryLogResponse(
-                        response.StatusCode,
-                        content);
-
-                Debug.WriteLine(
-                    "AdGuard query log status: " +
-                    $"{(int)response.StatusCode} {response.StatusCode}");
-
-                if (response.IsSuccessStatusCode &&
-                    QueryLogResponseHasEntries(content))
-                {
-                    return lastResponse;
-                }
-            }
-
-            return lastResponse ??
-                new AdGuardQueryLogResponse(
-                    HttpStatusCode.ServiceUnavailable,
-                    string.Empty);
+            return new AdGuardQueryLogResponse(
+                response.StatusCode,
+                content);
         }
 
         private static bool QueryLogResponseHasEntries(
