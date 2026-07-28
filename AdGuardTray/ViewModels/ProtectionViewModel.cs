@@ -64,6 +64,17 @@ namespace AdGuardTray.ViewModels
             ClearAllServicesCommand = new RelayCommand(() => SetAllBlockedServices(false), () => !IsBusy);
             BlockedServicesView = CollectionViewSource.GetDefaultView(BlockedServices);
             BlockedServicesView.Filter = FilterBlockedService;
+            BlockedServicesView.GroupDescriptions.Add(
+                new PropertyGroupDescription(
+                    nameof(BlockedServiceItem.Category)));
+            BlockedServicesView.SortDescriptions.Add(
+                new SortDescription(
+                    nameof(BlockedServiceItem.Category),
+                    ListSortDirection.Ascending));
+            BlockedServicesView.SortDescriptions.Add(
+                new SortDescription(
+                    nameof(BlockedServiceItem.Name),
+                    ListSortDirection.Ascending));
             AddDenyRuleCommand = new AsyncRelayCommand(() => AddRuleAsync(false), () => !IsBusy);
             AddAllowRuleCommand = new AsyncRelayCommand(() => AddRuleAsync(true), () => !IsBusy);
             DeleteRuleCommand = new AsyncRelayCommand(DeleteRuleAsync, () => !IsBusy && SelectedRule is not null);

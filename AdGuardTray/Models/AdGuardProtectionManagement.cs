@@ -42,6 +42,7 @@ namespace AdGuardTray.Models
         private bool _isBlocked;
         public string Id { get; init; } = "";
         public string Name { get; init; } = "";
+        public string Category { get; init; } = "Other";
         public bool IsBlocked
         {
             get => _isBlocked;

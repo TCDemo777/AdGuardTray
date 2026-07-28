@@ -646,6 +646,7 @@ namespace AdGuardTray.Services
                         {
                             Id = id,
                             Name = name,
+                            Category = CategorizeBlockedService(id, name),
                             IsBlocked =
                                 config.EnabledIds.Contains(id)
                         });
@@ -735,6 +736,106 @@ namespace AdGuardTray.Services
         private static bool GetBoolean(JsonElement root, string name, bool fallback = false) => root.TryGetProperty(name, out JsonElement value) ? value.ValueKind == JsonValueKind.True : fallback;
         private static int GetInteger(JsonElement root, string name, int fallback) => root.TryGetProperty(name, out JsonElement value) && value.TryGetInt32(out int result) ? result : fallback;
         private static double GetDouble(JsonElement root, string name, double fallback) => root.TryGetProperty(name, out JsonElement value) && value.TryGetDouble(out double result) ? result : fallback;
+        private static string CategorizeBlockedService(
+            string id,
+            string name)
+        {
+            string value =
+                $"{id} {name}".ToLowerInvariant();
+
+            if (ContainsAny(value,
+                    "playstation", "xbox", "steam", "epic-games",
+                    "nintendo", "roblox", "battle.net", "ea ",
+                    "gaming", "twitch"))
+            {
+                return "Gaming";
+            }
+
+            if (ContainsAny(value,
+                    "netflix", "disney", "hulu", "prime-video",
+                    "amazon-prime", "youtube", "vimeo", "dailymotion",
+                    "streaming", "paramount", "peacock", "hbo"))
+            {
+                return "Streaming & Video";
+            }
+
+            if (ContainsAny(value,
+                    "spotify", "soundcloud", "deezer", "tidal",
+                    "apple-music", "music"))
+            {
+                return "Music";
+            }
+
+            if (ContainsAny(value,
+                    "facebook", "instagram", "tiktok", "twitter",
+                    "x.com", "snapchat", "pinterest", "reddit",
+                    "linkedin", "social"))
+            {
+                return "Social Media";
+            }
+
+            if (ContainsAny(value,
+                    "whatsapp", "telegram", "signal", "discord",
+                    "messenger", "skype", "zoom", "teams",
+                    "slack", "communication", "chat"))
+            {
+                return "Messaging & Meetings";
+            }
+
+            if (ContainsAny(value,
+                    "dropbox", "onedrive", "google-drive", "icloud",
+                    "cloud", "box.com"))
+            {
+                return "Cloud Storage";
+            }
+
+            if (ContainsAny(value,
+                    "github", "gitlab", "bitbucket", "stackoverflow",
+                    "developer", "coding"))
+            {
+                return "Development";
+            }
+
+            if (ContainsAny(value,
+                    "amazon", "ebay", "aliexpress", "etsy",
+                    "shopping", "shop"))
+            {
+                return "Shopping";
+            }
+
+            if (ContainsAny(value,
+                    "openai", "chatgpt", "claude", "gemini",
+                    "copilot", "artificial-intelligence"))
+            {
+                return "AI Services";
+            }
+
+            if (ContainsAny(value,
+                    "gmail", "outlook", "protonmail", "yahoo-mail",
+                    "email", "mail"))
+            {
+                return "Email";
+            }
+
+            if (ContainsAny(value,
+                    "adult", "porn", "xxx"))
+            {
+                return "Adult Content";
+            }
+
+            return "Other";
+        }
+
+        private static bool ContainsAny(
+            string value,
+            params string[] terms)
+        {
+            return terms.Any(term =>
+                value.Contains(
+                    term,
+                    StringComparison.OrdinalIgnoreCase));
+        }
+
         private static string FormatBlockedServiceName(
             string id)
         {

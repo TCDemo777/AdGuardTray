@@ -15,200 +15,316 @@
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
-            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
-            <Setter Property="MaxHeight" Value="245"/>
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Disabled"/>
+        </Style>
+        <Style x:Key="RankingItem" TargetType="ListBoxItem">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Focusable" Value="False"/>
         </Style>
     </UserControl.Resources>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto"
-                  HorizontalScrollBarVisibility="Disabled">
-        <Grid Margin="0,0,8,8">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="12"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="12"/>
-            <RowDefinition Height="1.05*"/>
-            <RowDefinition Height="12"/>
-            <RowDefinition Height="0.95*"/>
-        </Grid.RowDefinitions>
+                  HorizontalScrollBarVisibility="Disabled"
+                  CanContentScroll="False">
+        <StackPanel Margin="0,0,8,8">
+            <StackPanel>
+                <TextBlock FontSize="24" FontWeight="Bold" Text="Analytics"/>
+                <TextBlock Margin="0,5,0,0"
+                           FontSize="14"
+                           Foreground="#667085"
+                           Text="AdGuard Home query trends, clients and domain activity"/>
+            </StackPanel>
 
-        <StackPanel>
-            <TextBlock FontSize="24" FontWeight="Bold" Text="Analytics"/>
-            <TextBlock Margin="0,5,0,0" FontSize="14" Foreground="#667085"
-                       Text="AdGuard Home query trends, clients and domain activity"/>
-        </StackPanel>
-
-        <UniformGrid Grid.Row="2" Columns="3">
-            <Border Margin="0,0,8,0" MinHeight="100" Style="{StaticResource Card}">
-                <StackPanel>
-                    <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="#475467" Text="TOTAL DNS QUERIES"/>
-                    <TextBlock Margin="0,6,0,3" FontSize="25" FontWeight="SemiBold" Text="{Binding AdGuardQueries}"/>
-                    <TextBlock FontSize="12" Foreground="#667085" Text="All requests processed by AdGuard Home"/>
-                </StackPanel>
-            </Border>
-            <Border Margin="4,0" MinHeight="100" Style="{StaticResource Card}">
-                <StackPanel>
-                    <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="#475467" Text="BLOCKED DNS QUERIES"/>
-                    <TextBlock Margin="0,6,0,3" FontSize="25" FontWeight="SemiBold" Foreground="#C62828" Text="{Binding AdGuardBlocked}"/>
-                    <TextBlock FontSize="12" Foreground="#667085" Text="Requests stopped by protection rules"/>
-                </StackPanel>
-            </Border>
-            <Border Margin="8,0,0,0" MinHeight="100" Style="{StaticResource Card}">
-                <StackPanel>
-                    <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="#475467" Text="OVERALL BLOCKING RATE"/>
-                    <TextBlock Margin="0,6,0,3" FontSize="25" FontWeight="SemiBold" Text="{Binding AdGuardBlockRate}"/>
-                    <TextBlock FontSize="12" Foreground="#667085" Text="Percentage of DNS traffic blocked"/>
-                </StackPanel>
-            </Border>
-        </UniformGrid>
-
-        <Border Grid.Row="4" Style="{StaticResource Card}">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="8"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
+            <UniformGrid Margin="0,12,0,0" Columns="3">
+                <Border Margin="0,0,8,0" MinHeight="100" Style="{StaticResource Card}">
                     <StackPanel>
-                        <TextBlock FontSize="18" FontWeight="Bold" Text="DNS Query History"/>
-                        <TextBlock Margin="0,3,0,0" FontSize="12" Foreground="#667085"
-                                   Text="Recent request volume reported by AdGuard Home"/>
+                        <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="#475467" Text="TOTAL DNS QUERIES"/>
+                        <TextBlock Margin="0,6,0,3" FontSize="25" FontWeight="SemiBold" Text="{Binding AdGuardQueries}"/>
+                        <TextBlock FontSize="12" Foreground="#667085" TextWrapping="Wrap" Text="All requests processed by AdGuard Home"/>
                     </StackPanel>
-                    <Border Grid.Column="1" Padding="9,4" Background="#F2F4F7" CornerRadius="10" VerticalAlignment="Center">
-                        <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="#475467" Text="LIVE STATISTICS"/>
-                    </Border>
-                </Grid>
-                <lvc:CartesianChart Grid.Row="2" MinHeight="210" Series="{Binding QueryHistorySeries}"/>
-            </Grid>
-        </Border>
+                </Border>
+                <Border Margin="4,0" MinHeight="100" Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="#475467" Text="BLOCKED DNS QUERIES"/>
+                        <TextBlock Margin="0,6,0,3" FontSize="25" FontWeight="SemiBold" Foreground="#C62828" Text="{Binding AdGuardBlocked}"/>
+                        <TextBlock FontSize="12" Foreground="#667085" TextWrapping="Wrap" Text="Requests stopped by protection rules"/>
+                    </StackPanel>
+                </Border>
+                <Border Margin="8,0,0,0" MinHeight="100" Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="#475467" Text="OVERALL BLOCKING RATE"/>
+                        <TextBlock Margin="0,6,0,3" FontSize="25" FontWeight="SemiBold" Text="{Binding AdGuardBlockRate}"/>
+                        <TextBlock FontSize="12" Foreground="#667085" TextWrapping="Wrap" Text="Percentage of DNS traffic blocked"/>
+                    </StackPanel>
+                </Border>
+            </UniformGrid>
 
-        <Grid Grid.Row="6">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="12"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="12"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-
-            <Border Style="{StaticResource Card}">
+            <Border Margin="0,12,0,0" MinHeight="280" Style="{StaticResource Card}">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="8"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <StackPanel>
-                        <TextBlock FontSize="17" FontWeight="Bold" Text="Top Clients"/>
-                        <TextBlock Margin="0,2,0,0" FontSize="12" Foreground="#667085"
-                                   Text="Devices generating the most DNS traffic"/>
-                    </StackPanel>
-                    <Grid Grid.Row="2">
-                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#667085" Text="No client ranking data yet">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding TopClients.Count}" Value="0"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style>
-                            </TextBlock.Style>
-                        </TextBlock>
-                        <ListBox Style="{StaticResource RankingList}" ItemsSource="{Binding TopClients}" AlternationCount="99">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Margin="0,2" Padding="8,6" Background="#F8FAFC" CornerRadius="7">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions><ColumnDefinition Width="30"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                            <Border Width="22" Height="22" Background="#E8EEF5" CornerRadius="11">
-                                                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="11" FontWeight="Bold" Text="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=(ItemsControl.AlternationIndex), StringFormat={}{0}}"/>
-                                            </Border>
-                                            <StackPanel Grid.Column="1" Margin="2,0,8,0">
-                                                <TextBlock FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip="{Binding Name}" Text="{Binding Name}"/>
-                                                <TextBlock FontSize="11" Foreground="#667085" Text="DNS requests from this client"/>
-                                            </StackPanel>
-                                            <Border Grid.Column="2" Padding="8,4" Background="#EEF4FF" CornerRadius="9" VerticalAlignment="Center">
-                                                <TextBlock FontWeight="SemiBold" Foreground="#175CD3" Text="{Binding Count, StringFormat={}{0:N0}}"/>
-                                            </Border>
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                            <ListBox.ItemContainerStyle>
-                                <Style TargetType="ListBoxItem"><Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="Focusable" Value="False"/></Style>
-                            </ListBox.ItemContainerStyle>
-                        </ListBox>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock FontSize="18" FontWeight="Bold" Text="DNS Query History"/>
+                            <TextBlock Margin="0,3,0,0" FontSize="12" Foreground="#667085"
+                                       Text="Recent request volume reported by AdGuard Home"/>
+                        </StackPanel>
+                        <Border Grid.Column="1" Padding="9,4" Background="#F2F4F7" CornerRadius="10" VerticalAlignment="Center">
+                            <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="#475467" Text="LIVE STATISTICS"/>
+                        </Border>
                     </Grid>
+                    <lvc:CartesianChart Grid.Row="2" Height="220" Series="{Binding QueryHistorySeries}"/>
                 </Grid>
             </Border>
 
-            <Border Grid.Column="2" Style="{StaticResource Card}">
-                <Grid>
-                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="8"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-                    <StackPanel>
-                        <TextBlock FontSize="17" FontWeight="Bold" Text="Top Requested Domains"/>
-                        <TextBlock Margin="0,2,0,0" FontSize="12" Foreground="#667085" Text="Most frequently requested destinations"/>
-                    </StackPanel>
-                    <Grid Grid.Row="2">
-                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#667085" Text="No requested-domain data yet">
-                            <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding TopQueriedDomains.Count}" Value="0"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></TextBlock.Style>
-                        </TextBlock>
-                        <ListBox Style="{StaticResource RankingList}" ItemsSource="{Binding TopQueriedDomains}" AlternationCount="99">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Margin="0,2" Padding="8,6" Background="#F8FAFC" CornerRadius="7">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions><ColumnDefinition Width="30"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                            <Border Width="22" Height="22" Background="#E8EEF5" CornerRadius="11"><TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="11" FontWeight="Bold" Text="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=(ItemsControl.AlternationIndex)}"/></Border>
-                                            <StackPanel Grid.Column="1" Margin="2,0,8,0">
-                                                <TextBlock FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip="{Binding Name}" Text="{Binding Name}"/>
-                                                <TextBlock FontSize="11" Foreground="#667085" Text="Allowed and blocked requests combined"/>
-                                            </StackPanel>
-                                            <Border Grid.Column="2" Padding="8,4" Background="#ECFDF3" CornerRadius="9" VerticalAlignment="Center"><TextBlock FontWeight="SemiBold" Foreground="#16803C" Text="{Binding Count, StringFormat={}{0:N0}}"/></Border>
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                            <ListBox.ItemContainerStyle><Style TargetType="ListBoxItem"><Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="Focusable" Value="False"/></Style></ListBox.ItemContainerStyle>
-                        </ListBox>
-                    </Grid>
-                </Grid>
-            </Border>
+            <Grid Margin="0,12,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="12"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="12"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
 
-            <Border Grid.Column="4" Style="{StaticResource Card}">
-                <Grid>
-                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="8"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-                    <StackPanel>
-                        <TextBlock FontSize="17" FontWeight="Bold" Text="Top Blocked Domains"/>
-                        <TextBlock Margin="0,2,0,0" FontSize="12" Foreground="#667085" Text="Domains stopped most often by protection"/>
-                    </StackPanel>
-                    <Grid Grid.Row="2">
-                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#667085" Text="No blocked-domain data yet">
-                            <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding TopBlockedDomains.Count}" Value="0"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></TextBlock.Style>
-                        </TextBlock>
-                        <ListBox Style="{StaticResource RankingList}" ItemsSource="{Binding TopBlockedDomains}" AlternationCount="99">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Margin="0,2" Padding="8,6" Background="#FFF7F7" CornerRadius="7">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions><ColumnDefinition Width="30"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                            <Border Width="22" Height="22" Background="#FDECEC" CornerRadius="11"><TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="11" FontWeight="Bold" Foreground="#C62828" Text="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=(ItemsControl.AlternationIndex)}"/></Border>
-                                            <StackPanel Grid.Column="1" Margin="2,0,8,0">
-                                                <TextBlock FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip="{Binding Name}" Text="{Binding Name}"/>
-                                                <TextBlock FontSize="11" Foreground="#667085" Text="Blocked request count"/>
-                                            </StackPanel>
-                                            <Border Grid.Column="2" Padding="8,4" Background="#FDECEC" CornerRadius="9" VerticalAlignment="Center"><TextBlock FontWeight="SemiBold" Foreground="#C62828" Text="{Binding Count, StringFormat={}{0:N0}}"/></Border>
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                            <ListBox.ItemContainerStyle><Style TargetType="ListBoxItem"><Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="Focusable" Value="False"/></Style></ListBox.ItemContainerStyle>
-                        </ListBox>
+                <Border Grid.Column="0" MinHeight="360" Style="{StaticResource Card}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="10"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Margin="0,0,8,0">
+                                <TextBlock FontSize="16" FontWeight="Bold" Text="Top Clients"/>
+                                <TextBlock Margin="0,3,0,0" FontSize="11" Foreground="#667085"
+                                           TextWrapping="Wrap"
+                                           Text="Devices generating the most DNS traffic"/>
+                            </StackPanel>
+                            <Border Grid.Column="1"
+                                    MinWidth="46"
+                                    Padding="7,3"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Top"
+                                    Background="#EEF4FF"
+                                    CornerRadius="8">
+                                <TextBlock HorizontalAlignment="Center"
+                                           FontSize="10"
+                                           FontWeight="SemiBold"
+                                           Foreground="#175CD3"
+                                           Text="ALL"/>
+                            </Border>
+                        </Grid>
+                        <Grid Grid.Row="2">
+                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#667085" Text="No client ranking data yet">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding TopClients.Count}" Value="0">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <ListBox Style="{StaticResource RankingList}"
+                                     ItemContainerStyle="{StaticResource RankingItem}"
+                                     ItemsSource="{Binding TopClients}"
+                                     AlternationCount="99">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Margin="0,2" Padding="8,6" Background="#F8FAFC" CornerRadius="7">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="28"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Border Width="22" Height="22" Background="#E8EEF5" CornerRadius="11">
+                                                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="11" FontWeight="Bold"
+                                                               Text="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=(ItemsControl.AlternationIndex)}"/>
+                                                </Border>
+                                                <TextBlock Grid.Column="1" Margin="2,0,8,0" VerticalAlignment="Center"
+                                                           FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
+                                                           ToolTip="{Binding Name}" Text="{Binding Name}"/>
+                                                <Border Grid.Column="2" Padding="7,3" Background="#EEF4FF" CornerRadius="8" VerticalAlignment="Center">
+                                                    <TextBlock FontWeight="SemiBold" Foreground="#175CD3" Text="{Binding Count, StringFormat={}{0:N0}}"/>
+                                                </Border>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Grid>
                     </Grid>
-                </Grid>
-            </Border>
-        </Grid>
-        </Grid>
+                </Border>
+
+                <Border Grid.Column="2" MinHeight="360" Style="{StaticResource Card}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="10"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Margin="0,0,8,0">
+                                <TextBlock FontSize="16" FontWeight="Bold" Text="Top Requested Domains"/>
+                                <TextBlock Margin="0,3,0,0" FontSize="11" Foreground="#667085"
+                                           TextWrapping="Wrap"
+                                           Text="Most frequently requested destinations"/>
+                            </StackPanel>
+                            <Border Grid.Column="1"
+                                    MinWidth="58"
+                                    Padding="7,3"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Top"
+                                    Background="#ECFDF3"
+                                    CornerRadius="8">
+                                <TextBlock HorizontalAlignment="Center"
+                                           FontSize="10"
+                                           FontWeight="SemiBold"
+                                           Foreground="#16803C"
+                                           Text="ALLOWED"/>
+                            </Border>
+                        </Grid>
+                        <Grid Grid.Row="2">
+                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#667085" Text="No requested-domain data yet">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding TopQueriedDomains.Count}" Value="0">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <ListBox Style="{StaticResource RankingList}"
+                                     ItemContainerStyle="{StaticResource RankingItem}"
+                                     ItemsSource="{Binding TopQueriedDomains}"
+                                     AlternationCount="99">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Margin="0,2" Padding="8,6" Background="#F8FAFC" CornerRadius="7">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="28"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Border Width="22" Height="22" Background="#E8EEF5" CornerRadius="11">
+                                                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="11" FontWeight="Bold"
+                                                               Text="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=(ItemsControl.AlternationIndex)}"/>
+                                                </Border>
+                                                <TextBlock Grid.Column="1" Margin="2,0,8,0" VerticalAlignment="Center"
+                                                           FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
+                                                           ToolTip="{Binding Name}" Text="{Binding Name}"/>
+                                                <Border Grid.Column="2" Padding="7,3" Background="#ECFDF3" CornerRadius="8" VerticalAlignment="Center">
+                                                    <TextBlock FontWeight="SemiBold" Foreground="#16803C" Text="{Binding Count, StringFormat={}{0:N0}}"/>
+                                                </Border>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <Border Grid.Column="4" MinHeight="360" Style="{StaticResource Card}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="10"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Margin="0,0,8,0">
+                                <TextBlock FontSize="16" FontWeight="Bold" Text="Top Blocked Domains"/>
+                                <TextBlock Margin="0,3,0,0" FontSize="11" Foreground="#667085"
+                                           TextWrapping="Wrap"
+                                           Text="Domains stopped most often by protection"/>
+                            </StackPanel>
+                            <Border Grid.Column="1"
+                                    MinWidth="58"
+                                    Padding="7,3"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Top"
+                                    Background="#FDECEC"
+                                    CornerRadius="8">
+                                <TextBlock HorizontalAlignment="Center"
+                                           FontSize="10"
+                                           FontWeight="SemiBold"
+                                           Foreground="#C62828"
+                                           Text="BLOCKED"/>
+                            </Border>
+                        </Grid>
+                        <Grid Grid.Row="2">
+                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#667085" Text="No blocked-domain data yet">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding TopBlockedDomains.Count}" Value="0">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <ListBox Style="{StaticResource RankingList}"
+                                     ItemContainerStyle="{StaticResource RankingItem}"
+                                     ItemsSource="{Binding TopBlockedDomains}"
+                                     AlternationCount="99">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Margin="0,2" Padding="8,6" Background="#FFF7F7" CornerRadius="7">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="28"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Border Width="22" Height="22" Background="#FDECEC" CornerRadius="11">
+                                                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="11" FontWeight="Bold"
+                                                               Foreground="#C62828"
+                                                               Text="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=(ItemsControl.AlternationIndex)}"/>
+                                                </Border>
+                                                <TextBlock Grid.Column="1" Margin="2,0,8,0" VerticalAlignment="Center"
+                                                           FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
+                                                           ToolTip="{Binding Name}" Text="{Binding Name}"/>
+                                                <Border Grid.Column="2" Padding="7,3" Background="#FDECEC" CornerRadius="8" VerticalAlignment="Center">
+                                                    <TextBlock FontWeight="SemiBold" Foreground="#C62828" Text="{Binding Count, StringFormat={}{0:N0}}"/>
+                                                </Border>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Grid>
+                    </Grid>
+                </Border>
+            </Grid>
+        </StackPanel>
     </ScrollViewer>
 </UserControl>

@@ -21,7 +21,7 @@
             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="10"/><ColumnDefinition Width="*"/><ColumnDefinition Width="10"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
             <Border Style="{StaticResource Card}"><StackPanel><TextBlock FontSize="17" FontWeight="Bold" Text="Internet"/><TextBlock Style="{StaticResource Label}" Text="WAN address"/><TextBlock Style="{StaticResource Value}" Text="{Binding WanIp}"/><TextBlock Style="{StaticResource Label}" Text="Gateway"/><TextBlock Style="{StaticResource Value}" Text="{Binding Gateway}"/><TextBlock Style="{StaticResource Label}" Text="Latency"/><TextBlock Style="{StaticResource Value}" Text="{Binding Latency}"/></StackPanel></Border>
             <Border Grid.Column="2" Style="{StaticResource Card}"><StackPanel><TextBlock FontSize="17" FontWeight="Bold" Text="DNS"/><TextBlock Style="{StaticResource Label}" Text="External DNS"/><TextBlock Style="{StaticResource Value}" Text="{Binding ExternalDns}"/><TextBlock Style="{StaticResource Label}" Text="Advertised DNS"/><TextBlock Style="{StaticResource Value}" Text="{Binding AdvertisedDns}"/><TextBlock Style="{StaticResource Label}" Text="AdGuard service"/><TextBlock Style="{StaticResource Value}" Text="{Binding AdGuardService}"/><TextBlock Style="{StaticResource Label}" Text="AdGuard version"/><TextBlock Style="{StaticResource Value}" Text="{Binding AdGuardVersion}"/></StackPanel></Border>
-            <Border Grid.Column="4" Style="{StaticResource Card}"><StackPanel><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock FontSize="17" FontWeight="Bold" Text="Router"/><Border Grid.Column="1" Style="{StaticResource HealthBadge}"><TextBlock FontSize="11" FontWeight="SemiBold" Foreground="{Binding RouterStatusColour}" Text="{Binding RouterStatusText}"/></Border></Grid><TextBlock Style="{StaticResource Label}" Text="Model"/><TextBlock Style="{StaticResource Value}" Text="{Binding RouterModel}"/><TextBlock Style="{StaticResource Label}" Text="Hostname"/><TextBlock Style="{StaticResource Value}" Text="{Binding Hostname}"/><TextBlock Style="{StaticResource Label}" Text="Firmware"/><TextBlock Style="{StaticResource Value}" Text="{Binding FirmwareVersion}"/><TextBlock Style="{StaticResource Label}" Text="Uptime"/><TextBlock Style="{StaticResource Value}" Text="{Binding Uptime}"/></StackPanel></Border>
+            <Border Grid.Column="4" Style="{StaticResource Card}"><StackPanel><TextBlock FontSize="17" FontWeight="Bold" Text="Router"/><TextBlock Style="{StaticResource Label}" Text="Model"/><TextBlock Style="{StaticResource Value}" Text="{Binding RouterModel}"/><TextBlock Style="{StaticResource Label}" Text="Hostname"/><TextBlock Style="{StaticResource Value}" Text="{Binding Hostname}"/><TextBlock Style="{StaticResource Label}" Text="Firmware"/><TextBlock Style="{StaticResource Value}" Text="{Binding FirmwareVersion}"/><TextBlock Style="{StaticResource Label}" Text="Uptime"/><TextBlock Style="{StaticResource Value}" Text="{Binding Uptime}"/></StackPanel></Border>
         </Grid>
 
         <Border Grid.Row="4" Style="{StaticResource Card}">
@@ -34,10 +34,15 @@
                     <TextBlock Grid.Row="2" FontSize="15" FontWeight="SemiBold" Text="{Binding CpuUsage}"/>
                 </Grid>
                 <Grid Grid.Column="2">
-                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                     <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock FontSize="16" FontWeight="Bold" VerticalAlignment="Center" Text="Memory"/><Border Grid.Column="1" Style="{StaticResource HealthBadge}"><TextBlock FontSize="11" FontWeight="SemiBold" Foreground="{Binding MemoryHealthColour}" Text="{Binding MemoryHealthText}"/></Border></Grid>
                     <ProgressBar Grid.Row="1" Height="10" Margin="0,9,0,5" Minimum="0" Maximum="100" Value="{Binding MemoryPercentage}"/>
                     <TextBlock Grid.Row="2" FontSize="15" FontWeight="SemiBold" Text="{Binding MemoryUsage}"/>
+                    <Grid Grid.Row="3" Margin="0,7,0,0">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                        <TextBlock FontSize="12" Foreground="#667085" Text="{Binding MemoryUsed, StringFormat=Used: {0}}"/>
+                        <TextBlock Grid.Column="1" HorizontalAlignment="Right" FontSize="12" Foreground="#667085" Text="{Binding MemoryCache, StringFormat=Cache: {0}}"/>
+                    </Grid>
                 </Grid>
                 <Grid Grid.Column="4">
                     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
