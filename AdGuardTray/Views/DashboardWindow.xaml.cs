@@ -59,6 +59,9 @@ namespace AdGuardTray.Views
             {
                 await RefreshDashboard();
             };
+
+            ProtectionStateNotifier.StateChanged +=
+                ProtectionStateNotifier_StateChanged;
         }
 
         private async void DashboardWindow_Loaded(
@@ -132,12 +135,6 @@ namespace AdGuardTray.Views
                 _viewModel.MemoryUsage =
                     info.MemoryUsage;
 
-                _viewModel.MemoryUsed =
-                    info.MemoryUsed;
-
-                _viewModel.MemoryCache =
-                    info.MemoryCache;
-
                 _viewModel.UpdateStorageUsage(
                     info.StorageUsage);
 
@@ -180,7 +177,7 @@ namespace AdGuardTray.Views
 
                 _viewModel.UpdateRankingsFromQueryLog(
                     rankingEntries,
-                    onlyWhenEmpty: true);
+                    onlyWhenEmpty: false);
 
                 // Protection state is authoritative from /control/status.
                 // Statistics responses are not reliable for this value on
@@ -331,12 +328,6 @@ namespace AdGuardTray.Views
                 "-";
 
             _viewModel.MemoryUsage =
-                "-";
-
-            _viewModel.MemoryUsed =
-                "-";
-
-            _viewModel.MemoryCache =
                 "-";
 
             _viewModel.UpdateStorageUsage(
@@ -522,10 +513,52 @@ namespace AdGuardTray.Views
             }
         }
 
+        private void ProtectionStateNotifier_StateChanged(
+            object? sender,
+            AdGuardProtectionStatus status)
+        {
+            void ApplyState()
+            {
+                _viewModel.AdGuardProtectionEnabled =
+                    status.IsEnabled;
+
+                _viewModel.AdGuardProtectionPaused =
+                    status.IsPaused;
+
+                _viewModel.AdGuardProtectionStatusKnown =
+                    true;
+
+                _viewModel.AdGuardProtectionRemaining =
+                    status.IsPaused
+                        ? FormatProtectionRemaining(
+                            status.RemainingPause)
+                        : "";
+
+                _viewModel.RefreshStatusIndicators();
+
+                _viewModel.LastRefresh =
+                    "Protection updated: " +
+                    DateTime.Now.ToString(
+                        "dd MMM yyyy HH:mm:ss");
+            }
+
+            if (Dispatcher.CheckAccess())
+            {
+                ApplyState();
+            }
+            else
+            {
+                Dispatcher.Invoke(ApplyState);
+            }
+        }
+
         protected override void OnClosed(
             EventArgs e)
         {
             _refreshTimer.Stop();
+
+            ProtectionStateNotifier.StateChanged -=
+                ProtectionStateNotifier_StateChanged;
 
             base.OnClosed(e);
         }

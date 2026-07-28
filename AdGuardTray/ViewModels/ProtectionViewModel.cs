@@ -235,10 +235,30 @@ namespace AdGuardTray.ViewModels
         private async Task RunStatusActionAsync(string busy, string success, Func<RouterManager, Task<AdGuardProtectionStatus>> action)
         {
             if (IsBusy) return;
-            IsBusy = true; Message = busy;
-            try { ApplyStatus(await action(GetRouterManager())); Message = success; }
-            catch (Exception ex) { Message = "Protection command failed: " + ex.Message; }
-            finally { IsBusy = false; }
+            IsBusy = true;
+            Message = busy;
+
+            try
+            {
+                AdGuardProtectionStatus status =
+                    await action(GetRouterManager());
+
+                ApplyStatus(status);
+
+                // Update the Overview page immediately instead of waiting for
+                // its normal router polling interval.
+                ProtectionStateNotifier.Publish(status);
+
+                Message = success;
+            }
+            catch (Exception ex)
+            {
+                Message = "Protection command failed: " + ex.Message;
+            }
+            finally
+            {
+                IsBusy = false;
+            }
         }
 
         private async Task UpdateOptionAsync(string label, Func<RouterManager, Task> action)

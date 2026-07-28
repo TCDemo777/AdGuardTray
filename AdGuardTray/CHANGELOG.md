@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-07-28 — Live Logs restoration and instant protection state
+
+### Fixed
+- Restored the previously known-working Live Logs view and refresh loop.
+- Restored the compatible AdGuard Home query-log request parameters.
+- Kept the current RouterManager analytics and protection functionality.
+- Added immediate Overview status updates after enable, disable, resume or pause.
+- The Overview no longer waits for its normal polling interval after a protection command.
+
 ## 2026-07-28 — Responsive Blocked Services filter layout
 
 ### Changed

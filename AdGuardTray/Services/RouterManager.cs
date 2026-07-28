@@ -520,139 +520,25 @@ namespace AdGuardTray.Services
 
         public async Task<(List<BlockedServiceItem> Services, AdGuardBlockedServicesConfig Config)> GetBlockedServicesAsync()
         {
-            JsonElement all =
-                await GetControlJsonAsync(
-                    "blocked_services/all");
+            JsonElement all = await GetControlJsonAsync("blocked_services/all");
+            JsonElement configJson = await GetControlJsonAsync("blocked_services/get");
+            var config = new AdGuardBlockedServicesConfig();
+            if (configJson.TryGetProperty("schedule", out JsonElement schedule)) config.ScheduleJson = schedule.GetRawText();
+            foreach (string id in GetStringArray(configJson, "ids")) config.EnabledIds.Add(id);
 
-            JsonElement configJson =
-                await GetControlJsonAsync(
-                    "blocked_services/get");
-
-            var config =
-                new AdGuardBlockedServicesConfig();
-
-            if (configJson.TryGetProperty(
-                    "schedule",
-                    out JsonElement schedule))
+            var result = new List<BlockedServiceItem>();
+            JsonElement array = all.ValueKind == JsonValueKind.Array ? all : (all.TryGetProperty("services", out JsonElement services) ? services : default);
+            if (array.ValueKind == JsonValueKind.Array)
             {
-                config.ScheduleJson =
-                    schedule.GetRawText();
-            }
-
-            foreach (string id in
-                GetStringArray(
-                    configJson,
-                    "ids"))
-            {
-                config.EnabledIds.Add(id);
-            }
-
-            var result =
-                new List<BlockedServiceItem>();
-
-            JsonElement array =
-                default;
-
-            if (all.ValueKind ==
-                JsonValueKind.Array)
-            {
-                array = all;
-            }
-            else if (all.ValueKind ==
-                     JsonValueKind.Object)
-            {
-                // AdGuard Home versions expose the catalogue under either
-                // "blocked_services" or "services".
-                if (!all.TryGetProperty(
-                        "blocked_services",
-                        out array))
+                foreach (JsonElement item in array.EnumerateArray())
                 {
-                    all.TryGetProperty(
-                        "services",
-                        out array);
+                    string id = GetString(item, "id");
+                    if (id.Length == 0) continue;
+                    string name = GetString(item, "name");
+                    if (name.Length == 0) name = id.Replace('_', ' ');
+                    result.Add(new BlockedServiceItem { Id = id, Name = name, IsBlocked = config.EnabledIds.Contains(id) });
                 }
             }
-
-            if (array.ValueKind ==
-                JsonValueKind.Array)
-            {
-                foreach (JsonElement item in
-                    array.EnumerateArray())
-                {
-                    string id;
-                    string name;
-
-                    if (item.ValueKind ==
-                        JsonValueKind.String)
-                    {
-                        id =
-                            item.GetString()?.Trim() ??
-                            string.Empty;
-
-                        name =
-                            FormatBlockedServiceName(id);
-                    }
-                    else if (item.ValueKind ==
-                             JsonValueKind.Object)
-                    {
-                        id =
-                            GetString(
-                                item,
-                                "id");
-
-                        if (id.Length == 0)
-                        {
-                            id =
-                                GetString(
-                                    item,
-                                    "service_id");
-                        }
-
-                        name =
-                            GetString(
-                                item,
-                                "name");
-
-                        if (name.Length == 0)
-                        {
-                            name =
-                                GetString(
-                                    item,
-                                    "display_name");
-                        }
-
-                        if (name.Length == 0)
-                        {
-                            name =
-                                FormatBlockedServiceName(id);
-                        }
-                    }
-                    else
-                    {
-                        continue;
-                    }
-
-                    if (id.Length == 0 ||
-                        result.Any(service =>
-                            service.Id.Equals(
-                                id,
-                                StringComparison.OrdinalIgnoreCase)))
-                    {
-                        continue;
-                    }
-
-                    result.Add(
-                        new BlockedServiceItem
-                        {
-                            Id = id,
-                            Name = name,
-                            Category = CategorizeBlockedService(id, name),
-                            IsBlocked =
-                                config.EnabledIds.Contains(id)
-                        });
-                }
-            }
-
             return (result, config);
         }
 
@@ -736,126 +622,6 @@ namespace AdGuardTray.Services
         private static bool GetBoolean(JsonElement root, string name, bool fallback = false) => root.TryGetProperty(name, out JsonElement value) ? value.ValueKind == JsonValueKind.True : fallback;
         private static int GetInteger(JsonElement root, string name, int fallback) => root.TryGetProperty(name, out JsonElement value) && value.TryGetInt32(out int result) ? result : fallback;
         private static double GetDouble(JsonElement root, string name, double fallback) => root.TryGetProperty(name, out JsonElement value) && value.TryGetDouble(out double result) ? result : fallback;
-        private static string CategorizeBlockedService(
-            string id,
-            string name)
-        {
-            string value =
-                $"{id} {name}".ToLowerInvariant();
-
-            if (ContainsAny(value,
-                    "playstation", "xbox", "steam", "epic-games",
-                    "nintendo", "roblox", "battle.net", "ea ",
-                    "gaming", "twitch"))
-            {
-                return "Gaming";
-            }
-
-            if (ContainsAny(value,
-                    "netflix", "disney", "hulu", "prime-video",
-                    "amazon-prime", "youtube", "vimeo", "dailymotion",
-                    "streaming", "paramount", "peacock", "hbo"))
-            {
-                return "Streaming & Video";
-            }
-
-            if (ContainsAny(value,
-                    "spotify", "soundcloud", "deezer", "tidal",
-                    "apple-music", "music"))
-            {
-                return "Music";
-            }
-
-            if (ContainsAny(value,
-                    "facebook", "instagram", "tiktok", "twitter",
-                    "x.com", "snapchat", "pinterest", "reddit",
-                    "linkedin", "social"))
-            {
-                return "Social Media";
-            }
-
-            if (ContainsAny(value,
-                    "whatsapp", "telegram", "signal", "discord",
-                    "messenger", "skype", "zoom", "teams",
-                    "slack", "communication", "chat"))
-            {
-                return "Messaging & Meetings";
-            }
-
-            if (ContainsAny(value,
-                    "dropbox", "onedrive", "google-drive", "icloud",
-                    "cloud", "box.com"))
-            {
-                return "Cloud Storage";
-            }
-
-            if (ContainsAny(value,
-                    "github", "gitlab", "bitbucket", "stackoverflow",
-                    "developer", "coding"))
-            {
-                return "Development";
-            }
-
-            if (ContainsAny(value,
-                    "amazon", "ebay", "aliexpress", "etsy",
-                    "shopping", "shop"))
-            {
-                return "Shopping";
-            }
-
-            if (ContainsAny(value,
-                    "openai", "chatgpt", "claude", "gemini",
-                    "copilot", "artificial-intelligence"))
-            {
-                return "AI Services";
-            }
-
-            if (ContainsAny(value,
-                    "gmail", "outlook", "protonmail", "yahoo-mail",
-                    "email", "mail"))
-            {
-                return "Email";
-            }
-
-            if (ContainsAny(value,
-                    "adult", "porn", "xxx"))
-            {
-                return "Adult Content";
-            }
-
-            return "Other";
-        }
-
-        private static bool ContainsAny(
-            string value,
-            params string[] terms)
-        {
-            return terms.Any(term =>
-                value.Contains(
-                    term,
-                    StringComparison.OrdinalIgnoreCase));
-        }
-
-        private static string FormatBlockedServiceName(
-            string id)
-        {
-            if (string.IsNullOrWhiteSpace(id))
-            {
-                return string.Empty;
-            }
-
-            string text =
-                id.Replace('_', ' ')
-                  .Replace('-', ' ');
-
-            return
-                System.Globalization.CultureInfo
-                    .InvariantCulture
-                    .TextInfo
-                    .ToTitleCase(
-                        text.ToLowerInvariant());
-        }
-
         private static string GetString(JsonElement root, string name) => root.TryGetProperty(name, out JsonElement value) && value.ValueKind == JsonValueKind.String ? value.GetString()?.Trim() ?? "" : "";
         private static string[] GetStringArray(JsonElement root, string name)
         {
@@ -1203,8 +969,12 @@ namespace AdGuardTray.Services
             using var handler =
                 new HttpClientHandler
                 {
-                    CookieContainer = cookieContainer,
-                    UseCookies = true,
+                    CookieContainer =
+                        cookieContainer,
+
+                    UseCookies =
+                        true,
+
                     AutomaticDecompression =
                         DecompressionMethods.GZip |
                         DecompressionMethods.Deflate
@@ -1213,62 +983,17 @@ namespace AdGuardTray.Services
             using var client =
                 new HttpClient(handler)
                 {
-                    Timeout = TimeSpan.FromSeconds(15)
+                    Timeout =
+                        TimeSpan.FromSeconds(15)
                 };
 
-            client.DefaultRequestHeaders.Accept.ParseAdd(
-                "application/json");
+            client.DefaultRequestHeaders
+                .Accept
+                .ParseAdd(
+                    "application/json");
 
-            client.DefaultRequestHeaders.CacheControl =
-                new System.Net.Http.Headers.CacheControlHeaderValue
-                {
-                    NoCache = true,
-                    NoStore = true,
-                    MustRevalidate = true
-                };
-
-            client.DefaultRequestHeaders.Pragma.ParseAdd(
-                "no-cache");
-
-            int safeLimit =
-                Math.Clamp(limit, 1, 5000);
-
-            long cacheBuster =
-                DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-
-            string futureCursor =
-                Uri.EscapeDataString(
-                    DateTimeOffset.UtcNow
-                        .AddMinutes(1)
-                        .ToString("O"));
-
-            string[] urls =
-            {
-                $"http://{_routerIp}:3000/control/querylog" +
-                $"?search=&response_status=&older_than=&limit={safeLimit}" +
-                $"&_={cacheBuster}",
-
-                $"http://{_routerIp}:3000/control/querylog" +
-                $"?search=&response_status=&older_than={futureCursor}" +
-                $"&limit={safeLimit}&_={cacheBuster + 1}",
-
-                $"http://{_routerIp}:3000/control/querylog" +
-                $"?limit={safeLimit}&_={cacheBuster + 2}"
-            };
-
-            AdGuardQueryLogResponse? lastResponse = null;
-
-            foreach (string url in urls)
-            {
-                Debug.WriteLine(
-                    "Calling AdGuard query log: " + url);
-
-                using var request =
-                    new HttpRequestMessage(
-                        HttpMethod.Get,
-                        url);
-
-                request.Headers.CacheControl =
+            client.DefaultRequestHeaders
+                .CacheControl =
                     new System.Net.Http.Headers.CacheControlHeaderValue
                     {
                         NoCache = true,
@@ -1276,62 +1001,65 @@ namespace AdGuardTray.Services
                         MustRevalidate = true
                     };
 
-                request.Headers.Pragma.ParseAdd(
-                    "no-cache");
+            client.DefaultRequestHeaders
+                .Pragma
+                .ParseAdd("no-cache");
 
-                using HttpResponseMessage response =
-                    await client.SendAsync(
-                        request,
-                        HttpCompletionOption.ResponseHeadersRead);
+            int safeLimit =
+                Math.Clamp(
+                    limit,
+                    1,
+                    5000);
 
-                string content =
-                    await response.Content.ReadAsStringAsync();
+            long cacheBuster =
+                DateTimeOffset.UtcNow
+                    .ToUnixTimeMilliseconds();
 
-                lastResponse =
-                    new AdGuardQueryLogResponse(
-                        response.StatusCode,
-                        content);
+            // Use the first-page request shape accepted by the GL.iNet
+            // AdGuard Home builds tested with the known-working Live Logs UI.
+            // The explicitly empty cursor and filters avoid stale or missing
+            // results on affected 0.107 installations.
+            string url =
+                $"http://{_routerIp}:3000/control/querylog" +
+                $"?search=&response_status=&older_than=&limit={safeLimit}" +
+                $"&_={cacheBuster}";
 
-                Debug.WriteLine(
-                    "AdGuard query log status: " +
-                    $"{(int)response.StatusCode} {response.StatusCode}");
+            Debug.WriteLine(
+                "Calling AdGuard query log: " +
+                url);
 
-                if (response.IsSuccessStatusCode &&
-                    QueryLogResponseHasEntries(content))
+            using var request =
+                new HttpRequestMessage(
+                    HttpMethod.Get,
+                    url);
+
+            request.Headers.CacheControl =
+                new System.Net.Http.Headers.CacheControlHeaderValue
                 {
-                    return lastResponse;
-                }
-            }
+                    NoCache = true,
+                    NoStore = true,
+                    MustRevalidate = true
+                };
 
-            return lastResponse ??
-                new AdGuardQueryLogResponse(
-                    HttpStatusCode.ServiceUnavailable,
-                    string.Empty);
-        }
+            request.Headers.Pragma.ParseAdd("no-cache");
 
-        private static bool QueryLogResponseHasEntries(
-            string json)
-        {
-            if (string.IsNullOrWhiteSpace(json))
-            {
-                return false;
-            }
+            using HttpResponseMessage response =
+                await client.SendAsync(
+                    request,
+                    HttpCompletionOption.ResponseHeadersRead);
 
-            try
-            {
-                using JsonDocument document =
-                    JsonDocument.Parse(json);
+            string content =
+                await response.Content
+                    .ReadAsStringAsync();
 
-                return document.RootElement.TryGetProperty(
-                           "data",
-                           out JsonElement data) &&
-                       data.ValueKind == JsonValueKind.Array &&
-                       data.GetArrayLength() > 0;
-            }
-            catch
-            {
-                return false;
-            }
+            Debug.WriteLine(
+                "AdGuard query log status: " +
+                $"{(int)response.StatusCode} " +
+                response.StatusCode);
+
+            return new AdGuardQueryLogResponse(
+                response.StatusCode,
+                content);
         }
 
         private static List<QueryLogEntry>
@@ -2094,21 +1822,6 @@ namespace AdGuardTray.Services
                 ParseQueryHistory(
                     root);
 
-            stats.TopClients =
-                ParseRankedItems(
-                    root,
-                    "top_clients");
-
-            stats.TopQueriedDomains =
-                ParseRankedItems(
-                    root,
-                    "top_queried_domains");
-
-            stats.TopBlockedDomains =
-                ParseRankedItems(
-                    root,
-                    "top_blocked_domains");
-
             Debug.WriteLine(
                 $"Queries: {stats.TotalQueries}");
 
@@ -2116,187 +1829,9 @@ namespace AdGuardTray.Services
                 $"Blocked: {stats.BlockedQueries}");
 
             Debug.WriteLine(
-                $"Top clients: {stats.TopClients.Count}");
-
-            Debug.WriteLine(
-                $"Top requested: {stats.TopQueriedDomains.Count}");
-
-            Debug.WriteLine(
-                $"Top blocked: {stats.TopBlockedDomains.Count}");
+                $"History points: {stats.QueryHistory.Count}");
 
             return stats;
-        }
-
-        private static List<AdGuardRankedItem>
-            ParseRankedItems(
-                JsonElement root,
-                string propertyName)
-        {
-            var result =
-                new List<AdGuardRankedItem>();
-
-            if (!root.TryGetProperty(
-                    propertyName,
-                    out JsonElement value))
-            {
-                return result;
-            }
-
-            if (value.ValueKind ==
-                JsonValueKind.Array)
-            {
-                foreach (JsonElement item in
-                    value.EnumerateArray())
-                {
-                    if (item.ValueKind ==
-                        JsonValueKind.Object)
-                    {
-                        // AdGuard Home normally returns one-property objects,
-                        // for example {"example.com": 42}.
-                        foreach (JsonProperty property in
-                            item.EnumerateObject())
-                        {
-                            if (TryGetInteger(
-                                    property.Value,
-                                    out int propertyCount))
-                            {
-                                result.Add(
-                                    new AdGuardRankedItem
-                                    {
-                                        Name = property.Name,
-                                        Count = propertyCount
-                                    });
-                            }
-                        }
-
-                        // Also accept named object schemas used by forks.
-                        string name =
-                            GetStringProperty(
-                                item,
-                                "name",
-                                string.Empty);
-
-                        if (name.Length == 0)
-                        {
-                            name =
-                                GetStringProperty(
-                                    item,
-                                    "domain",
-                                    string.Empty);
-                        }
-
-                        if (name.Length == 0)
-                        {
-                            name =
-                                GetStringProperty(
-                                    item,
-                                    "client",
-                                    string.Empty);
-                        }
-
-                        if (name.Length > 0 &&
-                            TryGetNamedInteger(
-                                item,
-                                out int namedCount))
-                        {
-                            result.Add(
-                                new AdGuardRankedItem
-                                {
-                                    Name = name,
-                                    Count = namedCount
-                                });
-                        }
-                    }
-                }
-            }
-            else if (value.ValueKind ==
-                     JsonValueKind.Object)
-            {
-                foreach (JsonProperty property in
-                    value.EnumerateObject())
-                {
-                    if (TryGetInteger(
-                            property.Value,
-                            out int mappedCount))
-                    {
-                        result.Add(
-                            new AdGuardRankedItem
-                            {
-                                Name = property.Name,
-                                Count = mappedCount
-                            });
-                    }
-                }
-            }
-
-            return result
-                .Where(item =>
-                    !string.IsNullOrWhiteSpace(item.Name))
-                .GroupBy(
-                    item => item.Name,
-                    StringComparer.OrdinalIgnoreCase)
-                .Select(group =>
-                    new AdGuardRankedItem
-                    {
-                        Name = group.Key,
-                        Count = group.Sum(item => item.Count)
-                    })
-                .OrderByDescending(item => item.Count)
-                .Take(10)
-                .ToList();
-        }
-
-        private static bool TryGetNamedInteger(
-            JsonElement item,
-            out int value)
-        {
-            foreach (string propertyName in
-                new[]
-                {
-                    "count",
-                    "queries",
-                    "value",
-                    "num"
-                })
-            {
-                if (item.TryGetProperty(
-                        propertyName,
-                        out JsonElement property) &&
-                    TryGetInteger(
-                        property,
-                        out value))
-                {
-                    return true;
-                }
-            }
-
-            value = 0;
-            return false;
-        }
-
-        private static bool TryGetInteger(
-            JsonElement value,
-            out int result)
-        {
-            if (value.ValueKind ==
-                    JsonValueKind.Number &&
-                value.TryGetInt32(
-                    out result))
-            {
-                return true;
-            }
-
-            if (value.ValueKind ==
-                    JsonValueKind.String &&
-                int.TryParse(
-                    value.GetString(),
-                    out result))
-            {
-                return true;
-            }
-
-            result = 0;
-            return false;
         }
 
         private static List<AdGuardTimePoint>

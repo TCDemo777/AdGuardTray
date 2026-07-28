@@ -29,16 +29,8 @@ namespace AdGuardTray.Views
             object sender,
             RoutedEventArgs e)
         {
-            try
-            {
-                await _viewModel.StartAsync();
-            }
-            catch (System.Exception ex)
-            {
-                _viewModel.StatusMessage =
-                    "Unable to start live logs: " +
-                    ex.Message;
-            }
+            await _viewModel
+                .StartAsync();
         }
 
         private void LogsView_Unloaded(
