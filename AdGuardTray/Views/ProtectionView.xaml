@@ -50,7 +50,7 @@
        <TextBlock DockPanel.Dock="Right" Foreground="#475467" FontWeight="SemiBold" Text="{Binding BlockedServicesSelectionSummary}"/>
       </DockPanel>
       <Border Height="390"
-              Padding="6"
+              Padding="4"
               Background="#F8FAFC"
               CornerRadius="8"
               BorderBrush="#E2E8F0"
@@ -75,35 +75,29 @@
           <GroupStyle.ContainerStyle>
            <Style TargetType="{x:Type GroupItem}">
             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-            <Setter Property="Margin" Value="0,0,0,6"/>
+            <Setter Property="Margin" Value="0,0,0,2"/>
             <Setter Property="Template">
              <Setter.Value>
               <ControlTemplate TargetType="{x:Type GroupItem}">
-               <Border Padding="6"
-                       Background="White"
-                       BorderBrush="#E2E8F0"
-                       BorderThickness="1"
-                       CornerRadius="7">
-                <StackPanel>
-                 <Grid Margin="2,0,2,4">
-                  <Grid.ColumnDefinitions>
-                   <ColumnDefinition Width="Auto"/>
-                   <ColumnDefinition Width="*"/>
-                  </Grid.ColumnDefinitions>
-                  <TextBlock FontSize="13"
-                             FontWeight="Bold"
-                             Foreground="#344054"
-                             VerticalAlignment="Center"
-                             Text="{Binding Name}"/>
-                  <Border Grid.Column="1"
-                          Height="1"
-                          Margin="10,1,0,0"
-                          VerticalAlignment="Center"
-                          Background="#D8DEE8"/>
-                 </Grid>
-                 <ItemsPresenter/>
-                </StackPanel>
-               </Border>
+               <StackPanel>
+                <Grid Margin="2,2,2,2">
+                 <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto"/>
+                  <ColumnDefinition Width="*"/>
+                 </Grid.ColumnDefinitions>
+                 <TextBlock FontSize="12"
+                            FontWeight="Bold"
+                            Foreground="#344054"
+                            VerticalAlignment="Center"
+                            Text="{Binding Name}"/>
+                 <Border Grid.Column="1"
+                         Height="1"
+                         Margin="8,1,0,0"
+                         VerticalAlignment="Center"
+                         Background="#E4E7EC"/>
+                </Grid>
+                <ItemsPresenter/>
+               </StackPanel>
               </ControlTemplate>
              </Setter.Value>
             </Setter>
@@ -134,9 +128,9 @@
         </ListBox.ItemContainerStyle>
         <ListBox.ItemTemplate>
          <DataTemplate>
-          <Border Margin="2"
-                  MinHeight="38"
-                  Padding="8,6"
+          <Border Margin="2,1"
+                  MinHeight="34"
+                  Padding="8,4"
                   Background="#FAFBFC"
                   BorderBrush="#E4E7EC"
                   BorderThickness="1"

@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-07-28 — Compact Blocked Services sections
+
+### Changed
+- Removed the outer card around every service category.
+- Reduced category spacing to two pixels.
+- Tightened category headings and divider lines.
+- Reduced service-tile height and vertical margins.
+- Kept three service tiles per row and vertical scrolling.
+
 ## 2026-07-28 — Blocked Services spacing refinement
 
 ### Changed
