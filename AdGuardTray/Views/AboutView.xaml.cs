@@ -490,6 +490,73 @@ namespace AdGuardTray.Views
             AppendLog("Changelog reloaded.");
         }
 
+        private void OpenLicense_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            string[] candidatePaths =
+            {
+                Path.Combine(
+                    AppContext.BaseDirectory,
+                    "LICENSE"),
+                Path.Combine(
+                    AppContext.BaseDirectory,
+                    "..",
+                    "..",
+                    "..",
+                    "LICENSE")
+            };
+
+            foreach (string path in candidatePaths)
+            {
+                string fullPath =
+                    Path.GetFullPath(
+                        path);
+
+                if (!File.Exists(
+                        fullPath))
+                {
+                    continue;
+                }
+
+                Process.Start(
+                    new ProcessStartInfo(
+                        fullPath)
+                    {
+                        UseShellExecute = true
+                    });
+
+                AppendLog(
+                    "Licence opened.");
+
+                return;
+            }
+
+            MessageBox.Show(
+                "The LICENSE file could not be found.",
+                "Licence",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+
+        private void SupportDevelopment_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            const string sponsorsUrl =
+                "https://github.com/sponsors/TCDemo777";
+
+            AppendLog(
+                "Opening GitHub Sponsors page...");
+
+            Process.Start(
+                new ProcessStartInfo(
+                    sponsorsUrl)
+                {
+                    UseShellExecute = true
+                });
+        }
+
         private void GitHubLink_RequestNavigate(
             object sender,
             RequestNavigateEventArgs e)

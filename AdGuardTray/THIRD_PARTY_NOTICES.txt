@@ -1,0 +1,78 @@
+AdGuardTray — Third-Party Notices
+
+AdGuardTray is an independent project and is not affiliated with, endorsed by,
+or sponsored by GL Technologies (Hong Kong) Limited or AdGuard Software Limited.
+
+Platforms and services
+----------------------
+GL.iNet
+Router hardware, firmware and management interfaces used by AdGuardTray.
+https://www.gl-inet.com/
+
+AdGuard Home
+DNS filtering, protection, statistics and query-log APIs used by AdGuardTray.
+https://adguard.com/adguard-home/overview.html
+
+Microsoft .NET and Windows Presentation Foundation
+Application runtime, desktop framework, hosting, configuration, dependency
+injection and logging components.
+https://dotnet.microsoft.com/
+
+Direct NuGet dependencies
+-------------------------
+CommunityToolkit.Mvvm 8.4.2
+Purpose: MVVM observable objects, generated properties and commands.
+Licence: MIT
+https://www.nuget.org/packages/CommunityToolkit.Mvvm/8.4.2
+
+CryptSharpOfficial 2.1.0
+Purpose: crypt-compatible password hashing used for router authentication.
+Licence: ISC
+https://www.nuget.org/packages/CryptSharpOfficial/2.1.0
+
+Hardcodet.NotifyIcon.Wpf 2.0.1
+Purpose: Windows notification-area icon and tray interaction.
+Licence: MIT
+https://www.nuget.org/packages/Hardcodet.NotifyIcon.Wpf/2.0.1
+
+LiveChartsCore.SkiaSharpView.WPF 2.0.5
+Purpose: analytics charts and data visualisation.
+Licence: MIT
+https://www.nuget.org/packages/LiveChartsCore.SkiaSharpView.WPF/2.0.5
+
+Microsoft.Extensions.Configuration.Json 10.0.10
+Purpose: JSON configuration support.
+Licence: MIT
+https://www.nuget.org/packages/Microsoft.Extensions.Configuration.Json/10.0.10
+
+Microsoft.Extensions.DependencyInjection 10.0.10
+Purpose: dependency injection.
+Licence: MIT
+https://www.nuget.org/packages/Microsoft.Extensions.DependencyInjection/10.0.10
+
+Microsoft.Extensions.Hosting 10.0.10
+Purpose: application hosting and lifetime management.
+Licence: MIT
+https://www.nuget.org/packages/Microsoft.Extensions.Hosting/10.0.10
+
+Microsoft.Extensions.Logging.Debug 10.0.10
+Purpose: debug logging provider.
+Licence: MIT
+https://www.nuget.org/packages/Microsoft.Extensions.Logging.Debug/10.0.10
+
+SSH.NET 2025.1.0
+Purpose: SSH connectivity to supported routers.
+Licence: MIT
+https://www.nuget.org/packages/SSH.NET/2025.1.0
+
+Transitive dependencies
+-----------------------
+The packages above may bring in additional transitive components. Their notices
+and licence information are available from the corresponding NuGet package
+pages and restored package metadata.
+
+Special thanks
+--------------
+Thanks to the GL.iNet and AdGuard teams and communities for providing the
+platforms, documentation and APIs that make independent tools such as
+AdGuardTray possible.

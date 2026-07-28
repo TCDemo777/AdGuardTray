@@ -25,31 +25,256 @@
                 <ScrollViewer Margin="0,12,0,0"
                               VerticalScrollBarVisibility="Auto">
                     <StackPanel>
-                        <Border Padding="20" Background="White" CornerRadius="12"
-                                BorderBrush="#DDE3EA" BorderThickness="1">
+                        <Border Padding="20"
+                                Background="White"
+                                CornerRadius="12"
+                                BorderBrush="#DDE3EA"
+                                BorderThickness="1">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="90"/>
                                     <ColumnDefinition Width="18"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <Image Width="82" Height="82" Stretch="Uniform"
+
+                                <Image Width="82"
+                                       Height="82"
+                                       Stretch="Uniform"
                                        Source="/Assets/AdGuardTrayLogo.png"/>
+
                                 <StackPanel Grid.Column="2">
-                                    <TextBlock FontSize="25" FontWeight="Bold" Text="AdGuardTray"/>
-                                    <TextBlock Margin="0,3,0,0" Foreground="#667085"
-                                               Text="Version 1.3"/>
-                                    <TextBlock Margin="0,11,0,0" FontSize="14"
-                                               LineHeight="20" TextWrapping="Wrap"
-                                               Text="A focused Windows desktop console for GL.iNet router health, AdGuard Home protection, analytics, clients, DNS logs and network administration."/>
-                                    <TextBlock Margin="0,11,0,0" FontWeight="SemiBold"
-                                               Text="Created by Tristan Caldwell"/>
-                                    <TextBlock Margin="0,4,0,0">
-                                        <Hyperlink NavigateUri="https://github.com/TCDemo777/AdGuardTray"
-                                                   RequestNavigate="GitHubLink_RequestNavigate">View AdGuardTray on GitHub</Hyperlink>
-                                    </TextBlock>
+                                    <TextBlock FontSize="25"
+                                               FontWeight="Bold"
+                                               Text="AdGuardTray"/>
+                                    <TextBlock Margin="0,3,0,0"
+                                               Foreground="#667085"
+                                               Text="Version 1.3.0"/>
+                                    <TextBlock Margin="0,11,0,0"
+                                               FontSize="14"
+                                               LineHeight="20"
+                                               TextWrapping="Wrap"
+                                               Text="A Windows desktop companion for monitoring and managing supported GL.iNet routers running AdGuard Home."/>
+                                    <TextBlock Margin="0,11,0,0"
+                                               FontWeight="SemiBold"
+                                               Text="Created and maintained by Tristan Caldwell"/>
+                                    <TextBlock Margin="0,4,0,0"
+                                               Foreground="#667085"
+                                               Text="Released under the MIT Licence."/>
+
+                                    <WrapPanel Margin="0,14,0,0">
+                                        <Button Margin="0,0,8,8"
+                                                Padding="14,6">
+                                            <TextBlock>
+                                                <Hyperlink NavigateUri="https://github.com/TCDemo777/AdGuardTray"
+                                                           RequestNavigate="GitHubLink_RequestNavigate">GitHub</Hyperlink>
+                                            </TextBlock>
+                                        </Button>
+                                        <Button Margin="0,0,8,8"
+                                                Padding="14,6">
+                                            <TextBlock>
+                                                <Hyperlink NavigateUri="https://github.com/TCDemo777/AdGuardTray#readme"
+                                                           RequestNavigate="GitHubLink_RequestNavigate">Documentation</Hyperlink>
+                                            </TextBlock>
+                                        </Button>
+                                        <Button Margin="0,0,8,8"
+                                                Padding="14,6">
+                                            <TextBlock>
+                                                <Hyperlink NavigateUri="https://github.com/TCDemo777/AdGuardTray/issues/new"
+                                                           RequestNavigate="GitHubLink_RequestNavigate">Report an issue</Hyperlink>
+                                            </TextBlock>
+                                        </Button>
+                                        <Button Margin="0,0,8,8"
+                                                Padding="14,6"
+                                                Click="SupportDevelopment_Click"
+                                                Content="★ Support Development"/>
+                                        <Button Margin="0,0,8,8"
+                                                Padding="14,6"
+                                                Click="OpenLicense_Click"
+                                                Content="Licence"/>
+                                    </WrapPanel>
                                 </StackPanel>
                             </Grid>
+                        </Border>
+
+                        <Border Margin="0,14,0,0"
+                                Padding="20"
+                                Background="White"
+                                CornerRadius="12"
+                                BorderBrush="#DDE3EA"
+                                BorderThickness="1">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Margin="0,0,22,0">
+                                    <TextBlock FontSize="20"
+                                               FontWeight="Bold"
+                                               Text="Support Development"/>
+                                    <TextBlock Margin="0,6,0,0"
+                                               FontSize="14"
+                                               LineHeight="20"
+                                               TextWrapping="Wrap"
+                                               Text="AdGuardTray is free and open source and is developed independently in my spare time."/>
+                                    <TextBlock Margin="0,7,0,0"
+                                               Foreground="#667085"
+                                               LineHeight="20"
+                                               TextWrapping="Wrap"
+                                               Text="If it has helped you manage your GL.iNet router or saved you time, you can support future development through GitHub Sponsors. Every contribution helps fund development time, testing hardware and future features."/>
+                                    <TextBlock Margin="0,9,0,0"
+                                               FontStyle="Italic"
+                                               Foreground="#667085"
+                                               Text="Thank you for using AdGuardTray."/>
+                                </StackPanel>
+
+                                <Button Grid.Column="1"
+                                        MinWidth="178"
+                                        Height="40"
+                                        Padding="16,7"
+                                        VerticalAlignment="Center"
+                                        Click="SupportDevelopment_Click"
+                                        Content="★ Support Development"/>
+                            </Grid>
+                        </Border>
+
+                        <Border Margin="0,14,0,0"
+                                Padding="20"
+                                Background="White"
+                                CornerRadius="12"
+                                BorderBrush="#DDE3EA"
+                                BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock FontSize="20"
+                                           FontWeight="Bold"
+                                           Text="Credits &amp; Acknowledgements"/>
+                                <TextBlock Margin="0,4,0,0"
+                                           Foreground="#667085"
+                                           TextWrapping="Wrap"
+                                           Text="AdGuardTray is an independent project. Product names and trademarks remain the property of their respective owners."/>
+
+                                <TextBlock Margin="0,18,0,0"
+                                           FontSize="15"
+                                           FontWeight="Bold"
+                                           Text="GL.iNet"/>
+                                <TextBlock Margin="0,5,0,0"
+                                           LineHeight="19"
+                                           TextWrapping="Wrap"
+                                           Text="AdGuardTray communicates with supported GL.iNet routers and their management interfaces to surface router health, network information and administration features."/>
+                                <TextBlock Margin="0,5,0,0">
+                                    <Hyperlink NavigateUri="https://www.gl-inet.com/"
+                                               RequestNavigate="GitHubLink_RequestNavigate">Visit GL.iNet</Hyperlink>
+                                </TextBlock>
+
+                                <Separator Margin="0,16,0,16"/>
+
+                                <TextBlock FontSize="15"
+                                           FontWeight="Bold"
+                                           Text="AdGuard Home"/>
+                                <TextBlock Margin="0,5,0,0"
+                                           LineHeight="19"
+                                           TextWrapping="Wrap"
+                                           Text="DNS filtering, protection controls, statistics, client activity and query-log data are provided through AdGuard Home."/>
+                                <TextBlock Margin="0,5,0,0">
+                                    <Hyperlink NavigateUri="https://adguard.com/adguard-home/overview.html"
+                                               RequestNavigate="GitHubLink_RequestNavigate">Visit AdGuard Home</Hyperlink>
+                                </TextBlock>
+
+                                <Separator Margin="0,16,0,16"/>
+
+                                <TextBlock FontSize="15"
+                                           FontWeight="Bold"
+                                           Text="Microsoft"/>
+                                <TextBlock Margin="0,5,0,0"
+                                           LineHeight="19"
+                                           TextWrapping="Wrap"
+                                           Text="Built with .NET 9 and Windows Presentation Foundation, with Microsoft.Extensions hosting, configuration, dependency-injection and logging components."/>
+                                <TextBlock Margin="0,5,0,0">
+                                    <Hyperlink NavigateUri="https://dotnet.microsoft.com/"
+                                               RequestNavigate="GitHubLink_RequestNavigate">Visit .NET</Hyperlink>
+                                </TextBlock>
+
+                                <Separator Margin="0,16,0,16"/>
+
+                                <TextBlock FontSize="15"
+                                           FontWeight="Bold"
+                                           Text="Open-source components"/>
+                                <TextBlock Margin="0,5,0,10"
+                                           Foreground="#667085"
+                                           TextWrapping="Wrap"
+                                           Text="Direct package references from AdGuardTray.csproj. Full notices are included in THIRD_PARTY_NOTICES.txt."/>
+
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="2.2*"/>
+                                        <ColumnDefinition Width="0.8*"/>
+                                        <ColumnDefinition Width="2.2*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <TextBlock Grid.Row="0" Grid.Column="0" FontWeight="Bold" Text="Component"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="1" FontWeight="Bold" Text="Licence"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="2" FontWeight="Bold" Text="Purpose"/>
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,7,12,0" Text="CommunityToolkit.Mvvm 8.4.2"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Margin="0,7,12,0" Text="MIT"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="2" Margin="0,7,0,0" Text="MVVM helpers"/>
+
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,7,12,0" Text="CryptSharpOfficial 2.1.0"/>
+                                    <TextBlock Grid.Row="2" Grid.Column="1" Margin="0,7,12,0" Text="ISC"/>
+                                    <TextBlock Grid.Row="2" Grid.Column="2" Margin="0,7,0,0" Text="Router password hashing"/>
+
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,7,12,0" Text="Hardcodet.NotifyIcon.Wpf 2.0.1"/>
+                                    <TextBlock Grid.Row="3" Grid.Column="1" Margin="0,7,12,0" Text="MIT"/>
+                                    <TextBlock Grid.Row="3" Grid.Column="2" Margin="0,7,0,0" Text="Notification-area icon"/>
+
+                                    <TextBlock Grid.Row="4" Grid.Column="0" Margin="0,7,12,0" Text="LiveChartsCore WPF 2.0.5"/>
+                                    <TextBlock Grid.Row="4" Grid.Column="1" Margin="0,7,12,0" Text="MIT"/>
+                                    <TextBlock Grid.Row="4" Grid.Column="2" Margin="0,7,0,0" Text="Analytics charts"/>
+
+                                    <TextBlock Grid.Row="5" Grid.Column="0" Margin="0,7,12,0" Text="Microsoft.Extensions.Configuration.Json 10.0.10"/>
+                                    <TextBlock Grid.Row="5" Grid.Column="1" Margin="0,7,12,0" Text="MIT"/>
+                                    <TextBlock Grid.Row="5" Grid.Column="2" Margin="0,7,0,0" Text="JSON configuration"/>
+
+                                    <TextBlock Grid.Row="6" Grid.Column="0" Margin="0,7,12,0" Text="Microsoft.Extensions.DependencyInjection 10.0.10"/>
+                                    <TextBlock Grid.Row="6" Grid.Column="1" Margin="0,7,12,0" Text="MIT"/>
+                                    <TextBlock Grid.Row="6" Grid.Column="2" Margin="0,7,0,0" Text="Dependency injection"/>
+
+                                    <TextBlock Grid.Row="7" Grid.Column="0" Margin="0,7,12,0" Text="Microsoft.Extensions.Hosting 10.0.10"/>
+                                    <TextBlock Grid.Row="7" Grid.Column="1" Margin="0,7,12,0" Text="MIT"/>
+                                    <TextBlock Grid.Row="7" Grid.Column="2" Margin="0,7,0,0" Text="Application hosting"/>
+
+                                    <TextBlock Grid.Row="8" Grid.Column="0" Margin="0,7,12,0" Text="Microsoft.Extensions.Logging.Debug 10.0.10"/>
+                                    <TextBlock Grid.Row="8" Grid.Column="1" Margin="0,7,12,0" Text="MIT"/>
+                                    <TextBlock Grid.Row="8" Grid.Column="2" Margin="0,7,0,0" Text="Debug logging"/>
+
+                                    <TextBlock Grid.Row="9" Grid.Column="0" Margin="0,7,12,0" Text="SSH.NET 2025.1.0"/>
+                                    <TextBlock Grid.Row="9" Grid.Column="1" Margin="0,7,12,0" Text="MIT"/>
+                                    <TextBlock Grid.Row="9" Grid.Column="2" Margin="0,7,0,0" Text="SSH connectivity"/>
+                                </Grid>
+
+                                <Border Margin="0,18,0,0"
+                                        Padding="14"
+                                        Background="#F8FAFC"
+                                        BorderBrush="#E4E7EC"
+                                        BorderThickness="1"
+                                        CornerRadius="8">
+                                    <TextBlock FontStyle="Italic"
+                                               TextWrapping="Wrap"
+                                               Text="Special thanks to the GL.iNet and AdGuard teams and communities for providing the platforms, documentation and APIs that make independent tools such as AdGuardTray possible."/>
+                                </Border>
+                            </StackPanel>
                         </Border>
                     </StackPanel>
                 </ScrollViewer>

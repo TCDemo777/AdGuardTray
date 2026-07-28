@@ -1,14 +1,19 @@
 # AdGuardTray Changelog
 
-This changelog consolidates the complete public GitHub history of AdGuardTray,
-from the initial project setup through the current v1.3 release.
-
 ## v1.3 — UI polish and historical changelog
 
 ### Fixed
 - Restored vertical scrolling on Analytics.
 - Prevented the DNS Query History chart and ranking panels from being clipped.
 - Improved Top Clients rendering when a friendly name and IP address are both present.
+
+### Added
+- Added a tasteful Support Development section linked to GitHub Sponsors.
+- Added a repository Sponsor button through `.github/FUNDING.yml`.
+- Added GitHub Sponsors information and badge to the README.
+- Added Credits & Acknowledgements for GL.iNet, AdGuard Home, Microsoft and direct open-source dependencies.
+- Added GitHub, documentation, issue-reporting and local licence actions.
+- Added LICENSE and THIRD_PARTY_NOTICES.txt to release output.
 
 ### Changed
 - Top Clients now displays friendly names and addresses on separate lines.
