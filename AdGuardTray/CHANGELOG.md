@@ -1,5 +1,17 @@
 # Unreleased
 
+## Added
+- Added a one-click **Enable query log** repair action to About > Diagnostics.
+- The action preserves the existing query-log retention, anonymisation and ignored-client settings.
+- Diagnostics now shows a clear warning when query logging is disabled.
+
+## Behaviour
+- Query totals continue to come from `/control/stats`.
+- Blocked, Block rate and Last seen begin populating from new query-log entries after logging is enabled.
+- Activity from while query logging was disabled cannot be reconstructed.
+
+# Previous unreleased
+
 ## Fixed
 - Client cards now merge per-client query totals from `/control/stats`
   when the query-log endpoint returns an empty page.

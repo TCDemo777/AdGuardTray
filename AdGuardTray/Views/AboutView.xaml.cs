@@ -99,14 +99,98 @@ namespace AdGuardTray.Views
                         settings.Username,
                         password);
 
-                DiagnosticsTextBox.Text =
+                string report =
                     await routerManager
                         .GetClientDiagnosticsAsync();
+
+                DiagnosticsTextBox.Text =
+                    report;
+
+                QueryLogWarningBorder.Visibility =
+                    report.Contains(
+                        "Enabled: False",
+                        StringComparison.OrdinalIgnoreCase)
+                        ? Visibility.Visible
+                        : Visibility.Collapsed;
             }
             catch (Exception ex)
             {
                 DiagnosticsTextBox.Text =
                     ex.ToString();
+            }
+        }
+
+        private async void EnableQueryLog_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            EnableQueryLogButton.IsEnabled =
+                false;
+
+            EnableQueryLogButton.Content =
+                "Enabling...";
+
+            try
+            {
+                var settings =
+                    _settingsService.Load();
+
+                string password =
+                    _settingsService.DecryptPassword(
+                        settings.EncryptedPassword);
+
+                var routerManager =
+                    new RouterManager(
+                        settings.RouterIp,
+                        settings.Username,
+                        password);
+
+                var current =
+                    await routerManager
+                        .GetProtectionOptionsAsync();
+
+                await routerManager
+                    .SetQueryLogEnabledAsync(
+                        true,
+                        current);
+
+                DiagnosticsTextBox.Text =
+                    "Query logging was enabled successfully.\n\n" +
+                    "New DNS requests will now provide Blocked, " +
+                    "Block rate and Last seen values. Existing history " +
+                    "from while logging was disabled cannot be recovered.\n\n" +
+                    "Running diagnostics again...";
+
+                string report =
+                    await routerManager
+                        .GetClientDiagnosticsAsync();
+
+                DiagnosticsTextBox.Text =
+                    report;
+
+                QueryLogWarningBorder.Visibility =
+                    report.Contains(
+                        "Enabled: False",
+                        StringComparison.OrdinalIgnoreCase)
+                        ? Visibility.Visible
+                        : Visibility.Collapsed;
+            }
+            catch (Exception ex)
+            {
+                DiagnosticsTextBox.Text =
+                    "Unable to enable query logging.\n\n" +
+                    ex;
+
+                QueryLogWarningBorder.Visibility =
+                    Visibility.Visible;
+            }
+            finally
+            {
+                EnableQueryLogButton.IsEnabled =
+                    true;
+
+                EnableQueryLogButton.Content =
+                    "Enable query log";
             }
         }
 

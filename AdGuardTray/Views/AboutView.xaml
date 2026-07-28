@@ -139,6 +139,8 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="10"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="10"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
                         <DockPanel>
@@ -163,8 +165,36 @@
                                         Content="Run diagnostics"/>
                             </StackPanel>
                         </DockPanel>
+                        <Border x:Name="QueryLogWarningBorder"
+                                Grid.Row="2"
+                                Padding="12"
+                                Background="#FFF7E6"
+                                BorderBrush="#F5C26B"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Visibility="Collapsed">
+                            <DockPanel LastChildFill="True">
+                                <Button x:Name="EnableQueryLogButton"
+                                        DockPanel.Dock="Right"
+                                        MinWidth="132"
+                                        Height="32"
+                                        Margin="12,0,0,0"
+                                        Click="EnableQueryLog_Click"
+                                        Content="Enable query log"/>
+                                <StackPanel>
+                                    <TextBlock FontWeight="Bold"
+                                               Foreground="#8A4B08"
+                                               Text="Query logging is disabled"/>
+                                    <TextBlock Margin="0,3,0,0"
+                                               Foreground="#8A4B08"
+                                               TextWrapping="Wrap"
+                                               Text="Queries can still come from statistics, but Blocked, Block rate and Last seen need query-log entries."/>
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+
                         <TextBox x:Name="DiagnosticsTextBox"
-                                 Grid.Row="2"
+                                 Grid.Row="4"
                                  Padding="12"
                                  Background="#F8FAFC"
                                  BorderBrush="#E4E7EC"
