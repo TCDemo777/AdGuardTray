@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-07-28 — Blocked Services spacing refinement
+
+### Changed
+- Reduced the vertical gap between Blocked Services sections.
+- Replaced large filled section headers with compact headings and divider lines.
+- Reduced group padding while retaining clear visual separation.
+- Reduced service-tile height and margins for denser scrolling.
+- Preserved the three-column layout, categories and vertical scrollbar.
+
 ## 2026-07-28 — Protection and Analytics layout refinement
 
 ### Changed
