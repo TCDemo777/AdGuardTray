@@ -1,15 +1,16 @@
 # Changelog
 
-## 2026-07-28 — Logs fix without UI or analytics regressions
+## 2026-07-28 — Analytics ranks and live client-card refresh
 
 ### Fixed
-- Restored the accepted responsive Blocked Services view and filtering ViewModel.
-- Restored the later RouterManager implementation used by working Top Lists.
-- Kept the robust AdGuard Home query-log request fallback.
-- Restored the dedicated Live Logs model, view and refresh ViewModel.
-- Added immediate Overview protection-state updates after successful commands.
+- Analytics Top Clients, Top Requested Domains and Top Blocked Domains now show 1 through 10.
+- Removed the invalid converter namespace approach that caused MC3000.
+- Added a one-based Rank property directly to Analytics ranking items.
+- Client cards refresh every 10 seconds while the Clients page is visible.
+- Client data refreshes immediately whenever the page is reopened.
+- Refresh stops when navigating away from the Clients page.
 
 ### Scope
-- No Analytics view files are replaced.
-- No Dashboard ViewModel or Top Lists UI files are replaced.
-- Blocked Services layout remains identical to the previously accepted package.
+- No RouterManager changes.
+- No client layout, sorting, filtering or favourites changes.
+- No Logs, Protection or Blocked Services files are replaced.

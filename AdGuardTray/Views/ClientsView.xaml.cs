@@ -11,6 +11,7 @@ namespace AdGuardTray.Views
     public partial class ClientsView : UserControl
     {
         private readonly ClientsViewModel _viewModel;
+        private readonly DispatcherTimer _refreshTimer;
 
         public ClientsView()
         {
@@ -19,15 +20,53 @@ namespace AdGuardTray.Views
             _viewModel = new ClientsViewModel();
             DataContext = _viewModel;
 
+            _refreshTimer =
+                new DispatcherTimer
+                {
+                    Interval = TimeSpan.FromSeconds(10)
+                };
+
+            _refreshTimer.Tick +=
+                ClientsRefreshTimer_Tick;
+
             Loaded += ClientsView_Loaded;
+            Unloaded += ClientsView_Unloaded;
         }
 
         private async void ClientsView_Loaded(
             object sender,
             RoutedEventArgs e)
         {
-            Loaded -= ClientsView_Loaded;
+            await RefreshClientsAsync();
 
+            if (!_refreshTimer.IsEnabled)
+            {
+                _refreshTimer.Start();
+            }
+        }
+
+        private async void ClientsRefreshTimer_Tick(
+            object? sender,
+            EventArgs e)
+        {
+            if (!IsVisible ||
+                _viewModel.IsLoading)
+            {
+                return;
+            }
+
+            await RefreshClientsAsync();
+        }
+
+        private void ClientsView_Unloaded(
+            object sender,
+            RoutedEventArgs e)
+        {
+            _refreshTimer.Stop();
+        }
+
+        private async System.Threading.Tasks.Task RefreshClientsAsync()
+        {
             try
             {
                 await _viewModel.LoadClientsAsync();

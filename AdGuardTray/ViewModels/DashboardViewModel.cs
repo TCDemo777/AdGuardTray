@@ -43,12 +43,6 @@ namespace AdGuardTray.ViewModels
         private double memoryPercentage;
 
         [ObservableProperty]
-        private string memoryUsed = "-";
-
-        [ObservableProperty]
-        private string memoryCache = "-";
-
-        [ObservableProperty]
         private string storageUsage = "-";
 
         [ObservableProperty]
@@ -518,8 +512,16 @@ namespace AdGuardTray.ViewModels
         {
             destination.Clear();
 
+            int rank = 1;
+
             foreach (T item in source)
             {
+                if (item is AdGuardRankedItem rankedItem)
+                {
+                    rankedItem.Rank = rank;
+                    rank++;
+                }
+
                 destination.Add(item);
             }
         }
