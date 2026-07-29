@@ -4,6 +4,8 @@ namespace AdGuardTray.Models
     {
         public string Time { get; set; } = "";
         public string Client { get; set; } = "";
+        public string ClientAddress { get; set; } = "";
+        public string ClientName { get; set; } = "";
         public string Domain { get; set; } = "";
         public bool IsBlocked { get; set; }
 

@@ -1841,6 +1841,12 @@ namespace AdGuardTray.Services
                         Client =
                             client,
 
+                        ClientAddress =
+                            clientAddress,
+
+                        ClientName =
+                            clientName,
+
                         Domain =
                             string.IsNullOrWhiteSpace(
                                 domain)
@@ -2334,6 +2340,38 @@ namespace AdGuardTray.Services
             {
                 ipAddress =
                     normalisedIdentifier;
+            }
+
+            // Configured AdGuard Home clients can expose an IP address
+            // and a MAC address as separate identifiers with the same name.
+            // Merge those identifiers into one card instead of creating two
+            // incomplete client records.
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                ClientInfo? existingClient =
+                    clients.FirstOrDefault(
+                        client =>
+                            string.Equals(
+                                client.Name,
+                                displayName,
+                                StringComparison.OrdinalIgnoreCase));
+
+                if (existingClient is not null)
+                {
+                    if (ipAddress != "-" &&
+                        existingClient.IpAddress == "-")
+                    {
+                        existingClient.IpAddress = ipAddress;
+                    }
+
+                    if (macAddress != "-" &&
+                        existingClient.MacAddress == "-")
+                    {
+                        existingClient.MacAddress = macAddress;
+                    }
+
+                    return;
+                }
             }
 
             clients.Add(

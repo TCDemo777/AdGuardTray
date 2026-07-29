@@ -164,11 +164,20 @@ namespace AdGuardTray.ViewModels
             QueryLogEntry entry)
         {
             return SameText(
+                       entry.ClientAddress,
+                       _client.IpAddress) ||
+                   SameText(
+                       entry.ClientName,
+                       _client.Name) ||
+                   SameText(
                        entry.Client,
                        _client.IpAddress) ||
                    SameText(
                        entry.Client,
-                       _client.Name);
+                       _client.Name) ||
+                   ContainsIdentifier(
+                       entry.Client,
+                       _client.IpAddress);
         }
 
         private void ApplyEntries(
@@ -258,6 +267,23 @@ namespace AdGuardTray.ViewModels
             return string.Equals(
                 first.Trim(),
                 second.Trim(),
+                StringComparison.OrdinalIgnoreCase);
+        }
+
+
+        private static bool ContainsIdentifier(
+            string? displayValue,
+            string? identifier)
+        {
+            if (string.IsNullOrWhiteSpace(displayValue) ||
+                string.IsNullOrWhiteSpace(identifier) ||
+                identifier == "-")
+            {
+                return false;
+            }
+
+            return displayValue.Contains(
+                identifier.Trim(),
                 StringComparison.OrdinalIgnoreCase);
         }
 

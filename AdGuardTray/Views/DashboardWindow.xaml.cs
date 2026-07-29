@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -47,6 +48,9 @@ namespace AdGuardTray.Views
 
             Loaded +=
                 DashboardWindow_Loaded;
+
+            StateChanged +=
+                DashboardWindow_StateChanged;
 
             _refreshTimer =
                 new DispatcherTimer
@@ -275,6 +279,37 @@ namespace AdGuardTray.Views
                 ShowConnectionError(
                     ex.Message);
             }
+        }
+
+        public Task RefreshNowAsync()
+        {
+            return RefreshDashboard();
+        }
+
+        private void DashboardWindow_StateChanged(
+            object? sender,
+            EventArgs e)
+        {
+            if (WindowState == WindowState.Minimized &&
+                Application.Current is App app)
+            {
+                Dispatcher.BeginInvoke(
+                    new Action(app.HideDashboard));
+            }
+        }
+
+        protected override void OnClosing(
+            CancelEventArgs e)
+        {
+            if (Application.Current is App app &&
+                !app.IsExitRequested)
+            {
+                e.Cancel = true;
+                app.HideDashboard();
+                return;
+            }
+
+            base.OnClosing(e);
         }
 
         private static string FormatProtectionRemaining(

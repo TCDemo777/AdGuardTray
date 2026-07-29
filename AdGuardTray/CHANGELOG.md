@@ -1,5 +1,22 @@
 # AdGuardTray Changelog
 
+## v1.3.1 — Client details and tray usability
+
+### Fixed
+- Restored Recent DNS Requests in the Client Details window by matching query-log entries against their separate client name and address fields.
+- Restored Top Requested Domains and Top Blocked Domains for the selected client.
+- Merged configured client IP and MAC identifiers that share the same AdGuard Home client name, allowing the MAC address to appear on a single client record.
+
+### Added
+- Added a notification-area context menu with Open Dashboard, Refresh Dashboard and Exit AdGuardTray actions.
+- Added double-click support on the notification-area icon to restore the dashboard.
+- Added a one-time notification explaining that AdGuardTray remains active after the dashboard is hidden.
+
+### Changed
+- Closing the dashboard with the X now hides it to the notification area instead of exiting.
+- Minimising the dashboard now hides it to the notification area.
+- Updated application, assembly and file versions to 1.3.1.
+
 ## v1.3 — UI polish and historical changelog
 
 ### Fixed
