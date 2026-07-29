@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Fragment>
+
+    <ComponentGroup Id="ApplicationComponents"
+                    Directory="INSTALLFOLDER">
+
+      <Files Include="!(bindpath.publish)\**">
+        <Exclude Files="!(bindpath.publish)\AdGuardTray.exe" />
+        <Exclude Files="!(bindpath.publish)\**\*.pdb" />
+      </Files>
+
+      <Component Id="MainExecutable"
+                 Directory="INSTALLFOLDER">
+
+        <File Id="AdGuardTrayExecutable"
+              Source="!(bindpath.publish)\AdGuardTray.exe"
+              KeyPath="yes">
+
+          <Shortcut Id="StartMenuShortcut"
+                    Directory="APPLICATIONPROGRAMSFOLDER"
+                    Name="AdGuardTray"
+                    Description="Manage your GL.iNet router and AdGuard Home"
+                    WorkingDirectory="INSTALLFOLDER"
+                    Advertise="no" />
+
+          <Shortcut Id="DesktopShortcut"
+                    Directory="DesktopFolder"
+                    Name="AdGuardTray"
+                    Description="Manage your GL.iNet router and AdGuard Home"
+                    WorkingDirectory="INSTALLFOLDER"
+                    Advertise="no" />
+
+        </File>
+
+      </Component>
+
+      <Component Id="StartMenuFolderCleanup"
+                 Directory="APPLICATIONPROGRAMSFOLDER">
+
+        <RemoveFolder Id="RemoveStartMenuFolder"
+                      On="uninstall" />
+
+        <RegistryValue Root="HKLM"
+                       Key="Software\TCDemo777\AdGuardTray"
+                       Name="Installed"
+                       Type="integer"
+                       Value="1"
+                       KeyPath="yes" />
+
+      </Component>
+
+    </ComponentGroup>
+
+  </Fragment>
+</Wix>
