@@ -11,8 +11,7 @@ built-in diagnostics.
 
 ## Support Development
 
-AdGuardTray is free and open source and is developed independently in Tristan
-Caldwell's spare time.
+AdGuardTray is free and open source and is developed independently in my spare time.
 
 If the application has helped you manage your GL.iNet router or saved you time,
 you can support future development through GitHub Sponsors:
