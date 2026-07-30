@@ -2,9 +2,9 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Client Details"
-        Width="1120"
+        Width="1180"
         Height="820"
-        MinWidth="940"
+        MinWidth="1000"
         MinHeight="700"
         Background="#F6F8FA"
         WindowStartupLocation="CenterOwner">
@@ -74,75 +74,94 @@
 
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="1.25*"/>
-                <ColumnDefinition Width="10"/>
-                <ColumnDefinition Width="1.25*"/>
-                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="1.7*"/>
+                <ColumnDefinition Width="12"/>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="12"/>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="12"/>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="10"/>
-                <ColumnDefinition Width="1.15*"/>
             </Grid.ColumnDefinitions>
 
             <Border Grid.Column="0" Style="{StaticResource CardStyle}">
-                <StackPanel>
-                    <TextBlock Foreground="#667085" Text="IP Address"/>
-                    <DockPanel Margin="0,7,0,0">
-                        <Button DockPanel.Dock="Right" Style="{StaticResource CopyButtonStyle}"
-                                Command="{Binding CopyIpCommand}" Content="Copy"/>
-                        <TextBlock VerticalAlignment="Center" FontSize="15" FontWeight="SemiBold"
-                                   TextTrimming="CharacterEllipsis" ToolTip="{Binding IpAddress}"
-                                   Text="{Binding IpAddress}"/>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="12"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <DockPanel LastChildFill="True">
+                        <Border DockPanel.Dock="Left" Width="42" Height="42" Margin="0,0,12,0"
+                                Background="#EAF2FF" CornerRadius="21">
+                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                       FontSize="18" Foreground="#2457A7" Text="&#xE716;"/>
+                        </Border>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="#667085"
+                                       Text="CLIENT IDENTITY"/>
+                            <TextBlock Margin="0,3,0,0" FontSize="15" FontWeight="SemiBold"
+                                       TextTrimming="CharacterEllipsis" Text="{Binding ClientName}"/>
+                        </StackPanel>
                     </DockPanel>
-                </StackPanel>
+
+                    <Grid Grid.Row="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel>
+                            <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="#8A94A6" Text="IP ADDRESS"/>
+                            <DockPanel Margin="0,5,0,0">
+                                <Button DockPanel.Dock="Right" Style="{StaticResource CopyButtonStyle}"
+                                        Command="{Binding CopyIpCommand}" Content="Copy"/>
+                                <TextBlock VerticalAlignment="Center" FontWeight="SemiBold"
+                                           TextTrimming="CharacterEllipsis" ToolTip="{Binding IpAddress}"
+                                           Text="{Binding IpAddress}"/>
+                            </DockPanel>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="2">
+                            <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="#8A94A6" Text="MAC ADDRESS"/>
+                            <DockPanel Margin="0,5,0,0">
+                                <Button DockPanel.Dock="Right" Style="{StaticResource CopyButtonStyle}"
+                                        Command="{Binding CopyMacCommand}" Content="Copy"/>
+                                <TextBlock VerticalAlignment="Center" FontWeight="SemiBold"
+                                           TextTrimming="CharacterEllipsis" ToolTip="{Binding MacAddress}"
+                                           Text="{Binding MacAddress}"/>
+                            </DockPanel>
+                        </StackPanel>
+                    </Grid>
+                </Grid>
             </Border>
 
             <Border Grid.Column="2" Style="{StaticResource CardStyle}">
                 <StackPanel>
-                    <TextBlock Foreground="#667085" Text="MAC Address"/>
-                    <DockPanel Margin="0,7,0,0">
-                        <Button DockPanel.Dock="Right" Style="{StaticResource CopyButtonStyle}"
-                                Command="{Binding CopyMacCommand}" Content="Copy"/>
-                        <TextBlock VerticalAlignment="Center" FontSize="15" FontWeight="SemiBold"
-                                   TextTrimming="CharacterEllipsis" ToolTip="{Binding MacAddress}"
-                                   Text="{Binding MacAddress}"/>
-                    </DockPanel>
+                    <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="#667085" Text="TOTAL QUERIES"/>
+                    <TextBlock Margin="0,8,0,3" FontSize="25" FontWeight="Bold" Foreground="#2457A7"
+                               Text="{Binding TotalQueries, StringFormat={}{0:N0}}"/>
+                    <TextBlock FontSize="12" Foreground="#8A94A6" Text="Requests from this client"/>
                 </StackPanel>
             </Border>
 
             <Border Grid.Column="4" Style="{StaticResource CardStyle}">
                 <StackPanel>
-                    <TextBlock Foreground="#667085" Text="Queries"/>
-                    <TextBlock Margin="0,7,0,0" FontSize="22" FontWeight="Bold" Foreground="#2457A7"
-                               Text="{Binding TotalQueries, StringFormat={}{0:N0}}"/>
+                    <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="#667085" Text="BLOCKED"/>
+                    <TextBlock Margin="0,8,0,3" FontSize="25" FontWeight="Bold" Foreground="#C62828"
+                               Text="{Binding BlockedQueries, StringFormat={}{0:N0}}"/>
+                    <TextBlock FontSize="12" Foreground="#8A94A6" Text="Protection actions"/>
                 </StackPanel>
             </Border>
 
             <Border Grid.Column="6" Style="{StaticResource CardStyle}">
                 <StackPanel>
-                    <TextBlock Foreground="#667085" Text="Blocked"/>
-                    <TextBlock Margin="0,7,0,0" FontSize="22" FontWeight="Bold" Foreground="#C62828"
-                               Text="{Binding BlockedQueries, StringFormat={}{0:N0}}"/>
-                </StackPanel>
-            </Border>
-
-            <Border Grid.Column="8" Style="{StaticResource CardStyle}">
-                <StackPanel>
-                    <TextBlock Foreground="#667085" Text="Block Rate"/>
-                    <TextBlock Margin="0,7,0,0" FontSize="22" FontWeight="Bold" Foreground="#A44A13"
+                    <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="#667085" Text="BLOCK RATE"/>
+                    <TextBlock Margin="0,8,0,3" FontSize="25" FontWeight="Bold" Foreground="#A44A13"
                                Text="{Binding BlockRate, StringFormat={}{0:F1}%}"/>
-                </StackPanel>
-            </Border>
-
-            <Border Grid.Column="10" Style="{StaticResource CardStyle}">
-                <StackPanel>
-                    <TextBlock Foreground="#667085" Text="Last Seen"/>
-                    <TextBlock Margin="0,7,0,0" FontSize="15" FontWeight="SemiBold"
-                               TextTrimming="CharacterEllipsis" ToolTip="{Binding LastSeen}"
-                               Text="{Binding LastSeen}"/>
+                    <TextBlock FontSize="12" Foreground="#8A94A6" TextTrimming="CharacterEllipsis"
+                               ToolTip="{Binding LastSeen}" Text="{Binding LastSeen, StringFormat=Last seen: {0}}"/>
                 </StackPanel>
             </Border>
         </Grid>

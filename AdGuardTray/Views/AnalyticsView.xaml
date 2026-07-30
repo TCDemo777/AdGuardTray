@@ -182,13 +182,17 @@
                 Style="{StaticResource Text.SectionTitle}"
                 Text="Top activity" />
 
-            <WrapPanel Margin="0,0,-16,0">
+            <Grid Margin="0,0,0,16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
 
                 <!-- Top clients -->
                 <Border
-                    Width="430"
+                    Grid.Column="0"
                     MinHeight="430"
-                    Margin="0,0,16,16"
                     Style="{StaticResource Card}">
                     <Grid>
                         <Grid.RowDefinitions>
@@ -324,9 +328,8 @@
 
                 <!-- Top blocked -->
                 <Border
-                    Width="430"
+                    Grid.Column="2"
                     MinHeight="430"
-                    Margin="0,0,16,16"
                     Style="{StaticResource Card}">
                     <Grid>
                         <Grid.RowDefinitions>
@@ -454,7 +457,7 @@
                         </Grid>
                     </Grid>
                 </Border>
-            </WrapPanel>
+            </Grid>
 
             <!-- Requested domains full width -->
             <Border
