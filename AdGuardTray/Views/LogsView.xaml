@@ -1,208 +1,350 @@
 <UserControl x:Class="AdGuardTray.Views.LogsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{DynamicResource Brush.WindowBackground}">
     <UserControl.Resources>
-        <Style x:Key="LogGridHeader" TargetType="DataGridColumnHeader">
-            <Setter Property="Height" Value="38"/>
-            <Setter Property="Padding" Value="12,0"/>
-            <Setter Property="Background" Value="#F8FAFC"/>
-            <Setter Property="Foreground" Value="#475467"/>
-            <Setter Property="FontSize" Value="12"/>
+        <Style x:Key="Logs.SummaryValue"
+               TargetType="TextBlock">
+            <Setter Property="Margin" Value="0,8,0,0"/>
+            <Setter Property="FontFamily" Value="Segoe UI Variable Display, Segoe UI"/>
+            <Setter Property="FontSize" Value="21"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="BorderBrush" Value="#E4E7EC"/>
-            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
         </Style>
 
-        <Style x:Key="LogGridRow" TargetType="DataGridRow">
-            <Setter Property="MinHeight" Value="42"/>
-            <Setter Property="Background" Value="White"/>
-            <Setter Property="BorderBrush" Value="#EEF1F4"/>
+        <Style x:Key="Logs.ColumnHeader"
+               TargetType="DataGridColumnHeader">
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="Padding" Value="12,0"/>
+            <Setter Property="Background" Value="{DynamicResource Brush.SurfaceMuted}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextSecondary}"/>
+            <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
             <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="Logs.Row"
+               TargetType="DataGridRow">
+            <Setter Property="MinHeight" Value="43"/>
+            <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
             <Style.Triggers>
                 <Trigger Property="AlternationIndex" Value="1">
-                    <Setter Property="Background" Value="#FBFCFD"/>
+                    <Setter Property="Background" Value="{DynamicResource Brush.SurfaceMuted}"/>
                 </Trigger>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#F2F6FF"/>
+                    <Setter Property="Background" Value="{DynamicResource Brush.SurfaceMuted}"/>
                 </Trigger>
                 <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="#EAF2FF"/>
-                    <Setter Property="Foreground" Value="#101828"/>
+                    <Setter Property="Background" Value="{DynamicResource Brush.SurfaceMuted}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
 
-        <Style x:Key="LogGridCell" TargetType="DataGridCell">
+        <Style x:Key="Logs.Cell"
+               TargetType="DataGridCell">
             <Setter Property="Padding" Value="12,7"/>
             <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
         </Style>
+
+        <Style x:Key="Logs.SearchBox"
+               TargetType="TextBox">
+            <Setter Property="Height" Value="38"/>
+            <Setter Property="Padding" Value="36,7,10,7"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}"/>
+            <Setter Property="CaretBrush" Value="{DynamicResource Brush.TextPrimary}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.BorderStrong}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
     </UserControl.Resources>
 
-    <Grid>
+    <Grid Margin="24">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="14"/>
+            <RowDefinition Height="18"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <StackPanel>
-            <TextBlock FontSize="24"
-                       FontWeight="Bold"
-                       Text="Logs"/>
-            <TextBlock Margin="0,5,0,0"
-                       FontSize="14"
-                       Foreground="#667085"
-                       Text="Live AdGuard Home DNS requests, clients and filtering outcomes"/>
-        </StackPanel>
+        <!-- Header -->
+        <Grid>
+            <StackPanel>
+                <TextBlock Style="{DynamicResource Text.PageTitle}"
+                           Text="Logs"/>
+                <TextBlock Margin="0,5,0,0"
+                           Style="{DynamicResource Text.Secondary}"
+                           Text="Live AdGuard Home DNS requests, clients and filtering outcomes."/>
+            </StackPanel>
+        </Grid>
 
-        <Border Grid.Row="2"
-                Padding="18"
-                Background="White"
-                BorderBrush="#DDE3EA"
-                BorderThickness="1"
-                CornerRadius="12">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="12"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="12"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
+        <ScrollViewer Grid.Row="2"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <StackPanel>
 
-                <Grid>
+                <!-- Summary -->
+                <Grid Margin="0,0,0,16">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="12"/>
-                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
-                    <Border Height="38"
-                            Padding="11,0"
-                            Background="#F8FAFC"
-                            BorderBrush="#D0D5DD"
-                            BorderThickness="1"
-                            CornerRadius="8">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="8"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock VerticalAlignment="Center"
-                                       FontSize="15"
-                                       Foreground="#667085"
-                                       Text="⌕"/>
-                            <TextBox Grid.Column="2"
-                                     VerticalContentAlignment="Center"
-                                     Background="Transparent"
-                                     BorderThickness="0"
-                                     Text="{Binding SearchText,
-                                                    UpdateSourceTrigger=PropertyChanged}"
-                                     ToolTip="Search by client, domain or status"/>
-                        </Grid>
+                    <Border Grid.Column="0"
+                            Style="{DynamicResource Card.Compact}">
+                        <StackPanel>
+                            <TextBlock Style="{DynamicResource Text.CardCaption}"
+                                       Text="VISIBLE ENTRIES"/>
+                            <TextBlock Style="{StaticResource Logs.SummaryValue}"
+                                       Text="{Binding Entries.Count}"/>
+                            <TextBlock Margin="0,5,0,0"
+                                       Style="{DynamicResource Text.Muted}"
+                                       Text="Current filtered view"/>
+                        </StackPanel>
                     </Border>
 
-                    <Button Grid.Column="2"
-                            MinWidth="112"
-                            Height="38"
-                            Padding="16,5"
-                            Command="{Binding TogglePauseCommand}"
-                            Content="{Binding PauseButtonText}"/>
+                    <Border Grid.Column="2"
+                            Style="{DynamicResource Card.Compact}">
+                        <StackPanel>
+                            <TextBlock Style="{DynamicResource Text.CardCaption}"
+                                       Text="LIVE UPDATES"/>
+                            <TextBlock Style="{StaticResource Logs.SummaryValue}"
+                                       Text="{Binding PauseButtonText}"/>
+                            <TextBlock Margin="0,5,0,0"
+                                       Style="{DynamicResource Text.Muted}"
+                                       Text="Refreshes every 3 seconds"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="4"
+                            Style="{DynamicResource Card.Compact}">
+                        <StackPanel>
+                            <TextBlock Style="{DynamicResource Text.CardCaption}"
+                                       Text="SEARCH"/>
+                            <TextBlock Style="{StaticResource Logs.SummaryValue}"
+                                       Text="{Binding SearchText,
+                                                      TargetNullValue=None,
+                                                      FallbackValue=None}"/>
+                            <TextBlock Margin="0,5,0,0"
+                                       Style="{DynamicResource Text.Muted}"
+                                       Text="Client, domain or status"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="6"
+                            Style="{DynamicResource Card.Compact}">
+                        <StackPanel>
+                            <TextBlock Style="{DynamicResource Text.CardCaption}"
+                                       Text="SOURCE"/>
+                            <TextBlock Style="{StaticResource Logs.SummaryValue}"
+                                       FontSize="17"
+                                       Text="AdGuard Home"/>
+                            <TextBlock Margin="0,5,0,0"
+                                       Style="{DynamicResource Text.Muted}"
+                                       Text="Live query log"/>
+                        </StackPanel>
+                    </Border>
                 </Grid>
 
-                <Border Grid.Row="2"
-                        BorderBrush="#E4E7EC"
-                        BorderThickness="1"
-                        CornerRadius="9"
-                        ClipToBounds="True">
-                    <DataGrid AutoGenerateColumns="False"
-                              AlternationCount="2"
-                              CanUserAddRows="False"
-                              CanUserDeleteRows="False"
-                              ColumnHeaderStyle="{StaticResource LogGridHeader}"
-                              RowStyle="{StaticResource LogGridRow}"
-                              CellStyle="{StaticResource LogGridCell}"
-                              GridLinesVisibility="None"
-                              HeadersVisibility="Column"
-                              IsReadOnly="True"
-                              ItemsSource="{Binding Entries}"
-                              SelectionMode="Single"
-                              VerticalScrollBarVisibility="Auto"
-                              HorizontalScrollBarVisibility="Disabled">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Width="155"
-                                                Binding="{Binding Time}"
-                                                Header="TIME"/>
-                            <DataGridTextColumn Width="190"
-                                                Binding="{Binding Client}"
-                                                Header="CLIENT"/>
-                            <DataGridTextColumn Width="*"
-                                                Binding="{Binding Domain}"
-                                                Header="DOMAIN"/>
-                            <DataGridTemplateColumn Width="118"
-                                                    Header="STATUS">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <Border Padding="9,4"
-                                                HorizontalAlignment="Left"
-                                                CornerRadius="10">
-                                            <Border.Style>
-                                                <Style TargetType="Border">
-                                                    <Setter Property="Background"
-                                                            Value="#ECFDF3"/>
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsBlocked}"
-                                                                     Value="True">
-                                                            <Setter Property="Background"
-                                                                    Value="#FDECEC"/>
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Border.Style>
-                                            <TextBlock FontSize="11"
-                                                       FontWeight="SemiBold"
-                                                       Text="{Binding Status}">
-                                                <TextBlock.Style>
-                                                    <Style TargetType="TextBlock">
-                                                        <Setter Property="Foreground"
-                                                                Value="#16803C"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsBlocked}"
-                                                                         Value="True">
-                                                                <Setter Property="Foreground"
-                                                                        Value="#C62828"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
-                                        </Border>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
-                        </DataGrid.Columns>
-                    </DataGrid>
-                </Border>
+                <!-- Main log card -->
+                <Border Style="{DynamicResource Card}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="16"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="14"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
 
-                <DockPanel Grid.Row="4">
-                    <Border DockPanel.Dock="Right"
-                            Padding="9,4"
-                            Background="#F2F4F7"
-                            CornerRadius="10">
-                        <TextBlock FontSize="11"
-                                   FontWeight="SemiBold"
-                                   Foreground="#475467"
-                                   Text="LIVE QUERY LOG"/>
-                    </Border>
-                    <TextBlock VerticalAlignment="Center"
-                               FontSize="13"
-                               Foreground="#667085"
-                               Text="{Binding StatusMessage}"/>
-                </DockPanel>
-            </Grid>
-        </Border>
+                        <!-- Toolbar -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Grid>
+                                <TextBox Style="{StaticResource Logs.SearchBox}"
+                                         Text="{Binding SearchText,
+                                                        UpdateSourceTrigger=PropertyChanged}"
+                                         ToolTip="Search by client, domain or status"/>
+
+                                <TextBlock Margin="12,0,0,0"
+                                           HorizontalAlignment="Left"
+                                           VerticalAlignment="Center"
+                                           FontSize="16"
+                                           Foreground="{DynamicResource Brush.TextMuted}"
+                                           IsHitTestVisible="False"
+                                           Text="⌕"/>
+                            </Grid>
+
+                            <Button Grid.Column="2"
+                                    MinWidth="112"
+                                    Height="38"
+                                    Style="{DynamicResource Button.Secondary}"
+                                    Command="{Binding TogglePauseCommand}"
+                                    Content="{Binding PauseButtonText}"/>
+
+                            <Button Grid.Column="4"
+                                    MinWidth="112"
+                                    Height="38"
+                                    Style="{DynamicResource Button.Primary}"
+                                    Command="{Binding LoadLogsCommand}"
+                                    Content="Refresh"/>
+                        </Grid>
+
+                        <!-- Query log -->
+                        <Border Grid.Row="2"
+                                MinHeight="440"
+                                Background="{DynamicResource Brush.Surface}"
+                                BorderBrush="{DynamicResource Brush.Border}"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                ClipToBounds="True">
+                            <DataGrid AutoGenerateColumns="False"
+                                      AlternationCount="2"
+                                      CanUserAddRows="False"
+                                      CanUserDeleteRows="False"
+                                      CanUserReorderColumns="False"
+                                      CanUserResizeRows="False"
+                                      ColumnHeaderStyle="{StaticResource Logs.ColumnHeader}"
+                                      RowStyle="{StaticResource Logs.Row}"
+                                      CellStyle="{StaticResource Logs.Cell}"
+                                      Background="{DynamicResource Brush.Surface}"
+                                      Foreground="{DynamicResource Brush.TextPrimary}"
+                                      BorderThickness="0"
+                                      GridLinesVisibility="None"
+                                      HeadersVisibility="Column"
+                                      IsReadOnly="True"
+                                      ItemsSource="{Binding Entries}"
+                                      RowHeaderWidth="0"
+                                      SelectionMode="Single"
+                                      SelectionUnit="FullRow"
+                                      VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Disabled">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Width="150"
+                                                        Binding="{Binding Time}"
+                                                        Header="TIME"/>
+
+                                    <DataGridTextColumn Width="190"
+                                                        Binding="{Binding Client}"
+                                                        Header="CLIENT"/>
+
+                                    <DataGridTextColumn Width="*"
+                                                        MinWidth="260"
+                                                        Binding="{Binding Domain}"
+                                                        Header="DOMAIN"/>
+
+                                    <DataGridTemplateColumn Width="125"
+                                                            Header="STATUS">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Border Padding="10,4"
+                                                        HorizontalAlignment="Left"
+                                                        Background="{DynamicResource Brush.SurfaceMuted}"
+                                                        BorderBrush="{DynamicResource Brush.Border}"
+                                                        BorderThickness="1"
+                                                        CornerRadius="10">
+                                                    <Border.Style>
+                                                        <Style TargetType="Border">
+                                                            <Setter Property="Background"
+                                                                    Value="{DynamicResource Brush.SurfaceMuted}"/>
+                                                            <Setter Property="BorderBrush"
+                                                                    Value="{DynamicResource Brush.Border}"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsBlocked}"
+                                                                             Value="True">
+                                                                    <Setter Property="BorderBrush"
+                                                                            Value="{DynamicResource Brush.Danger}"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Border.Style>
+
+                                                    <TextBlock FontSize="11"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource Brush.Primary}"
+                                                               Text="{Binding Status}">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Foreground"
+                                                                        Value="{DynamicResource Brush.Primary}"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsBlocked}"
+                                                                                 Value="True">
+                                                                        <Setter Property="Foreground"
+                                                                                Value="{DynamicResource Brush.Danger}"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                </Border>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Border>
+
+                        <!-- Status -->
+                        <Grid Grid.Row="4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse Width="8"
+                                         Height="8"
+                                         Margin="0,0,9,0"
+                                         VerticalAlignment="Center"
+                                         Fill="{DynamicResource Brush.Primary}"/>
+                                <TextBlock VerticalAlignment="Center"
+                                           Style="{DynamicResource Text.Secondary}"
+                                           Text="{Binding StatusMessage}"/>
+                            </StackPanel>
+
+                            <Border Grid.Column="1"
+                                    Margin="16,0,0,0"
+                                    Padding="10,5"
+                                    Background="{DynamicResource Brush.SurfaceMuted}"
+                                    BorderBrush="{DynamicResource Brush.Border}"
+                                    BorderThickness="1"
+                                    CornerRadius="10">
+                                <TextBlock FontSize="11"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource Brush.TextSecondary}"
+                                           Text="{Binding Entries.Count,
+                                                          StringFormat={}{0} SHOWN}"/>
+                            </Border>
+                        </Grid>
+                    </Grid>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
     </Grid>
 </UserControl>
