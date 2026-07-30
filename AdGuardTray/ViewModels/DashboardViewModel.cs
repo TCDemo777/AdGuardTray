@@ -6,8 +6,6 @@ using AdGuardTray.Models;
 using CommunityToolkit.Mvvm.ComponentModel;
 using LiveChartsCore;
 using LiveChartsCore.SkiaSharpView;
-using LiveChartsCore.SkiaSharpView.Painting;
-using SkiaSharp;
 
 namespace AdGuardTray.ViewModels
 {
@@ -151,9 +149,6 @@ namespace AdGuardTray.ViewModels
         [ObservableProperty]
         private string adGuardBlockRate = "-";
 
-        [ObservableProperty]
-        private double adGuardBlockRateNumeric;
-
 
         //
         // AdGuard graph and rankings
@@ -173,112 +168,7 @@ namespace AdGuardTray.ViewModels
             get;
         } =
         {
-            new LineSeries<double>
-            {
-                Name = "DNS queries",
-                GeometrySize = 0,
-                LineSmoothness = 0.35,
-                Stroke = new SolidColorPaint(SKColor.Parse("#3978D6"), 3),
-                Fill = new SolidColorPaint(SKColor.Parse("#223978D6"))
-            },
-            new LineSeries<double>
-            {
-                Name = "Blocked",
-                GeometrySize = 0,
-                LineSmoothness = 0.35,
-                Stroke = new SolidColorPaint(SKColor.Parse("#D92D20"), 3),
-                Fill = new SolidColorPaint(SKColor.Parse("#20D92D20"))
-            }
-        };
-
-        public Axis[] QueryHistoryXAxes { get; } =
-        {
-            new Axis
-            {
-                Labels = Array.Empty<string>(),
-                TextSize = 11,
-                LabelsPaint = new SolidColorPaint(SKColor.Parse("#667085")),
-                SeparatorsPaint = new SolidColorPaint(SKColor.Parse("#EEF2F6"), 1)
-            }
-        };
-
-        public Axis[] QueryHistoryYAxes { get; } =
-        {
-            new Axis
-            {
-                MinLimit = 0,
-                TextSize = 11,
-                LabelsPaint = new SolidColorPaint(SKColor.Parse("#667085")),
-                SeparatorsPaint = new SolidColorPaint(SKColor.Parse("#E4E7EC"), 1)
-            }
-        };
-
-        public ISeries[] TopClientsSeries { get; } =
-        {
-            new RowSeries<double>
-            {
-                Name = "Requests",
-                MaxBarWidth = 22,
-                Rx = 5,
-                Ry = 5,
-                Fill = new SolidColorPaint(SKColor.Parse("#3978D6"))
-            }
-        };
-
-        public Axis[] TopClientsXAxes { get; } =
-        {
-            new Axis
-            {
-                MinLimit = 0,
-                TextSize = 10,
-                LabelsPaint = new SolidColorPaint(SKColor.Parse("#667085")),
-                SeparatorsPaint = new SolidColorPaint(SKColor.Parse("#EEF2F6"), 1)
-            }
-        };
-
-        public Axis[] TopClientsYAxes { get; } =
-        {
-            new Axis
-            {
-                Labels = Array.Empty<string>(),
-                TextSize = 11,
-                LabelsPaint = new SolidColorPaint(SKColor.Parse("#344054")),
-                SeparatorsPaint = null
-            }
-        };
-
-        public ISeries[] TopBlockedDomainsSeries { get; } =
-        {
-            new RowSeries<double>
-            {
-                Name = "Blocked",
-                MaxBarWidth = 22,
-                Rx = 5,
-                Ry = 5,
-                Fill = new SolidColorPaint(SKColor.Parse("#D92D20"))
-            }
-        };
-
-        public Axis[] TopBlockedDomainsXAxes { get; } =
-        {
-            new Axis
-            {
-                MinLimit = 0,
-                TextSize = 10,
-                LabelsPaint = new SolidColorPaint(SKColor.Parse("#667085")),
-                SeparatorsPaint = new SolidColorPaint(SKColor.Parse("#EEF2F6"), 1)
-            }
-        };
-
-        public Axis[] TopBlockedDomainsYAxes { get; } =
-        {
-            new Axis
-            {
-                Labels = Array.Empty<string>(),
-                TextSize = 11,
-                LabelsPaint = new SolidColorPaint(SKColor.Parse("#344054")),
-                SeparatorsPaint = null
-            }
+            new LineSeries<double>()
         };
 
         public ObservableCollection<AdGuardRankedItem>
@@ -416,14 +306,6 @@ namespace AdGuardTray.ViewModels
                     .Select(point => (double)point.Queries)
                     .ToArray();
 
-            ((LineSeries<double>)QueryHistorySeries[1]).Values =
-                statistics.QueryHistory
-                    .Select(point => (double)point.Blocked)
-                    .ToArray();
-
-            QueryHistoryXAxes[0].Labels =
-                BuildTimeLabels(statistics.QueryHistory);
-
             AdGuardQueryGraphMaximum =
                 statistics.QueryHistory.Count == 0
                     ? 1
@@ -443,8 +325,6 @@ namespace AdGuardTray.ViewModels
             ReplaceCollection(
                 TopBlockedDomains,
                 statistics.TopBlockedDomains);
-
-            RefreshRankingCharts();
         }
 
         public void UpdateRankingsFromQueryLog(
@@ -538,8 +418,6 @@ namespace AdGuardTray.ViewModels
                                 item.Name,
                                 item.Count)));
             }
-
-            RefreshRankingCharts();
         }
 
         private static AdGuardRankedItem CreateRankedItem(
@@ -611,74 +489,6 @@ namespace AdGuardTray.ViewModels
             return item;
         }
 
-        private static string[] BuildTimeLabels(
-            IReadOnlyList<AdGuardTimePoint> history)
-        {
-            if (history.Count == 0)
-            {
-                return Array.Empty<string>();
-            }
-
-            int interval = Math.Max(1, history.Count / 6);
-
-            return history
-                .Select((point, index) =>
-                    index % interval == 0 || index == history.Count - 1
-                        ? point.TimeLabel
-                        : string.Empty)
-                .ToArray();
-        }
-
-        private void RefreshRankingCharts()
-        {
-            UpdateRankingChart(
-                TopClients,
-                (RowSeries<double>)TopClientsSeries[0],
-                TopClientsYAxes[0],
-                7);
-
-            UpdateRankingChart(
-                TopBlockedDomains,
-                (RowSeries<double>)TopBlockedDomainsSeries[0],
-                TopBlockedDomainsYAxes[0],
-                7);
-        }
-
-        private static void UpdateRankingChart(
-            IEnumerable<AdGuardRankedItem> source,
-            RowSeries<double> series,
-            Axis categoryAxis,
-            int maximumItems)
-        {
-            List<AdGuardRankedItem> items = source
-                .OrderByDescending(item => item.Count)
-                .Take(maximumItems)
-                .Reverse()
-                .ToList();
-
-            series.Values = items
-                .Select(item => (double)item.Count)
-                .ToArray();
-
-            categoryAxis.Labels = items
-                .Select(item => TruncateLabel(item.DisplayName, 28))
-                .ToArray();
-        }
-
-        private static string TruncateLabel(
-            string value,
-            int maximumLength)
-        {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return "-";
-            }
-
-            return value.Length <= maximumLength
-                ? value
-                : $"{value[..(maximumLength - 1)]}…";
-        }
-
         public void ClearAdGuardStatistics()
         {
             AdGuardQueryHistory.Clear();
@@ -688,11 +498,6 @@ namespace AdGuardTray.ViewModels
 
             ((LineSeries<double>)QueryHistorySeries[0]).Values =
                 Array.Empty<double>();
-            ((LineSeries<double>)QueryHistorySeries[1]).Values =
-                Array.Empty<double>();
-            QueryHistoryXAxes[0].Labels = Array.Empty<string>();
-
-            RefreshRankingCharts();
 
             AdGuardProtectionEnabled = false;
             AdGuardProtectionPaused = false;
@@ -707,13 +512,27 @@ namespace AdGuardTray.ViewModels
         {
             destination.Clear();
 
+            List<T> items = source
+                .Take(5)
+                .ToList();
+
+            int maximumCount = items
+                .OfType<AdGuardRankedItem>()
+                .Select(item => item.Count)
+                .DefaultIfEmpty(0)
+                .Max();
+
             int rank = 1;
 
-            foreach (T item in source)
+            foreach (T item in items)
             {
                 if (item is AdGuardRankedItem rankedItem)
                 {
                     rankedItem.Rank = rank;
+                    rankedItem.RelativePercent =
+                        maximumCount <= 0
+                            ? 0
+                            : Math.Max(4, rankedItem.Count * 100d / maximumCount);
                     rank++;
                 }
 
@@ -737,21 +556,6 @@ namespace AdGuardTray.ViewModels
             OnPropertyChanged(nameof(InternetStatusText));
             OnPropertyChanged(nameof(InternetStatusColour));
             OnPropertyChanged(nameof(OverallStatusColour));
-        }
-
-
-        partial void OnAdGuardBlockRateChanged(string value)
-        {
-            if (double.TryParse(
-                value.Replace("%", "").Trim(),
-                out double result))
-            {
-                AdGuardBlockRateNumeric = Math.Clamp(result, 0, 100);
-            }
-            else
-            {
-                AdGuardBlockRateNumeric = 0;
-            }
         }
 
 

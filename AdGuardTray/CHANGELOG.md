@@ -1,20 +1,15 @@
-# Changelog
+# AdGuardTray Changelog
 
-## 1.4.0 — Analytics dashboard redesign
+## [1.4.0] - 2026-07-30
 
 ### Added
-- Dual-series DNS activity chart showing total and blocked requests over time.
-- Horizontal bar charts for top clients and top blocked domains.
-- Chart axes, labels, tooltips and responsive empty-data states.
-- Visual blocking-rate progress indicator and live protection status card.
+- Analytics v2 dashboard with responsive leaderboard-style rankings.
+- Proportional activity bars for top clients, requested domains, and blocked domains.
+- Full-name tooltips and clearer request totals for ranked items.
 
 ### Changed
-- Redesigned the Analytics page with a modern card-based dashboard layout.
-- Improved chart styling, spacing, hierarchy and readability.
-- Added a compact ranked-domain summary for the most requested domains.
-- Updated application, assembly and file versions to 1.4.0.
-
-# AdGuardTray Changelog
+- Replaced cramped ranking charts and bottom chips with readable top-five lists.
+- Improved analytics spacing, card sizing, typography, and long-name handling.
 
 ## v1.3.1 — Client details and tray usability
 

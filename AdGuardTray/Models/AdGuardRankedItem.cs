@@ -8,6 +8,8 @@ namespace AdGuardTray.Models
 
         public int Count { get; set; }
 
+        public double RelativePercent { get; set; }
+
         public string DisplayName
         {
             get
