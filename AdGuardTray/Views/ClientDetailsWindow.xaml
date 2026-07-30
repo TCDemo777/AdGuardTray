@@ -47,13 +47,17 @@
         </Style>
     </Window.Resources>
 
-    <Grid Margin="22">
+    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled"
+                  CanContentScroll="False"
+                  PanningMode="VerticalOnly">
+        <Grid Margin="22">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="16"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="16"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
@@ -106,33 +110,33 @@
                     </DockPanel>
 
                     <Grid Grid.Row="2">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="12"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
 
-                        <StackPanel>
-                            <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="#8A94A6" Text="IP ADDRESS"/>
-                            <DockPanel Margin="0,5,0,0">
-                                <Button DockPanel.Dock="Right" Style="{StaticResource CopyButtonStyle}"
-                                        Command="{Binding CopyIpCommand}" Content="Copy"/>
-                                <TextBlock VerticalAlignment="Center" FontWeight="SemiBold"
-                                           TextTrimming="CharacterEllipsis" ToolTip="{Binding IpAddress}"
-                                           Text="{Binding IpAddress}"/>
-                            </DockPanel>
-                        </StackPanel>
+                            <StackPanel>
+                                <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="#8A94A6" Text="IP ADDRESS"/>
+                                <DockPanel Margin="0,5,0,0" LastChildFill="True">
+                                    <Button DockPanel.Dock="Right" Style="{StaticResource CopyButtonStyle}"
+                                            Command="{Binding CopyIpCommand}" Content="Copy"/>
+                                    <TextBlock VerticalAlignment="Center" FontWeight="SemiBold"
+                                               TextWrapping="Wrap" ToolTip="{Binding IpAddress}"
+                                               Text="{Binding IpAddress}"/>
+                                </DockPanel>
+                            </StackPanel>
 
-                        <StackPanel Grid.Column="2">
-                            <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="#8A94A6" Text="MAC ADDRESS"/>
-                            <DockPanel Margin="0,5,0,0">
-                                <Button DockPanel.Dock="Right" Style="{StaticResource CopyButtonStyle}"
-                                        Command="{Binding CopyMacCommand}" Content="Copy"/>
-                                <TextBlock VerticalAlignment="Center" FontWeight="SemiBold"
-                                           TextTrimming="CharacterEllipsis" ToolTip="{Binding MacAddress}"
-                                           Text="{Binding MacAddress}"/>
-                            </DockPanel>
-                        </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="#8A94A6" Text="MAC ADDRESS"/>
+                                <DockPanel Margin="0,5,0,0" LastChildFill="True">
+                                    <Button DockPanel.Dock="Right" Style="{StaticResource CopyButtonStyle}"
+                                            Command="{Binding CopyMacCommand}" Content="Copy"/>
+                                    <TextBlock VerticalAlignment="Center" FontWeight="SemiBold"
+                                               TextWrapping="Wrap" ToolTip="{Binding MacAddress}"
+                                               Text="{Binding MacAddress}"/>
+                                </DockPanel>
+                            </StackPanel>
                     </Grid>
                 </Grid>
             </Border>
@@ -409,5 +413,6 @@
 
         <TextBlock Grid.Row="5" Margin="2,11,0,0" Foreground="#667085"
                    Text="{Binding StatusMessage}"/>
-    </Grid>
+        </Grid>
+    </ScrollViewer>
 </Window>

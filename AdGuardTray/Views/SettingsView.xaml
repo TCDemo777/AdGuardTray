@@ -1,7 +1,12 @@
 <UserControl x:Class="AdGuardTray.Views.SettingsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <Grid>
+    <Grid Background="{DynamicResource Brush.WindowBackground}">
+        <Grid.Resources>
+            <Style TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}"/>
+            </Style>
+        </Grid.Resources>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="20"/>
@@ -17,13 +22,13 @@
 
             <TextBlock Margin="0,5,0,0"
                        FontSize="14"
-                       Foreground="#666666"
+                       Foreground="{DynamicResource Brush.TextSecondary}"
                        Text="Application, router and AdGuard Home configuration"/>
         </StackPanel>
 
         <Border Grid.Row="2"
-                Background="White"
-                BorderBrush="#DDDDDD"
+                Background="{DynamicResource Brush.Surface}"
+                BorderBrush="{DynamicResource Brush.Border}"
                 BorderThickness="1"
                 CornerRadius="10">
             <TabControl Margin="12">
@@ -37,12 +42,32 @@
                                        Text="Application"/>
 
                             <TextBlock Margin="0,6,0,20"
-                                       Foreground="#666666"
+                                       Foreground="{DynamicResource Brush.TextSecondary}"
                                        Text="Control startup and dashboard refresh behaviour."/>
 
                             <CheckBox Margin="0,0,0,18"
                                       Content="Start AdGuardTray with Windows"
                                       IsChecked="{Binding StartWithWindows}"/>
+
+                            <TextBlock FontWeight="SemiBold"
+                                       Text="Appearance"/>
+
+                            <TextBlock Margin="0,5,0,8"
+                                       Foreground="{DynamicResource Brush.TextSecondary}"
+                                       Text="Choose how AdGuardTray should display its interface."/>
+
+                            <ComboBox Width="220"
+                                      Height="34"
+                                      Margin="0,0,0,18"
+                                      HorizontalAlignment="Left"
+                                      SelectedValue="{Binding Theme,
+                                                              Mode=TwoWay,
+                                                              UpdateSourceTrigger=PropertyChanged}"
+                                      SelectedValuePath="Tag">
+                                <ComboBoxItem Content="Follow Windows" Tag="System"/>
+                                <ComboBoxItem Content="Light" Tag="Light"/>
+                                <ComboBoxItem Content="Dark" Tag="Dark"/>
+                            </ComboBox>
 
                             <TextBlock FontWeight="SemiBold"
                                        Text="Dashboard refresh interval"/>
@@ -57,15 +82,15 @@
 
                                 <TextBlock Margin="10,0,0,0"
                                            VerticalAlignment="Center"
-                                           Foreground="#666666"
+                                           Foreground="{DynamicResource Brush.TextSecondary}"
                                            Text="seconds (5–3,600)"/>
                             </StackPanel>
 
                             <Border Margin="0,24,0,0"
                                     Padding="14"
-                                    Background="#F5F7F9"
+                                    Background="{DynamicResource Brush.SurfaceMuted}"
                                     CornerRadius="8">
-                                <TextBlock Foreground="#555555"
+                                <TextBlock Foreground="{DynamicResource Brush.TextSecondary}"
                                            TextWrapping="Wrap"
                                            Text="The startup preference is saved here. Windows startup registration will be connected when the tray startup feature is implemented."/>
                             </Border>
@@ -83,7 +108,7 @@
                                        Text="Router connection"/>
 
                             <TextBlock Margin="0,6,0,20"
-                                       Foreground="#666666"
+                                       Foreground="{DynamicResource Brush.TextSecondary}"
                                        Text="SSH credentials used to connect to the GL.iNet router."/>
 
                             <TextBlock FontWeight="SemiBold"
@@ -130,9 +155,9 @@
 
                             <Border Margin="0,24,0,0"
                                     Padding="14"
-                                    Background="#F5F7F9"
+                                    Background="{DynamicResource Brush.SurfaceMuted}"
                                     CornerRadius="8">
-                                <TextBlock Foreground="#555555"
+                                <TextBlock Foreground="{DynamicResource Brush.TextSecondary}"
                                            TextWrapping="Wrap"
                                            Text="Saved passwords are protected with Windows Data Protection and can only be decrypted by the current Windows user."/>
                             </Border>
@@ -150,7 +175,7 @@
                                        Text="AdGuard Home"/>
 
                             <TextBlock Margin="0,6,0,20"
-                                       Foreground="#666666"
+                                       Foreground="{DynamicResource Brush.TextSecondary}"
                                        TextWrapping="Wrap"
                                        Text="AdGuardTray currently reaches AdGuard Home through the configured router connection."/>
 
@@ -167,20 +192,20 @@
 
                                 <TextBlock Margin="10,0,0,0"
                                            VerticalAlignment="Center"
-                                           Foreground="#666666"
+                                           Foreground="{DynamicResource Brush.TextSecondary}"
                                            Text="minutes (1–1,440)"/>
                             </StackPanel>
 
                             <Border Margin="0,24,0,0"
                                     Padding="14"
-                                    Background="#F5F7F9"
+                                    Background="{DynamicResource Brush.SurfaceMuted}"
                                     CornerRadius="8">
                                 <StackPanel>
                                     <TextBlock FontWeight="SemiBold"
                                                Text="Coming next"/>
 
                                     <TextBlock Margin="0,6,0,0"
-                                               Foreground="#555555"
+                                               Foreground="{DynamicResource Brush.TextSecondary}"
                                                TextWrapping="Wrap"
                                                Text="Protection controls, blocked services, DNS rules, live logs and dashboard refresh all use the settings stored here."/>
                                 </StackPanel>
@@ -199,7 +224,7 @@
 
             <TextBlock Grid.Column="0"
                        VerticalAlignment="Center"
-                       Foreground="#666666"
+                       Foreground="{DynamicResource Brush.TextSecondary}"
                        Text="{Binding StatusMessage}"/>
 
             <StackPanel Grid.Column="1"

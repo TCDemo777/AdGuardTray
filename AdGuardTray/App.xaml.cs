@@ -19,6 +19,9 @@ namespace AdGuardTray
         {
             base.OnStartup(e);
 
+            AppSettings savedSettings = new SettingsService().Load();
+            ThemeService.Initialize(savedSettings.Theme);
+
             if (!HasUsableSavedSettings())
             {
                 ShutdownMode = ShutdownMode.OnMainWindowClose;

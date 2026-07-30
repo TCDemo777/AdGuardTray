@@ -12,6 +12,8 @@ namespace AdGuardTray.Models
 
         public bool StartWithWindows { get; set; } = false;
 
+        public string Theme { get; set; } = "System";
+
         public int RefreshIntervalSeconds { get; set; } = 30;
 
         public int DefaultPauseMinutes { get; set; } = 30;

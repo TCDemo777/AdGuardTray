@@ -1,169 +1,605 @@
 <UserControl x:Class="AdGuardTray.Views.ProtectionView"
- xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
- xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
- <UserControl.Resources>
-  <Style x:Key="Card" TargetType="Border"><Setter Property="Margin" Value="6,6,6,12"/><Setter Property="Padding" Value="20"/><Setter Property="Background" Value="White"/><Setter Property="CornerRadius" Value="12"/><Setter Property="BorderBrush" Value="#DDE3EA"/><Setter Property="BorderThickness" Value="1"/></Style>
-  <Style x:Key="ActionButton" TargetType="Button"><Setter Property="Height" Value="38"/><Setter Property="MinWidth" Value="108"/><Setter Property="Margin" Value="0,0,10,10"/><Setter Property="Padding" Value="14,0"/><Setter Property="Background" Value="#EEF3F8"/><Setter Property="BorderBrush" Value="#CBD5E1"/><Setter Property="BorderThickness" Value="1"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="Cursor" Value="Hand"/></Style>
- </UserControl.Resources>
- <Grid>
-  <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="12"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-  <Grid Grid.Row="0">
-   <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-   <StackPanel><TextBlock FontSize="24" FontWeight="Bold" Text="Protection"/><TextBlock Margin="0,5,0,0" FontSize="14" Foreground="#666" Text="Protection, filtering, profiles, blocked services and DNS rules"/></StackPanel>
-   <Button Grid.Column="1" Width="110" Height="36" Content="Refresh all" Command="{Binding RefreshAllCommand}"/>
-  </Grid>
-  <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
-   <StackPanel>
-    <Grid>
-     <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="12"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-     <Border Grid.Column="0" Style="{StaticResource Card}">
-      <StackPanel><TextBlock FontSize="18" FontWeight="Bold" Text="Status"/><Separator Margin="0,8"/><TextBlock FontSize="20" FontWeight="SemiBold" Text="{Binding StatusText}"/><TextBlock Margin="0,8,0,0" Foreground="#555" TextWrapping="Wrap" Text="{Binding StatusDetail}"/><TextBlock Margin="0,7,0,0" FontWeight="SemiBold" Text="{Binding Remaining}"/><WrapPanel Margin="0,16,0,0"><Button Style="{StaticResource ActionButton}" Content="Enable" Command="{Binding EnableProtectionCommand}"/><Button Style="{StaticResource ActionButton}" Content="Disable" Command="{Binding DisableProtectionCommand}"/><Button Style="{StaticResource ActionButton}" Content="Resume" Command="{Binding ResumeProtectionCommand}"/></WrapPanel><TextBlock Margin="0,10,0,5" FontWeight="SemiBold" Text="Pause presets"/><WrapPanel><Button Style="{StaticResource ActionButton}" Content="30 minutes" Command="{Binding Pause30Command}"/><Button Style="{StaticResource ActionButton}" Content="1 hour" Command="{Binding Pause1HourCommand}"/><Button Style="{StaticResource ActionButton}" Content="4 hours" Command="{Binding Pause4HoursCommand}"/><Button Style="{StaticResource ActionButton}" Content="Until tomorrow" Command="{Binding PauseUntilTomorrowCommand}"/></WrapPanel></StackPanel>
-     </Border>
-     <Border Grid.Column="2" Style="{StaticResource Card}">
-      <StackPanel><TextBlock FontSize="18" FontWeight="Bold" Text="Protection options"/><Separator Margin="0,8"/><CheckBox Margin="0,7" FontWeight="SemiBold" Content="DNS filtering" IsEnabled="{Binding ControlsEnabled}" IsChecked="{Binding FilteringEnabled, Mode=TwoWay}"/><CheckBox Margin="0,7" FontWeight="SemiBold" Content="Safe Browsing" IsEnabled="{Binding ControlsEnabled}" IsChecked="{Binding SafeBrowsingEnabled, Mode=TwoWay}"/><CheckBox Margin="0,7" FontWeight="SemiBold" Content="Safe Search" IsEnabled="{Binding ControlsEnabled}" IsChecked="{Binding SafeSearchEnabled, Mode=TwoWay}"/><CheckBox Margin="0,7" FontWeight="SemiBold" Content="Parental Control" IsEnabled="{Binding ControlsEnabled}" IsChecked="{Binding ParentalEnabled, Mode=TwoWay}"/><CheckBox Margin="0,7" FontWeight="SemiBold" Content="Query logging" IsEnabled="{Binding ControlsEnabled}" IsChecked="{Binding QueryLogEnabled, Mode=TwoWay}"/><TextBlock Margin="0,15,0,4" FontWeight="SemiBold" Text="Current profile"/><TextBlock FontSize="18" FontWeight="Bold" Text="{Binding ProfileName}"/><WrapPanel Margin="0,13,0,0"><Button Style="{StaticResource ActionButton}" Content="Standard" Command="{Binding ApplyStandardProfileCommand}"/><Button Style="{StaticResource ActionButton}" Content="Family" Command="{Binding ApplyFamilyProfileCommand}"/><Button Style="{StaticResource ActionButton}" Content="Privacy" Command="{Binding ApplyPrivacyProfileCommand}"/></WrapPanel></StackPanel>
-     </Border>
-    </Grid>
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{DynamicResource Brush.WindowBackground}">
+    <UserControl.Resources>
+        <Style x:Key="Protection.ActionButton"
+               TargetType="Button"
+               BasedOn="{DynamicResource Button.Secondary}">
+            <Setter Property="MinWidth" Value="104"/>
+            <Setter Property="Margin" Value="0,0,8,8"/>
+            <Setter Property="Padding" Value="14,8"/>
+        </Style>
 
-    <Border Style="{StaticResource Card}">
-     <StackPanel>
-      <DockPanel>
-       <StackPanel>
-        <TextBlock FontSize="18" FontWeight="Bold" Text="Blocked services"/>
-        <TextBlock Margin="0,4,0,0" Foreground="#667085" Text="Choose services to block across the network."/>
-       </StackPanel>
-      </DockPanel>
-      <Separator Margin="0,10"/>
-      <StackPanel Margin="0,0,0,10">
-       <Grid>
-        <Grid.ColumnDefinitions>
-         <ColumnDefinition Width="*"/>
-         <ColumnDefinition Width="12"/>
-         <ColumnDefinition Width="138"/>
-         <ColumnDefinition Width="Auto"/>
-        </Grid.ColumnDefinitions>
-        <TextBox Height="36"
-                 Padding="10,6"
-                 Text="{Binding BlockedServicesSearch, UpdateSourceTrigger=PropertyChanged}"
-                 ToolTip="Search blocked services"/>
-        <ComboBox Grid.Column="2"
-                  Height="32"
-                  MinWidth="0"
-                  Padding="7,2"
-                  VerticalAlignment="Center"
-                  FontSize="12"
-                  ItemsSource="{Binding BlockedServiceCategories}"
-                  SelectedItem="{Binding SelectedBlockedServiceCategory, Mode=TwoWay}"
-                  ToolTip="Filter by category"/>
-        <CheckBox Grid.Column="3"
-                  Margin="14,0,0,0"
-                  VerticalAlignment="Center"
-                  Content="Blocked only"
-                  IsChecked="{Binding ShowBlockedOnly}"/>
-       </Grid>
-       <StackPanel Margin="0,10,0,0" Orientation="Horizontal">
-        <Button Width="90" Margin="0,0,8,0" Content="Select all" Command="{Binding SelectAllServicesCommand}"/>
-        <Button Width="90" Margin="0,0,8,0" Content="Clear all" Command="{Binding ClearAllServicesCommand}"/>
-        <Button MinWidth="125" Content="Save changes" Command="{Binding SaveBlockedServicesCommand}"/>
-       </StackPanel>
-      </StackPanel>
-      <DockPanel Margin="0,0,0,8">
-       <TextBlock Foreground="#555"
-                  TextWrapping="Wrap"
-                  Text="{Binding BlockedServicesStatus}"/>
-       <StackPanel DockPanel.Dock="Right"
-                   Margin="12,0,0,0"
-                   Orientation="Horizontal">
-        <TextBlock VerticalAlignment="Center"
-                   Foreground="#667085"
-                   Text="{Binding SelectedBlockedServiceCategory}"/>
-        <TextBlock Margin="8,0,0,0"
-                   VerticalAlignment="Center"
-                   Foreground="#475467"
-                   FontWeight="SemiBold"
-                   Text="{Binding BlockedServicesSelectionSummary}"/>
-       </StackPanel>
-      </DockPanel>
-      <Border Height="390"
-              Padding="4"
-              Background="#F8FAFC"
-              CornerRadius="8"
-              BorderBrush="#E2E8F0"
-              BorderThickness="1">
-       <ListBox ItemsSource="{Binding BlockedServicesView}"
-                Padding="2"
-                BorderThickness="0"
-                Background="Transparent"
-                HorizontalContentAlignment="Stretch"
-                ScrollViewer.CanContentScroll="False"
-                ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                ScrollViewer.VerticalScrollBarVisibility="Auto"
-                VirtualizingPanel.IsVirtualizing="False"
-                ScrollViewer.PanningMode="VerticalOnly">
-        <ListBox.Resources>
-         <Style TargetType="ScrollBar">
-          <Setter Property="Width" Value="12"/>
-         </Style>
-        </ListBox.Resources>
-        <ListBox.ItemsPanel>
-         <ItemsPanelTemplate>
-          <WrapPanel Orientation="Horizontal"
-                     ItemWidth="250"
-                     ItemHeight="44"/>
-         </ItemsPanelTemplate>
-        </ListBox.ItemsPanel>
-        <ListBox.ItemContainerStyle>
-         <Style TargetType="ListBoxItem">
-          <Setter Property="Padding" Value="0"/>
-          <Setter Property="Margin" Value="0"/>
-          <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-          <Setter Property="VerticalContentAlignment" Value="Stretch"/>
-          <Setter Property="Focusable" Value="False"/>
-          <Setter Property="Template">
-           <Setter.Value>
-            <ControlTemplate TargetType="ListBoxItem">
-             <ContentPresenter/>
-            </ControlTemplate>
-           </Setter.Value>
-          </Setter>
-         </Style>
-        </ListBox.ItemContainerStyle>
-        <ListBox.ItemTemplate>
-         <DataTemplate>
-          <Border Margin="3,2"
-                  Width="244"
-                  Height="40"
-                  Padding="10,6"
-                  Background="#FFFFFF"
-                  BorderBrush="#DDE3EA"
-                  BorderThickness="1"
-                  CornerRadius="7">
-           <CheckBox VerticalAlignment="Center"
-                     HorizontalContentAlignment="Left"
-                     FontWeight="SemiBold"
-                     Foreground="#344054"
-                     Content="{Binding Name}"
-                     ToolTip="{Binding Name}"
-                     IsChecked="{Binding IsBlocked, Mode=TwoWay}"
-                     IsEnabled="{Binding DataContext.ControlsEnabled, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
-          </Border>
-         </DataTemplate>
-        </ListBox.ItemTemplate>
-       </ListBox>
-      </Border>
-     </StackPanel>
-    </Border>
+        <Style x:Key="Protection.DangerButton"
+               TargetType="Button"
+               BasedOn="{DynamicResource Button.Secondary}">
+            <Setter Property="MinWidth" Value="104"/>
+            <Setter Property="Margin" Value="0,0,8,8"/>
+            <Setter Property="Padding" Value="14,8"/>
+            <Setter Property="Foreground" Value="{DynamicResource Brush.Danger}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Danger}"/>
+        </Style>
 
-    <Grid>
-     <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="12"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-     <Border Grid.Column="0" Style="{StaticResource Card}">
-      <StackPanel><TextBlock FontSize="18" FontWeight="Bold" Text="Allow and block rules"/><Separator Margin="0,8"/><TextBlock Foreground="#555" Text="Enter a domain without http:// or a path."/><Grid Margin="0,10,0,10"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBox Height="34" Padding="8,5" Text="{Binding NewRuleDomain, UpdateSourceTrigger=PropertyChanged}"/><Button Grid.Column="1" Margin="8,0,0,0" Width="85" Content="Block" Command="{Binding AddDenyRuleCommand}"/><Button Grid.Column="2" Margin="8,0,0,0" Width="85" Content="Allow" Command="{Binding AddAllowRuleCommand}"/></Grid><ListBox Height="190" ItemsSource="{Binding FilteringRules}" SelectedItem="{Binding SelectedRule}" DisplayMemberPath="Display"/><Button Margin="0,10,0,0" MinWidth="142" Padding="16,0" Height="36" HorizontalAlignment="Left" Content="Delete Selected" Command="{Binding DeleteRuleCommand}"/></StackPanel>
-     </Border>
-     <Border Grid.Column="2" Style="{StaticResource Card}">
-      <StackPanel><TextBlock FontSize="18" FontWeight="Bold" Text="DNS rewrites"/><Separator Margin="0,8"/><Grid Margin="0,0,0,8"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="8"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Domain"/><TextBox Height="34" Padding="8,5" Text="{Binding NewRewriteDomain, UpdateSourceTrigger=PropertyChanged}"/></StackPanel><StackPanel Grid.Column="2"><TextBlock Text="Answer (IP or domain)"/><TextBox Height="34" Padding="8,5" Text="{Binding NewRewriteAnswer, UpdateSourceTrigger=PropertyChanged}"/></StackPanel></Grid><Button Width="105" Height="34" HorizontalAlignment="Left" Content="Add rewrite" Command="{Binding AddRewriteCommand}"/><ListBox Margin="0,10,0,0" Height="190" ItemsSource="{Binding DnsRewrites}" SelectedItem="{Binding SelectedRewrite}" DisplayMemberPath="Display"/><Button Margin="0,10,0,0" MinWidth="142" Padding="16,0" Height="36" HorizontalAlignment="Left" Content="Delete Selected" Command="{Binding DeleteRewriteCommand}"/></StackPanel>
-     </Border>
+        <Style x:Key="Protection.SectionLabel"
+               TargetType="TextBlock"
+               BasedOn="{DynamicResource Text.CardCaption}">
+            <Setter Property="Margin" Value="0,0,0,6"/>
+        </Style>
+
+        <Style x:Key="Protection.Option"
+               TargetType="CheckBox">
+            <Setter Property="Margin" Value="0,0,0,10"/>
+            <Setter Property="Padding" Value="0,2"/>
+            <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="Protection.Input"
+               TargetType="TextBox">
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.BorderStrong}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CaretBrush" Value="{DynamicResource Brush.TextPrimary}"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="Protection.ComboBox"
+               TargetType="ComboBox">
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.BorderStrong}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+
+        <Style x:Key="Protection.List"
+               TargetType="ListBox">
+            <Setter Property="Background" Value="{DynamicResource Brush.SurfaceMuted}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="4"/>
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="18"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Page header -->
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel>
+                <TextBlock Style="{DynamicResource Text.PageTitle}"
+                           Text="Protection"/>
+                <TextBlock Margin="0,5,0,0"
+                           Style="{DynamicResource Text.Secondary}"
+                           Text="Manage AdGuard Home protection, filtering profiles, services and DNS rules."/>
+            </StackPanel>
+
+            <Button Grid.Column="1"
+                    MinWidth="112"
+                    Height="38"
+                    Style="{DynamicResource Button.Secondary}"
+                    Content="Refresh all"
+                    Command="{Binding RefreshAllCommand}"/>
+        </Grid>
+
+        <ScrollViewer Grid.Row="2"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <StackPanel>
+
+                <!-- Summary cards -->
+                <Grid Margin="0,0,0,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0" Style="{DynamicResource Card.Compact}">
+                        <StackPanel>
+                            <TextBlock Style="{DynamicResource Text.CardCaption}"
+                                       Text="PROTECTION"/>
+                            <TextBlock Margin="0,8,0,0"
+                                       FontSize="22"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource Brush.TextPrimary}"
+                                       Text="{Binding StatusText}"/>
+                            <TextBlock Margin="0,5,0,0"
+                                       Style="{DynamicResource Text.Muted}"
+                                       TextTrimming="CharacterEllipsis"
+                                       Text="{Binding Remaining}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="2" Style="{DynamicResource Card.Compact}">
+                        <StackPanel>
+                            <TextBlock Style="{DynamicResource Text.CardCaption}"
+                                       Text="DNS FILTERING"/>
+                            <CheckBox Margin="0,12,0,0"
+                                      Style="{StaticResource Protection.Option}"
+                                      Content="Filtering enabled"
+                                      IsEnabled="{Binding ControlsEnabled}"
+                                      IsChecked="{Binding FilteringEnabled, Mode=TwoWay}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="4" Style="{DynamicResource Card.Compact}">
+                        <StackPanel>
+                            <TextBlock Style="{DynamicResource Text.CardCaption}"
+                                       Text="SAFE BROWSING"/>
+                            <CheckBox Margin="0,12,0,0"
+                                      Style="{StaticResource Protection.Option}"
+                                      Content="Protection enabled"
+                                      IsEnabled="{Binding ControlsEnabled}"
+                                      IsChecked="{Binding SafeBrowsingEnabled, Mode=TwoWay}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="6" Style="{DynamicResource Card.Compact}">
+                        <StackPanel>
+                            <TextBlock Style="{DynamicResource Text.CardCaption}"
+                                       Text="CURRENT PROFILE"/>
+                            <TextBlock Margin="0,8,0,0"
+                                       FontSize="22"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource Brush.TextPrimary}"
+                                       Text="{Binding ProfileName}"/>
+                            <TextBlock Margin="0,5,0,0"
+                                       Style="{DynamicResource Text.Muted}"
+                                       Text="Protection preset"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- Status and options -->
+                <Grid Margin="0,0,0,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.15*"/>
+                        <ColumnDefinition Width="16"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0" Style="{DynamicResource Card}">
+                        <StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Style="{DynamicResource Text.SectionTitle}"
+                                               Text="Protection status"/>
+                                    <TextBlock Margin="0,5,0,0"
+                                               Style="{DynamicResource Text.Secondary}"
+                                               Text="{Binding StatusDetail}"/>
+                                </StackPanel>
+                                <Border Grid.Column="1"
+                                        Margin="16,0,0,0"
+                                        Padding="12,6"
+                                        VerticalAlignment="Top"
+                                        Background="{DynamicResource Brush.SurfaceMuted}"
+                                        BorderBrush="{DynamicResource Brush.Border}"
+                                        BorderThickness="1"
+                                        CornerRadius="8">
+                                    <TextBlock FontWeight="SemiBold"
+                                               Foreground="{DynamicResource Brush.TextPrimary}"
+                                               Text="{Binding StatusText}"/>
+                                </Border>
+                            </Grid>
+
+                            <Border Margin="0,18,0,16"
+                                    Height="1"
+                                    Background="{DynamicResource Brush.Border}"/>
+
+                            <TextBlock Style="{StaticResource Protection.SectionLabel}"
+                                       Text="PROTECTION ACTIONS"/>
+                            <WrapPanel>
+                                <Button Style="{DynamicResource Button.Primary}"
+                                        MinWidth="104"
+                                        Margin="0,0,8,8"
+                                        Content="Enable"
+                                        Command="{Binding EnableProtectionCommand}"/>
+                                <Button Style="{StaticResource Protection.ActionButton}"
+                                        Content="Resume"
+                                        Command="{Binding ResumeProtectionCommand}"/>
+                                <Button Style="{StaticResource Protection.DangerButton}"
+                                        Content="Disable"
+                                        Command="{Binding DisableProtectionCommand}"/>
+                            </WrapPanel>
+
+                            <TextBlock Margin="0,10,0,6"
+                                       Style="{StaticResource Protection.SectionLabel}"
+                                       Text="PAUSE PRESETS"/>
+                            <WrapPanel>
+                                <Button Style="{StaticResource Protection.ActionButton}"
+                                        Content="30 minutes"
+                                        Command="{Binding Pause30Command}"/>
+                                <Button Style="{StaticResource Protection.ActionButton}"
+                                        Content="1 hour"
+                                        Command="{Binding Pause1HourCommand}"/>
+                                <Button Style="{StaticResource Protection.ActionButton}"
+                                        Content="4 hours"
+                                        Command="{Binding Pause4HoursCommand}"/>
+                                <Button Style="{StaticResource Protection.ActionButton}"
+                                        Content="Until tomorrow"
+                                        Command="{Binding PauseUntilTomorrowCommand}"/>
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="2" Style="{DynamicResource Card}">
+                        <StackPanel>
+                            <TextBlock Style="{DynamicResource Text.SectionTitle}"
+                                       Text="Protection options"/>
+                            <TextBlock Margin="0,5,0,16"
+                                       Style="{DynamicResource Text.Secondary}"
+                                       Text="Changes are applied immediately to AdGuard Home."/>
+
+                            <CheckBox Style="{StaticResource Protection.Option}"
+                                      Content="DNS filtering"
+                                      IsEnabled="{Binding ControlsEnabled}"
+                                      IsChecked="{Binding FilteringEnabled, Mode=TwoWay}"/>
+                            <CheckBox Style="{StaticResource Protection.Option}"
+                                      Content="Safe Browsing"
+                                      IsEnabled="{Binding ControlsEnabled}"
+                                      IsChecked="{Binding SafeBrowsingEnabled, Mode=TwoWay}"/>
+                            <CheckBox Style="{StaticResource Protection.Option}"
+                                      Content="Safe Search"
+                                      IsEnabled="{Binding ControlsEnabled}"
+                                      IsChecked="{Binding SafeSearchEnabled, Mode=TwoWay}"/>
+                            <CheckBox Style="{StaticResource Protection.Option}"
+                                      Content="Parental Control"
+                                      IsEnabled="{Binding ControlsEnabled}"
+                                      IsChecked="{Binding ParentalEnabled, Mode=TwoWay}"/>
+                            <CheckBox Style="{StaticResource Protection.Option}"
+                                      Content="Query logging"
+                                      IsEnabled="{Binding ControlsEnabled}"
+                                      IsChecked="{Binding QueryLogEnabled, Mode=TwoWay}"/>
+
+                            <Border Margin="0,8,0,16"
+                                    Height="1"
+                                    Background="{DynamicResource Brush.Border}"/>
+
+                            <TextBlock Style="{StaticResource Protection.SectionLabel}"
+                                       Text="QUICK PROFILES"/>
+                            <WrapPanel>
+                                <Button Style="{StaticResource Protection.ActionButton}"
+                                        Content="Standard"
+                                        Command="{Binding ApplyStandardProfileCommand}"/>
+                                <Button Style="{StaticResource Protection.ActionButton}"
+                                        Content="Family"
+                                        Command="{Binding ApplyFamilyProfileCommand}"/>
+                                <Button Style="{StaticResource Protection.ActionButton}"
+                                        Content="Privacy"
+                                        Command="{Binding ApplyPrivacyProfileCommand}"/>
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- Blocked services -->
+                <Border Margin="0,0,0,16" Style="{DynamicResource Card}">
+                    <StackPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Style="{DynamicResource Text.SectionTitle}"
+                                           Text="Blocked services"/>
+                                <TextBlock Margin="0,5,0,0"
+                                           Style="{DynamicResource Text.Secondary}"
+                                           Text="Choose online services to block across the network."/>
+                            </StackPanel>
+                            <TextBlock Grid.Column="1"
+                                       Margin="16,2,0,0"
+                                       VerticalAlignment="Top"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource Brush.TextSecondary}"
+                                       Text="{Binding BlockedServicesSelectionSummary}"/>
+                        </Grid>
+
+                        <Grid Margin="0,18,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="190"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBox Style="{StaticResource Protection.Input}"
+                                     Text="{Binding BlockedServicesSearch, UpdateSourceTrigger=PropertyChanged}"
+                                     ToolTip="Search services by name, ID or category"/>
+
+                            <ComboBox Grid.Column="2"
+                                      Style="{StaticResource Protection.ComboBox}"
+                                      ItemsSource="{Binding BlockedServiceCategories}"
+                                      SelectedItem="{Binding SelectedBlockedServiceCategory, Mode=TwoWay}"
+                                      ToolTip="Filter services by category"/>
+
+                            <CheckBox Grid.Column="3"
+                                      Margin="16,0,0,0"
+                                      VerticalAlignment="Center"
+                                      Style="{StaticResource Protection.Option}"
+                                      Content="Blocked only"
+                                      IsChecked="{Binding ShowBlockedOnly}"/>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock VerticalAlignment="Center"
+                                       Style="{DynamicResource Text.Secondary}"
+                                       Text="{Binding BlockedServicesStatus}"/>
+
+                            <WrapPanel Grid.Column="1" Margin="16,0,0,0">
+                                <Button Style="{StaticResource Protection.ActionButton}"
+                                        MinWidth="88"
+                                        Content="Select all"
+                                        Command="{Binding SelectAllServicesCommand}"/>
+                                <Button Style="{StaticResource Protection.ActionButton}"
+                                        MinWidth="88"
+                                        Content="Clear all"
+                                        Command="{Binding ClearAllServicesCommand}"/>
+                                <Button Style="{DynamicResource Button.Primary}"
+                                        MinWidth="120"
+                                        Margin="0,0,0,8"
+                                        Content="Save changes"
+                                        Command="{Binding SaveBlockedServicesCommand}"/>
+                            </WrapPanel>
+                        </Grid>
+
+                        <Border Height="360"
+                                Padding="5"
+                                Background="{DynamicResource Brush.SurfaceMuted}"
+                                BorderBrush="{DynamicResource Brush.Border}"
+                                BorderThickness="1"
+                                CornerRadius="10">
+                            <ListBox ItemsSource="{Binding BlockedServicesView}"
+                                     Padding="2"
+                                     BorderThickness="0"
+                                     Background="Transparent"
+                                     HorizontalContentAlignment="Stretch"
+                                     ScrollViewer.CanContentScroll="False"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                     VirtualizingPanel.IsVirtualizing="False"
+                                     ScrollViewer.PanningMode="VerticalOnly">
+                                <ListBox.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel Orientation="Horizontal"
+                                                   ItemWidth="250"
+                                                   ItemHeight="46"/>
+                                    </ItemsPanelTemplate>
+                                </ListBox.ItemsPanel>
+
+                                <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem">
+                                        <Setter Property="Padding" Value="0"/>
+                                        <Setter Property="Margin" Value="0"/>
+                                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                        <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+                                        <Setter Property="Focusable" Value="False"/>
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="ListBoxItem">
+                                                    <ContentPresenter/>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Width="244"
+                                                Height="40"
+                                                Margin="3"
+                                                Padding="10,6"
+                                                Background="{DynamicResource Brush.Surface}"
+                                                BorderBrush="{DynamicResource Brush.Border}"
+                                                BorderThickness="1"
+                                                CornerRadius="8">
+                                            <CheckBox VerticalAlignment="Center"
+                                                      HorizontalContentAlignment="Left"
+                                                      FontWeight="SemiBold"
+                                                      Foreground="{DynamicResource Brush.TextPrimary}"
+                                                      Content="{Binding Name}"
+                                                      ToolTip="{Binding Name}"
+                                                      IsChecked="{Binding IsBlocked, Mode=TwoWay}"
+                                                      IsEnabled="{Binding DataContext.ControlsEnabled, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!-- Rules and rewrites -->
+                <Grid Margin="0,0,0,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="16"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0" Style="{DynamicResource Card}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <StackPanel>
+                                <TextBlock Style="{DynamicResource Text.SectionTitle}"
+                                           Text="Allow and block rules"/>
+                                <TextBlock Margin="0,5,0,0"
+                                           Style="{DynamicResource Text.Secondary}"
+                                           Text="Enter a domain without a protocol or path."/>
+                            </StackPanel>
+
+                            <Grid Grid.Row="1" Margin="0,16,0,12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <TextBox Style="{StaticResource Protection.Input}"
+                                         Text="{Binding NewRuleDomain, UpdateSourceTrigger=PropertyChanged}"/>
+                                <Button Grid.Column="1"
+                                        Width="84"
+                                        Margin="8,0,0,0"
+                                        Style="{DynamicResource Button.Secondary}"
+                                        Content="Block"
+                                        Command="{Binding AddDenyRuleCommand}"/>
+                                <Button Grid.Column="2"
+                                        Width="84"
+                                        Margin="8,0,0,0"
+                                        Style="{DynamicResource Button.Secondary}"
+                                        Content="Allow"
+                                        Command="{Binding AddAllowRuleCommand}"/>
+                            </Grid>
+
+                            <ListBox Grid.Row="2"
+                                     Height="205"
+                                     Style="{StaticResource Protection.List}"
+                                     ItemsSource="{Binding FilteringRules}"
+                                     SelectedItem="{Binding SelectedRule}"
+                                     DisplayMemberPath="Display"/>
+
+                            <Button Grid.Row="3"
+                                    Margin="0,12,0,0"
+                                    MinWidth="136"
+                                    HorizontalAlignment="Left"
+                                    Style="{StaticResource Protection.DangerButton}"
+                                    Content="Delete selected"
+                                    Command="{Binding DeleteRuleCommand}"/>
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Column="2" Style="{DynamicResource Card}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <StackPanel>
+                                <TextBlock Style="{DynamicResource Text.SectionTitle}"
+                                           Text="DNS rewrites"/>
+                                <TextBlock Margin="0,5,0,0"
+                                           Style="{DynamicResource Text.Secondary}"
+                                           Text="Return a custom IP address or domain for a DNS name."/>
+                            </StackPanel>
+
+                            <Grid Grid.Row="1" Margin="0,16,0,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="10"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource Protection.SectionLabel}"
+                                               Text="DOMAIN"/>
+                                    <TextBox Style="{StaticResource Protection.Input}"
+                                             Text="{Binding NewRewriteDomain, UpdateSourceTrigger=PropertyChanged}"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Style="{StaticResource Protection.SectionLabel}"
+                                               Text="ANSWER"/>
+                                    <TextBox Style="{StaticResource Protection.Input}"
+                                             Text="{Binding NewRewriteAnswer, UpdateSourceTrigger=PropertyChanged}"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <Button Grid.Row="2"
+                                    MinWidth="108"
+                                    Margin="0,0,0,12"
+                                    HorizontalAlignment="Left"
+                                    Style="{DynamicResource Button.Primary}"
+                                    Content="Add rewrite"
+                                    Command="{Binding AddRewriteCommand}"/>
+
+                            <ListBox Grid.Row="3"
+                                     Height="205"
+                                     Style="{StaticResource Protection.List}"
+                                     ItemsSource="{Binding DnsRewrites}"
+                                     SelectedItem="{Binding SelectedRewrite}"
+                                     DisplayMemberPath="Display"/>
+
+                            <Button Grid.Row="4"
+                                    Margin="0,12,0,0"
+                                    MinWidth="136"
+                                    HorizontalAlignment="Left"
+                                    Style="{StaticResource Protection.DangerButton}"
+                                    Content="Delete selected"
+                                    Command="{Binding DeleteRewriteCommand}"/>
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <!-- Activity message -->
+                <Border Margin="0,0,0,8"
+                        Padding="14,12"
+                        Background="{DynamicResource Brush.SurfaceMuted}"
+                        BorderBrush="{DynamicResource Brush.Border}"
+                        BorderThickness="1"
+                        CornerRadius="10">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Ellipse Width="8"
+                                 Height="8"
+                                 VerticalAlignment="Center"
+                                 Fill="{DynamicResource Brush.Primary}"/>
+                        <TextBlock Grid.Column="2"
+                                   VerticalAlignment="Center"
+                                   Style="{DynamicResource Text.Secondary}"
+                                   TextWrapping="Wrap"
+                                   Text="{Binding Message}"/>
+                    </Grid>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
     </Grid>
-    <Border Margin="6,4,6,8" Padding="14" Background="#F8FAFC" CornerRadius="8" BorderBrush="#D7DDE5" BorderThickness="1"><TextBlock Foreground="#444" TextWrapping="Wrap" Text="{Binding Message}"/></Border>
-   </StackPanel>
-  </ScrollViewer>
- </Grid>
 </UserControl>

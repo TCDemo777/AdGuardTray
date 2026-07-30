@@ -1,0 +1,43 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Dark palette. Keep the keys identical to LightTheme.xaml. -->
+    <Color x:Key="Color.Primary">#4F8DFF</Color>
+    <Color x:Key="Color.PrimaryHover">#6EA2FF</Color>
+    <Color x:Key="Color.PrimaryPressed">#3975DE</Color>
+    <Color x:Key="Color.Success">#37C871</Color>
+    <Color x:Key="Color.Warning">#F2A93B</Color>
+    <Color x:Key="Color.Danger">#E76868</Color>
+
+    <Color x:Key="Color.WindowBackground">#FF171A20</Color>
+    <Color x:Key="Color.Surface">#FF22262F</Color>
+    <Color x:Key="Color.SurfaceMuted">#FF2A2F39</Color>
+    <Color x:Key="Color.SurfaceHover">#FF303744</Color>
+    <Color x:Key="Color.Border">#FF343A46</Color>
+    <Color x:Key="Color.BorderStrong">#FF46505F</Color>
+
+    <Color x:Key="Color.TextPrimary">#FFF1F5F9</Color>
+    <Color x:Key="Color.TextSecondary">#FFCBD5E1</Color>
+    <Color x:Key="Color.TextMuted">#FF94A3B8</Color>
+    <Color x:Key="Color.TextOnAccent">#FFFFFFFF</Color>
+
+    <SolidColorBrush x:Key="Brush.Primary" Color="{StaticResource Color.Primary}" />
+    <SolidColorBrush x:Key="Brush.PrimaryHover" Color="{StaticResource Color.PrimaryHover}" />
+    <SolidColorBrush x:Key="Brush.PrimaryPressed" Color="{StaticResource Color.PrimaryPressed}" />
+    <SolidColorBrush x:Key="Brush.Success" Color="{StaticResource Color.Success}" />
+    <SolidColorBrush x:Key="Brush.Warning" Color="{StaticResource Color.Warning}" />
+    <SolidColorBrush x:Key="Brush.Danger" Color="{StaticResource Color.Danger}" />
+
+    <SolidColorBrush x:Key="Brush.WindowBackground" Color="{StaticResource Color.WindowBackground}" />
+    <SolidColorBrush x:Key="Brush.Surface" Color="{StaticResource Color.Surface}" />
+    <SolidColorBrush x:Key="Brush.SurfaceMuted" Color="{StaticResource Color.SurfaceMuted}" />
+    <SolidColorBrush x:Key="Brush.SurfaceHover" Color="{StaticResource Color.SurfaceHover}" />
+    <SolidColorBrush x:Key="Brush.Border" Color="{StaticResource Color.Border}" />
+    <SolidColorBrush x:Key="Brush.BorderStrong" Color="{StaticResource Color.BorderStrong}" />
+
+    <SolidColorBrush x:Key="Brush.TextPrimary" Color="{StaticResource Color.TextPrimary}" />
+    <SolidColorBrush x:Key="Brush.TextSecondary" Color="{StaticResource Color.TextSecondary}" />
+    <SolidColorBrush x:Key="Brush.TextMuted" Color="{StaticResource Color.TextMuted}" />
+    <SolidColorBrush x:Key="Brush.TextOnAccent" Color="{StaticResource Color.TextOnAccent}" />
+</ResourceDictionary>

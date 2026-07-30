@@ -8,45 +8,10 @@
         All page-specific redesigns can now reference these resources.
     -->
 
-    <!-- Colour tokens -->
-    <Color x:Key="Color.Primary">#2563EB</Color>
-    <Color x:Key="Color.PrimaryHover">#1D4ED8</Color>
-    <Color x:Key="Color.PrimaryPressed">#1E40AF</Color>
-    <Color x:Key="Color.Success">#22C55E</Color>
-    <Color x:Key="Color.Warning">#F59E0B</Color>
-    <Color x:Key="Color.Danger">#EF4444</Color>
-
-    <Color x:Key="Color.WindowBackground">#F4F7FB</Color>
-    <Color x:Key="Color.Surface">#FFFFFFFF</Color>
-    <Color x:Key="Color.SurfaceMuted">#FFF8FAFC</Color>
-    <Color x:Key="Color.SurfaceHover">#FFEFF6FF</Color>
-    <Color x:Key="Color.Border">#FFE2E8F0</Color>
-    <Color x:Key="Color.BorderStrong">#FFCBD5E1</Color>
-
-    <Color x:Key="Color.TextPrimary">#FF0F172A</Color>
-    <Color x:Key="Color.TextSecondary">#FF475569</Color>
-    <Color x:Key="Color.TextMuted">#FF64748B</Color>
-    <Color x:Key="Color.TextOnAccent">#FFFFFFFF</Color>
-
-    <!-- Brush tokens -->
-    <SolidColorBrush x:Key="Brush.Primary" Color="{StaticResource Color.Primary}" />
-    <SolidColorBrush x:Key="Brush.PrimaryHover" Color="{StaticResource Color.PrimaryHover}" />
-    <SolidColorBrush x:Key="Brush.PrimaryPressed" Color="{StaticResource Color.PrimaryPressed}" />
-    <SolidColorBrush x:Key="Brush.Success" Color="{StaticResource Color.Success}" />
-    <SolidColorBrush x:Key="Brush.Warning" Color="{StaticResource Color.Warning}" />
-    <SolidColorBrush x:Key="Brush.Danger" Color="{StaticResource Color.Danger}" />
-
-    <SolidColorBrush x:Key="Brush.WindowBackground" Color="{StaticResource Color.WindowBackground}" />
-    <SolidColorBrush x:Key="Brush.Surface" Color="{StaticResource Color.Surface}" />
-    <SolidColorBrush x:Key="Brush.SurfaceMuted" Color="{StaticResource Color.SurfaceMuted}" />
-    <SolidColorBrush x:Key="Brush.SurfaceHover" Color="{StaticResource Color.SurfaceHover}" />
-    <SolidColorBrush x:Key="Brush.Border" Color="{StaticResource Color.Border}" />
-    <SolidColorBrush x:Key="Brush.BorderStrong" Color="{StaticResource Color.BorderStrong}" />
-
-    <SolidColorBrush x:Key="Brush.TextPrimary" Color="{StaticResource Color.TextPrimary}" />
-    <SolidColorBrush x:Key="Brush.TextSecondary" Color="{StaticResource Color.TextSecondary}" />
-    <SolidColorBrush x:Key="Brush.TextMuted" Color="{StaticResource Color.TextMuted}" />
-    <SolidColorBrush x:Key="Brush.TextOnAccent" Color="{StaticResource Color.TextOnAccent}" />
+    <!--
+        Theme colours and brushes live in LightTheme.xaml and DarkTheme.xaml.
+        This dictionary contains only theme-independent design tokens and styles.
+    -->
 
     <!-- Layout tokens -->
     <Thickness x:Key="Spacing.4">4</Thickness>
@@ -65,7 +30,7 @@
         <Setter Property="FontFamily" Value="Segoe UI Variable Display, Segoe UI" />
         <Setter Property="FontSize" Value="26" />
         <Setter Property="FontWeight" Value="SemiBold" />
-        <Setter Property="Foreground" Value="{StaticResource Brush.TextPrimary}" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}" />
         <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
 
@@ -73,7 +38,7 @@
         <Setter Property="FontFamily" Value="Segoe UI Variable Display, Segoe UI" />
         <Setter Property="FontSize" Value="24" />
         <Setter Property="FontWeight" Value="SemiBold" />
-        <Setter Property="Foreground" Value="{StaticResource Brush.TextPrimary}" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}" />
         <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
 
@@ -81,7 +46,7 @@
         <Setter Property="FontFamily" Value="Segoe UI Variable Display, Segoe UI" />
         <Setter Property="FontSize" Value="18" />
         <Setter Property="FontWeight" Value="SemiBold" />
-        <Setter Property="Foreground" Value="{StaticResource Brush.TextPrimary}" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}" />
         <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
 
@@ -89,7 +54,7 @@
         <Setter Property="FontFamily" Value="Segoe UI Variable Display, Segoe UI" />
         <Setter Property="FontSize" Value="30" />
         <Setter Property="FontWeight" Value="SemiBold" />
-        <Setter Property="Foreground" Value="{StaticResource Brush.TextPrimary}" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}" />
         <Setter Property="TextTrimming" Value="CharacterEllipsis" />
     </Style>
 
@@ -97,29 +62,29 @@
         <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI" />
         <Setter Property="FontSize" Value="12" />
         <Setter Property="FontWeight" Value="SemiBold" />
-        <Setter Property="Foreground" Value="{StaticResource Brush.TextSecondary}" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.TextSecondary}" />
         <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
 
     <Style x:Key="Text.Body" TargetType="TextBlock">
         <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI" />
         <Setter Property="FontSize" Value="13" />
-        <Setter Property="Foreground" Value="{StaticResource Brush.TextPrimary}" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}" />
         <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
 
     <Style x:Key="Text.Secondary" TargetType="TextBlock" BasedOn="{StaticResource Text.Body}">
-        <Setter Property="Foreground" Value="{StaticResource Brush.TextSecondary}" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.TextSecondary}" />
     </Style>
 
     <Style x:Key="Text.Muted" TargetType="TextBlock" BasedOn="{StaticResource Text.Body}">
-        <Setter Property="Foreground" Value="{StaticResource Brush.TextMuted}" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}" />
     </Style>
 
     <!-- Containers -->
     <Style x:Key="Card" TargetType="Border">
-        <Setter Property="Background" Value="{StaticResource Brush.Surface}" />
-        <Setter Property="BorderBrush" Value="{StaticResource Brush.Border}" />
+        <Setter Property="Background" Value="{DynamicResource Brush.Surface}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="{StaticResource Radius.Large}" />
         <Setter Property="Padding" Value="20" />
@@ -142,8 +107,8 @@
     </Style>
 
     <Style x:Key="Card.Flat" TargetType="Border">
-        <Setter Property="Background" Value="{StaticResource Brush.Surface}" />
-        <Setter Property="BorderBrush" Value="{StaticResource Brush.Border}" />
+        <Setter Property="Background" Value="{DynamicResource Brush.Surface}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="{StaticResource Radius.Medium}" />
         <Setter Property="Padding" Value="16" />
@@ -152,9 +117,9 @@
 
     <!-- Buttons -->
     <Style x:Key="Button.Primary" TargetType="Button">
-        <Setter Property="Background" Value="{StaticResource Brush.Primary}" />
-        <Setter Property="Foreground" Value="{StaticResource Brush.TextOnAccent}" />
-        <Setter Property="BorderBrush" Value="{StaticResource Brush.Primary}" />
+        <Setter Property="Background" Value="{DynamicResource Brush.Primary}" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.TextOnAccent}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Primary}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="Padding" Value="16,9" />
         <Setter Property="MinHeight" Value="38" />
@@ -181,12 +146,12 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="ButtonBorder" Property="Background" Value="{StaticResource Brush.PrimaryHover}" />
-                            <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="{StaticResource Brush.PrimaryHover}" />
+                            <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource Brush.PrimaryHover}" />
+                            <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="{DynamicResource Brush.PrimaryHover}" />
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="ButtonBorder" Property="Background" Value="{StaticResource Brush.PrimaryPressed}" />
-                            <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="{StaticResource Brush.PrimaryPressed}" />
+                            <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource Brush.PrimaryPressed}" />
+                            <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="{DynamicResource Brush.PrimaryPressed}" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="Opacity" Value="0.48" />
@@ -198,9 +163,9 @@
     </Style>
 
     <Style x:Key="Button.Secondary" TargetType="Button" BasedOn="{StaticResource Button.Primary}">
-        <Setter Property="Background" Value="{StaticResource Brush.Surface}" />
-        <Setter Property="Foreground" Value="{StaticResource Brush.TextPrimary}" />
-        <Setter Property="BorderBrush" Value="{StaticResource Brush.BorderStrong}" />
+        <Setter Property="Background" Value="{DynamicResource Brush.Surface}" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Brush.BorderStrong}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
@@ -218,11 +183,11 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="ButtonBorder" Property="Background" Value="{StaticResource Brush.SurfaceHover}" />
-                            <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="{StaticResource Brush.Primary}" />
+                            <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource Brush.SurfaceHover}" />
+                            <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="{DynamicResource Brush.Primary}" />
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="ButtonBorder" Property="Background" Value="{StaticResource Brush.SurfaceMuted}" />
+                            <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource Brush.SurfaceMuted}" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="Opacity" Value="0.48" />
@@ -240,7 +205,7 @@
         <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI" />
         <Setter Property="FontSize" Value="12" />
         <Setter Property="FontWeight" Value="Bold" />
-        <Setter Property="Foreground" Value="{StaticResource Brush.TextSecondary}" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.TextSecondary}" />
         <Setter Property="TextAlignment" Value="Center" />
         <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
@@ -261,8 +226,8 @@
         <Setter Property="Height" Value="10" />
         <Setter Property="Minimum" Value="0" />
         <Setter Property="Maximum" Value="100" />
-        <Setter Property="Foreground" Value="{StaticResource Brush.Primary}" />
-        <Setter Property="Background" Value="{StaticResource Brush.Border}" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Primary}" />
+        <Setter Property="Background" Value="{DynamicResource Brush.Border}" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Template">
             <Setter.Value>
@@ -289,8 +254,8 @@
 
     <!-- Common controls -->
     <Style TargetType="ToolTip">
-        <Setter Property="Background" Value="{StaticResource Brush.TextPrimary}" />
-        <Setter Property="Foreground" Value="{StaticResource Brush.TextOnAccent}" />
+        <Setter Property="Background" Value="{DynamicResource Brush.TextPrimary}" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.TextOnAccent}" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Padding" Value="10,7" />
         <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI" />
@@ -298,7 +263,7 @@
     </Style>
 
     <Style TargetType="Separator">
-        <Setter Property="Background" Value="{StaticResource Brush.Border}" />
+        <Setter Property="Background" Value="{DynamicResource Brush.Border}" />
         <Setter Property="Margin" Value="0,12" />
     </Style>
 

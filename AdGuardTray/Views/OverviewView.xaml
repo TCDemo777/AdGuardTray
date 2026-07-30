@@ -40,11 +40,11 @@
         </Style>
     </UserControl.Resources>
 
-    <ScrollViewer>
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="0,0,6,24">
 
             <!-- Page heading -->
-            <Grid Margin="0,0,0,24">
+            <Grid Margin="0,0,0,18">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
@@ -83,10 +83,22 @@
                 Style="{StaticResource Text.SectionTitle}"
                 Text="System health" />
 
-            <WrapPanel Margin="0,0,-12,12">
+            <Grid Margin="0,0,0,14">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="8" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="8" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="8" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="8" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
                 <controls:StatisticCard
-                    Width="210"
-                    Margin="0,0,12,12"
+                    Grid.Column="0"
+                    Height="146"
                     AccentBrush="{Binding RouterStatusColour}"
                     FooterText="{Binding RouterModel}"
                     IconBackground="#EFF6FF"
@@ -96,19 +108,19 @@
                     Value="{Binding RouterStatusText}" />
 
                 <controls:StatisticCard
-                    Width="210"
-                    Margin="0,0,12,12"
+                    Grid.Column="2"
+                    Height="146"
                     AccentBrush="{Binding AdGuardStatusColour}"
                     FooterText="{Binding AdGuardVersion}"
                     IconBackground="#F0FDF4"
                     IconGlyph="&#xE72E;"
-                    Subtitle="DNS filtering service"
-                    Title="ADGUARD HOME"
+                    Subtitle="DNS filtering"
+                    Title="ADGUARD"
                     Value="{Binding AdGuardStatusText}" />
 
                 <controls:StatisticCard
-                    Width="210"
-                    Margin="0,0,12,12"
+                    Grid.Column="4"
+                    Height="146"
                     AccentBrush="{Binding InternetStatusColour}"
                     FooterText="{Binding Latency}"
                     IconBackground="#EFF6FF"
@@ -118,8 +130,8 @@
                     Value="{Binding InternetStatusText}" />
 
                 <controls:StatisticCard
-                    Width="210"
-                    Margin="0,0,12,12"
+                    Grid.Column="6"
+                    Height="146"
                     AccentBrush="{Binding CpuHealthColour}"
                     FooterText="{Binding CpuUsage}"
                     IconBackground="#FFF7ED"
@@ -129,8 +141,8 @@
                     Value="{Binding CpuHealthText}" />
 
                 <controls:StatisticCard
-                    Width="210"
-                    Margin="0,0,12,12"
+                    Grid.Column="8"
+                    Height="146"
                     AccentBrush="{Binding MemoryHealthColour}"
                     FooterText="{Binding MemoryUsage}"
                     IconBackground="#F5F3FF"
@@ -138,21 +150,30 @@
                     Subtitle="Memory usage"
                     Title="MEMORY"
                     Value="{Binding MemoryHealthText}" />
-            </WrapPanel>
+            </Grid>
 
             <!-- Main details -->
             <TextBlock
-                Margin="0,8,0,12"
+                Margin="0,4,0,12"
                 Style="{StaticResource Text.SectionTitle}"
                 Text="System details" />
 
-            <WrapPanel Margin="0,0,-16,0">
-
-                <!-- Router -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="16" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
                 <Border
-                    Width="355"
-                    MinHeight="375"
-                    Margin="0,0,16,16"
+                    Grid.Row="0"
+                    Grid.Column="0"
+                    MinHeight="350"
+                    Margin="0,0,8,16"
                     Style="{StaticResource Card}">
                     <Grid>
                         <Grid.RowDefinitions>
@@ -286,11 +307,11 @@
                     </Grid>
                 </Border>
 
-                <!-- AdGuard Home -->
                 <Border
-                    Width="355"
-                    MinHeight="375"
-                    Margin="0,0,16,16"
+                    Grid.Row="0"
+                    Grid.Column="2"
+                    MinHeight="350"
+                    Margin="8,0,0,16"
                     Style="{StaticResource Card}">
                     <Grid>
                         <Grid.RowDefinitions>
@@ -421,11 +442,12 @@
                     </Grid>
                 </Border>
 
-                <!-- Internet and storage -->
                 <Border
-                    Width="355"
-                    MinHeight="375"
-                    Margin="0,0,16,16"
+                    Grid.Row="2"
+                    Grid.Column="0"
+                    Grid.ColumnSpan="3"
+                    MinHeight="350"
+                    Margin="0"
                     Style="{StaticResource Card}">
                     <Grid>
                         <Grid.RowDefinitions>
@@ -548,7 +570,7 @@
                         </StackPanel>
                     </Grid>
                 </Border>
-            </WrapPanel>
+            </Grid>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

@@ -16,6 +16,7 @@ namespace AdGuardTray.ViewModels
         private string _password = "";
         private bool _rememberPassword;
         private bool _startWithWindows;
+        private string _theme = ThemeService.SystemTheme;
         private int _refreshIntervalSeconds = 30;
         private int _defaultPauseMinutes = 30;
         private string _statusMessage = "Settings loaded.";
@@ -77,6 +78,22 @@ namespace AdGuardTray.ViewModels
             {
                 if (SetProperty(ref _startWithWindows, value))
                 {
+                    MarkChanged();
+                }
+            }
+        }
+
+
+        public string Theme
+        {
+            get => _theme;
+            set
+            {
+                string normalizedTheme = ThemeService.Normalize(value);
+
+                if (SetProperty(ref _theme, normalizedTheme))
+                {
+                    ThemeService.Apply(normalizedTheme);
                     MarkChanged();
                 }
             }
@@ -162,6 +179,9 @@ namespace AdGuardTray.ViewModels
                 StartWithWindows =
                     settings.StartWithWindows;
 
+                Theme =
+                    ThemeService.Normalize(settings.Theme);
+
                 RefreshIntervalSeconds =
                     settings.RefreshIntervalSeconds <= 0
                         ? 30
@@ -225,6 +245,9 @@ namespace AdGuardTray.ViewModels
 
                         StartWithWindows =
                             StartWithWindows,
+
+                        Theme =
+                            Theme,
 
                         RefreshIntervalSeconds =
                             RefreshIntervalSeconds,
