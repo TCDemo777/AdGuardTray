@@ -5,7 +5,7 @@
     <UserControl.Resources>
         <Style x:Key="Protection.ActionButton"
                TargetType="Button"
-               BasedOn="{DynamicResource Button.Secondary}">
+               BasedOn="{StaticResource Button.Secondary}">
             <Setter Property="MinWidth" Value="104"/>
             <Setter Property="Margin" Value="0,0,8,8"/>
             <Setter Property="Padding" Value="14,8"/>
@@ -13,7 +13,7 @@
 
         <Style x:Key="Protection.DangerButton"
                TargetType="Button"
-               BasedOn="{DynamicResource Button.Secondary}">
+               BasedOn="{StaticResource Button.Secondary}">
             <Setter Property="MinWidth" Value="104"/>
             <Setter Property="Margin" Value="0,0,8,8"/>
             <Setter Property="Padding" Value="14,8"/>
@@ -23,7 +23,7 @@
 
         <Style x:Key="Protection.SectionLabel"
                TargetType="TextBlock"
-               BasedOn="{DynamicResource Text.CardCaption}">
+               BasedOn="{StaticResource Text.CardCaption}">
             <Setter Property="Margin" Value="0,0,0,6"/>
         </Style>
 
@@ -286,17 +286,20 @@
 
                             <TextBlock Style="{StaticResource Protection.SectionLabel}"
                                        Text="QUICK PROFILES"/>
-                            <WrapPanel>
+                            <UniformGrid Columns="3" Margin="0,0,0,8">
                                 <Button Style="{StaticResource Protection.ActionButton}"
+                                        Margin="0,0,8,0"
                                         Content="Standard"
                                         Command="{Binding ApplyStandardProfileCommand}"/>
                                 <Button Style="{StaticResource Protection.ActionButton}"
+                                        Margin="0,0,8,0"
                                         Content="Family"
                                         Command="{Binding ApplyFamilyProfileCommand}"/>
                                 <Button Style="{StaticResource Protection.ActionButton}"
                                         Content="Privacy"
+                                        Margin="0,0,0,0"
                                         Command="{Binding ApplyPrivacyProfileCommand}"/>
-                            </WrapPanel>
+                            </UniformGrid>
                         </StackPanel>
                     </Border>
                 </Grid>
@@ -377,69 +380,79 @@
                             </WrapPanel>
                         </Grid>
 
-                        <Border Height="360"
+                        <Border Height="390"
                                 Padding="5"
                                 Background="{DynamicResource Brush.SurfaceMuted}"
                                 BorderBrush="{DynamicResource Brush.Border}"
                                 BorderThickness="1"
                                 CornerRadius="10">
-                            <ListBox ItemsSource="{Binding BlockedServicesView}"
-                                     Padding="2"
-                                     BorderThickness="0"
-                                     Background="Transparent"
-                                     HorizontalContentAlignment="Stretch"
-                                     ScrollViewer.CanContentScroll="False"
-                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                                     ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                     VirtualizingPanel.IsVirtualizing="False"
-                                     ScrollViewer.PanningMode="VerticalOnly">
-                                <ListBox.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <WrapPanel Orientation="Horizontal"
-                                                   ItemWidth="250"
-                                                   ItemHeight="46"/>
-                                    </ItemsPanelTemplate>
-                                </ListBox.ItemsPanel>
+                            <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                                          VerticalScrollBarVisibility="Auto"
+                                          CanContentScroll="False"
+                                          PanningMode="VerticalOnly">
+                                <ListBox Width="Auto"
+                                         HorizontalAlignment="Left"
+                                         ItemsSource="{Binding BlockedServicesView}"
+                                         Padding="0"
+                                         BorderThickness="0"
+                                         Background="Transparent"
+                                         HorizontalContentAlignment="Stretch"
+                                         ScrollViewer.CanContentScroll="False"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                         ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                         VirtualizingPanel.IsVirtualizing="False">
+                                    <ListBox.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel
+                                                       Orientation="Horizontal"
+                                                       ItemWidth="250"
+                                                       ItemHeight="46"/>
+                                        </ItemsPanelTemplate>
+                                    </ListBox.ItemsPanel>
 
-                                <ListBox.ItemContainerStyle>
-                                    <Style TargetType="ListBoxItem">
-                                        <Setter Property="Padding" Value="0"/>
-                                        <Setter Property="Margin" Value="0"/>
-                                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                                        <Setter Property="VerticalContentAlignment" Value="Stretch"/>
-                                        <Setter Property="Focusable" Value="False"/>
-                                        <Setter Property="Template">
-                                            <Setter.Value>
-                                                <ControlTemplate TargetType="ListBoxItem">
-                                                    <ContentPresenter/>
-                                                </ControlTemplate>
-                                            </Setter.Value>
-                                        </Setter>
-                                    </Style>
-                                </ListBox.ItemContainerStyle>
+                                    <ListBox.ItemContainerStyle>
+                                        <Style TargetType="ListBoxItem">
+                                            <Setter Property="Width" Value="250"/>
+                                            <Setter Property="Height" Value="46"/>
+                                            <Setter Property="Padding" Value="0"/>
+                                            <Setter Property="Margin" Value="0"/>
+                                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                            <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+                                            <Setter Property="Focusable" Value="False"/>
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="ListBoxItem">
+                                                        <ContentPresenter/>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Style>
+                                    </ListBox.ItemContainerStyle>
 
-                                <ListBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border Width="244"
-                                                Height="40"
-                                                Margin="3"
-                                                Padding="10,6"
-                                                Background="{DynamicResource Brush.Surface}"
-                                                BorderBrush="{DynamicResource Brush.Border}"
-                                                BorderThickness="1"
-                                                CornerRadius="8">
-                                            <CheckBox VerticalAlignment="Center"
-                                                      HorizontalContentAlignment="Left"
-                                                      FontWeight="SemiBold"
-                                                      Foreground="{DynamicResource Brush.TextPrimary}"
-                                                      Content="{Binding Name}"
-                                                      ToolTip="{Binding Name}"
-                                                      IsChecked="{Binding IsBlocked, Mode=TwoWay}"
-                                                      IsEnabled="{Binding DataContext.ControlsEnabled, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
-                                        </Border>
-                                    </DataTemplate>
-                                </ListBox.ItemTemplate>
-                            </ListBox>
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Width="244"
+                                                    Height="40"
+                                                    Margin="3"
+                                                    Padding="10,6"
+                                                    Background="{DynamicResource Brush.Surface}"
+                                                    BorderBrush="{DynamicResource Brush.Border}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="8">
+                                                <CheckBox VerticalAlignment="Center"
+                                                          HorizontalAlignment="Stretch"
+                                                          HorizontalContentAlignment="Left"
+                                                          FontWeight="SemiBold"
+                                                          Foreground="{DynamicResource Brush.TextPrimary}"
+                                                          Content="{Binding Name}"
+                                                          ToolTip="{Binding Name}"
+                                                          IsChecked="{Binding IsBlocked, Mode=TwoWay}"
+                                                          IsEnabled="{Binding DataContext.ControlsEnabled, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </ScrollViewer>
                         </Border>
                     </StackPanel>
                 </Border>
@@ -574,31 +587,6 @@
                         </Grid>
                     </Border>
                 </Grid>
-
-                <!-- Activity message -->
-                <Border Margin="0,0,0,8"
-                        Padding="14,12"
-                        Background="{DynamicResource Brush.SurfaceMuted}"
-                        BorderBrush="{DynamicResource Brush.Border}"
-                        BorderThickness="1"
-                        CornerRadius="10">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="10"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <Ellipse Width="8"
-                                 Height="8"
-                                 VerticalAlignment="Center"
-                                 Fill="{DynamicResource Brush.Primary}"/>
-                        <TextBlock Grid.Column="2"
-                                   VerticalAlignment="Center"
-                                   Style="{DynamicResource Text.Secondary}"
-                                   TextWrapping="Wrap"
-                                   Text="{Binding Message}"/>
-                    </Grid>
-                </Border>
             </StackPanel>
         </ScrollViewer>
     </Grid>
