@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Threading;
 using AdGuardTray.Models;
 using AdGuardTray.Services;
@@ -35,6 +36,10 @@ namespace AdGuardTray.ViewModels
         public int TotalQueries => _client.TotalQueries;
         public int BlockedQueries => _client.BlockedQueries;
         public double BlockRate => _client.BlockRate;
+
+        public bool HasRecentQueries => RecentQueries.Count > 0;
+        public bool HasTopDomains => TopDomains.Count > 0;
+        public bool HasTopBlockedDomains => TopBlockedDomains.Count > 0;
 
         [ObservableProperty]
         private string statusMessage =
@@ -147,6 +152,30 @@ namespace AdGuardTray.ViewModels
         }
 
         [RelayCommand]
+        private void CopyIp()
+        {
+            CopyToClipboard(IpAddress, "IP address");
+        }
+
+        [RelayCommand]
+        private void CopyMac()
+        {
+            CopyToClipboard(MacAddress, "MAC address");
+        }
+
+        private void CopyToClipboard(string? value, string label)
+        {
+            if (string.IsNullOrWhiteSpace(value) || value == "-")
+            {
+                StatusMessage = $"No {label.ToLowerInvariant()} is available to copy.";
+                return;
+            }
+
+            Clipboard.SetText(value);
+            StatusMessage = $"{label} copied to the clipboard.";
+        }
+
+        [RelayCommand]
         private void TogglePause()
         {
             IsPaused = !IsPaused;
@@ -202,6 +231,10 @@ namespace AdGuardTray.ViewModels
                     entries,
                     blockedOnly: true));
 
+            OnPropertyChanged(nameof(HasRecentQueries));
+            OnPropertyChanged(nameof(HasTopDomains));
+            OnPropertyChanged(nameof(HasTopBlockedDomains));
+
             StatusMessage =
                 entries.Count switch
                 {
@@ -218,7 +251,7 @@ namespace AdGuardTray.ViewModels
             IEnumerable<QueryLogEntry> entries,
             bool blockedOnly)
         {
-            return entries
+            List<DomainStat> results = entries
                 .Where(
                     entry =>
                         (!blockedOnly || entry.IsBlocked) &&
@@ -234,11 +267,20 @@ namespace AdGuardTray.ViewModels
                             Domain = group.Key,
                             Count = group.Count()
                         })
-                .OrderByDescending(
-                    item => item.Count)
-                .ThenBy(
-                    item => item.Domain)
-                .Take(10);
+                .OrderByDescending(item => item.Count)
+                .ThenBy(item => item.Domain)
+                .Take(5)
+                .ToList();
+
+            int maximum = results.Count == 0 ? 1 : results.Max(item => item.Count);
+            for (int index = 0; index < results.Count; index++)
+            {
+                DomainStat item = results[index];
+                item.Rank = index + 1;
+                item.Percentage = Math.Max(4d, item.Count * 100d / maximum);
+            }
+
+            return results;
         }
 
         private static void ReplaceStats(

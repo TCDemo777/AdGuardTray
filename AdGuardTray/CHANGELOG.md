@@ -6,10 +6,12 @@
 - Analytics v2 dashboard with responsive leaderboard-style rankings.
 - Proportional activity bars for top clients, requested domains, and blocked domains.
 - Full-name tooltips and clearer request totals for ranked items.
+- Client Details v2 with compact summary cards, copy buttons for IP and MAC addresses, top-five domain leaderboards, and clearer allowed/blocked request badges.
 
 ### Changed
 - Replaced cramped ranking charts and bottom chips with readable top-five lists.
 - Improved analytics spacing, card sizing, typography, and long-name handling.
+- Restyled the Client Details window to match Analytics v2, including responsive cards, progress bars, tooltips, and empty states.
 
 ## v1.3.1 — Client details and tray usability
 
