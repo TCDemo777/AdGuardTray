@@ -98,10 +98,10 @@ namespace AdGuardTray.Services
 
         public async Task<List<WifiRadioInfo>> GetWifiRadiosAsync()
         {
-            // GL-MT6000 uses MediaTek radio identifiers such as mt798611/mt798612,
-            // while associated stations are exposed by separate hostapd.* ubus objects.
-            // Read configuration from UCI, then match hostapd interfaces by SSID or band.
-            string command = """
+            // Read configured APs first.  GL.iNet's own client service is then
+            // used as the primary station source because MediaTek firmware does
+            // not consistently expose associations through iw/iwinfo.
+            string networkCommand = """
                 for s in $(uci show wireless 2>/dev/null | sed -n 's/^wireless\.\([^.=]*\)=wifi-iface$/\1/p'); do
                     mode=$(uci -q get wireless.$s.mode)
                     [ -z "$mode" -o "$mode" = "ap" ] || continue
@@ -113,104 +113,305 @@ namespace AdGuardTray.Services
                     [ -n "$band" ] || band=$(uci -q get wireless.$dev.hwmode)
                     channel=$(uci -q get wireless.$dev.channel)
                     [ -n "$channel" ] || channel='auto'
+                    encryption=$(uci -q get wireless.$s.encryption)
+                    [ -n "$encryption" ] || encryption='open'
                     disabled=$(uci -q get wireless.$s.disabled)
                     rdisabled=$(uci -q get wireless.$dev.disabled)
-                    clients=0
-                    live_ifaces=''
+                    iface=''
 
-                    case "$band" in
-                        *2g*|*11g*|*11b*) wanted_band='2g' ;;
-                        *5g*|*11a*|*11ac*|*11ax*) wanted_band='5g' ;;
-                        *)
-                            if [ "$channel" != 'auto' ] && [ "$channel" -le 14 ] 2>/dev/null; then wanted_band='2g'; else wanted_band='5g'; fi
-                            ;;
-                    esac
-
-                    for h in $(ubus list 'hostapd.*' 2>/dev/null); do
-                        status=$(ubus call "$h" get_status 2>/dev/null)
-                        hssid=$(printf '%s' "$status" | jsonfilter -e '@.ssid' 2>/dev/null)
-                        hfreq=$(printf '%s' "$status" | jsonfilter -e '@.freq' 2>/dev/null)
-                        hchan=$(printf '%s' "$status" | jsonfilter -e '@.channel' 2>/dev/null)
-                        hband=''
-                        if [ -n "$hfreq" ]; then
-                            [ "$hfreq" -lt 3000 ] 2>/dev/null && hband='2g' || hband='5g'
-                        elif [ -n "$hchan" ]; then
-                            [ "$hchan" -le 14 ] 2>/dev/null && hband='2g' || hband='5g'
-                        fi
-
-                        if [ "$hssid" = "$ssid" ] || { [ -n "$hband" ] && [ "$hband" = "$wanted_band" ]; }; then
-                            iface=${h#hostapd.}
-                            case " $live_ifaces " in *" $iface "*) continue ;; esac
-                            live_ifaces="$live_ifaces $iface"
-                            count=$(ubus call "$h" get_clients 2>/dev/null | grep -Eo '[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}' | tr 'A-F' 'a-f' | sort -u | wc -l)
-                            clients=$((clients + count))
-                            [ "$hssid" = "$ssid" ] && break
+                    for i in $(iw dev 2>/dev/null | awk '$1 == "Interface" { print $2 }'); do
+                        runtime_ssid=$(iw dev "$i" info 2>/dev/null | sed -n 's/^[[:space:]]*ssid //p' | head -n1)
+                        if [ "$runtime_ssid" = "$ssid" ]; then
+                            iface="$i"
+                            runtime_channel=$(iw dev "$i" info 2>/dev/null | awk '$1 == "channel" { print $2; exit }')
+                            [ -n "$runtime_channel" ] && channel="$runtime_channel"
+                            break
                         fi
                     done
 
                     state='Online'
                     [ "$disabled" = "1" -o "$rdisabled" = "1" ] && state='Disabled'
-                    live_ifaces=$(printf '%s' "$live_ifaces" | sed 's/^ *//')
-                    [ -n "$live_ifaces" ] || live_ifaces="$dev"
-                    printf '%s|%s|%s|%s|%s|%s|%s\n' "$dev" "$ssid" "$band" "$channel" "$clients" "$state" "$live_ifaces"
+                    [ -z "$iface" -a "$state" = 'Online' ] && state='Configured'
+                    display_iface="$iface"
+                    [ -n "$display_iface" ] || display_iface="$dev"
+                    printf 'N|%s|%s|%s|%s|%s|%s|%s|%s\n' "$s" "$dev" "$display_iface" "$ssid" "$band" "$channel" "$encryption" "$state"
                 done
                 """;
 
-            string output = await _ssh.RunCommandAsync(command);
-            var radios = new List<WifiRadioInfo>();
+            string networkOutput = await _ssh.RunCommandAsync(networkCommand);
+            var networks = new List<WifiRadioInfo>();
 
-            foreach (string line in output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+            foreach (string line in networkOutput.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
             {
                 string[] parts = line.Split('|');
-                if (parts.Length < 6)
+                if (parts.Length < 9 || parts[0] != "N")
                 {
                     continue;
                 }
 
-                string rawBand = parts[2].Trim().ToLowerInvariant();
+                string rawBand = parts[5].Trim().ToLowerInvariant();
                 string band = rawBand.Contains("2g") || rawBand.Contains("11g") || rawBand.Contains("11b")
                     ? "2.4 GHz"
                     : rawBand.Contains("5g") || rawBand.Contains("11a") || rawBand.Contains("11ac") || rawBand.Contains("11ax")
                         ? "5 GHz"
                         : rawBand.Contains("6g")
                             ? "6 GHz"
-                            : InferBandFromChannel(parts[3]);
+                            : InferBandFromChannel(parts[6]);
 
-                radios.Add(new WifiRadioInfo
+                networks.Add(new WifiRadioInfo
                 {
-                    Radio = parts.Length > 6 && !string.IsNullOrWhiteSpace(parts[6])
-                        ? parts[6].Trim()
-                        : string.IsNullOrWhiteSpace(parts[0]) ? "-" : parts[0].Trim(),
-                    Ssid = string.IsNullOrWhiteSpace(parts[1]) ? "Hidden network" : parts[1].Trim(),
+                    Radio = string.IsNullOrWhiteSpace(parts[2]) ? "-" : parts[2].Trim(),
+                    Interface = string.IsNullOrWhiteSpace(parts[3]) ? "-" : parts[3].Trim(),
+                    Ssid = string.IsNullOrWhiteSpace(parts[4]) ? "Hidden network" : parts[4].Trim(),
                     Band = band,
-                    Channel = string.IsNullOrWhiteSpace(parts[3]) ? "auto" : parts[3].Trim(),
-                    ClientCount = int.TryParse(parts[4].Trim(), out int count) ? count : 0,
-                    Status = string.IsNullOrWhiteSpace(parts[5]) ? "Configured" : parts[5].Trim()
+                    Channel = string.IsNullOrWhiteSpace(parts[6]) ? "auto" : parts[6].Trim(),
+                    Security = FormatWifiSecurity(parts[7]),
+                    Status = string.IsNullOrWhiteSpace(parts[8]) ? "Configured" : parts[8].Trim()
                 });
             }
 
-            return radios
-                .GroupBy(r => r.Band, StringComparer.OrdinalIgnoreCase)
-                .Select(group =>
+            if (networks.Count == 0)
+            {
+                return networks;
+            }
+
+            // GL.iNet firmware's client service knows the connection type even
+            // where the MediaTek driver returns an empty station dump.
+            string clientJson = await _ssh.RunCommandAsync(
+                "ubus call gl-clients list 2>/dev/null || true");
+
+            if (!string.IsNullOrWhiteSpace(clientJson))
+            {
+                try
                 {
-                    WifiRadioInfo first = group.First();
-                    return new WifiRadioInfo
+                    using JsonDocument document = JsonDocument.Parse(clientJson);
+                    foreach (JsonElement client in EnumerateClientObjects(document.RootElement))
                     {
-                        Radio = string.Join(", ", group.Select(r => r.Radio)
-                            .Where(value => !string.IsNullOrWhiteSpace(value) && value != "-")
-                            .Distinct(StringComparer.OrdinalIgnoreCase)),
-                        Ssid = string.Join(", ", group.Select(r => r.Ssid)
-                            .Where(value => !string.IsNullOrWhiteSpace(value))
-                            .Distinct(StringComparer.OrdinalIgnoreCase)),
-                        Band = first.Band,
-                        Channel = first.Channel,
-                        ClientCount = group.Sum(r => r.ClientCount),
-                        Status = group.Any(r => r.Status.Equals("Online", StringComparison.OrdinalIgnoreCase))
-                            ? "Online"
-                            : first.Status
-                    };
-                })
-                .ToList();
+                        if (!GetFlexibleBoolean(client, "online", true))
+                        {
+                            continue;
+                        }
+
+                        string iface = GetFlexibleString(client, "iface", "interface", "connection", "type");
+                        string band = NormaliseClientBand(iface);
+                        if (band.Length == 0)
+                        {
+                            continue; // Cable/VPN clients do not belong to a Wi-Fi card.
+                        }
+
+                        WifiRadioInfo? network = FindClientNetwork(networks, client, band);
+                        if (network == null)
+                        {
+                            continue;
+                        }
+
+                        string mac = GetFlexibleString(client, "mac", "macaddr", "mac_address");
+                        if (mac.Length == 0 || network.Clients.Any(c =>
+                                string.Equals(c.MacAddress, mac, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            continue;
+                        }
+
+                        string name = GetFlexibleString(client, "name", "hostname", "host_name");
+                        string ip = GetFlexibleString(client, "ip", "ipaddr", "ip_address");
+                        string signal = GetFlexibleString(client, "signal", "rssi");
+
+                        network.Clients.Add(new WifiClientInfo
+                        {
+                            Name = string.IsNullOrWhiteSpace(name) ? "Unknown device" : name,
+                            IpAddress = string.IsNullOrWhiteSpace(ip) ? "-" : ip,
+                            MacAddress = mac,
+                            Signal = FormatSignal(signal)
+                        });
+                    }
+                }
+                catch (JsonException)
+                {
+                    // Keep the configured networks visible.  Older firmware may
+                    // briefly return an empty or incomplete gl-clients payload.
+                }
+            }
+
+            return networks;
+        }
+
+        private static IEnumerable<JsonElement> EnumerateClientObjects(JsonElement element)
+        {
+            if (element.ValueKind == JsonValueKind.Object)
+            {
+                bool looksLikeClient =
+                    HasAnyProperty(element, "mac", "macaddr", "mac_address") &&
+                    HasAnyProperty(element, "iface", "interface", "connection", "type");
+
+                if (looksLikeClient)
+                {
+                    yield return element;
+                }
+
+                foreach (JsonProperty property in element.EnumerateObject())
+                {
+                    foreach (JsonElement child in EnumerateClientObjects(property.Value))
+                    {
+                        yield return child;
+                    }
+                }
+            }
+            else if (element.ValueKind == JsonValueKind.Array)
+            {
+                foreach (JsonElement item in element.EnumerateArray())
+                {
+                    foreach (JsonElement child in EnumerateClientObjects(item))
+                    {
+                        yield return child;
+                    }
+                }
+            }
+        }
+
+        private static bool HasAnyProperty(JsonElement element, params string[] names)
+        {
+            return names.Any(name => TryGetPropertyIgnoreCase(element, name, out _));
+        }
+
+        private static string GetFlexibleString(JsonElement element, params string[] names)
+        {
+            foreach (string name in names)
+            {
+                if (!TryGetPropertyIgnoreCase(element, name, out JsonElement value))
+                {
+                    continue;
+                }
+
+                return value.ValueKind switch
+                {
+                    JsonValueKind.String => value.GetString()?.Trim() ?? string.Empty,
+                    JsonValueKind.Number => value.GetRawText(),
+                    JsonValueKind.True => "true",
+                    JsonValueKind.False => "false",
+                    _ => string.Empty
+                };
+            }
+
+            return string.Empty;
+        }
+
+        private static bool GetFlexibleBoolean(JsonElement element, string name, bool defaultValue)
+        {
+            if (!TryGetPropertyIgnoreCase(element, name, out JsonElement value))
+            {
+                return defaultValue;
+            }
+
+            return value.ValueKind switch
+            {
+                JsonValueKind.True => true,
+                JsonValueKind.False => false,
+                JsonValueKind.Number => value.TryGetInt32(out int number) && number != 0,
+                JsonValueKind.String => value.GetString() is string text &&
+                    (text == "1" || text.Equals("true", StringComparison.OrdinalIgnoreCase) ||
+                     text.Equals("online", StringComparison.OrdinalIgnoreCase)),
+                _ => defaultValue
+            };
+        }
+
+        private static bool TryGetPropertyIgnoreCase(
+            JsonElement element,
+            string name,
+            out JsonElement value)
+        {
+            if (element.ValueKind == JsonValueKind.Object)
+            {
+                foreach (JsonProperty property in element.EnumerateObject())
+                {
+                    if (property.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+                    {
+                        value = property.Value;
+                        return true;
+                    }
+                }
+            }
+
+            value = default;
+            return false;
+        }
+
+        private static string NormaliseClientBand(string iface)
+        {
+            string value = iface.Trim().ToLowerInvariant();
+            if (value.Contains("2.4") || value.Contains("2g") || value.Contains("24g"))
+            {
+                return "2.4 GHz";
+            }
+
+            if (value.Contains("5g") || value.Contains("5 ghz") || value == "5")
+            {
+                return "5 GHz";
+            }
+
+            if (value.Contains("6g") || value.Contains("6 ghz") || value == "6")
+            {
+                return "6 GHz";
+            }
+
+            return string.Empty;
+        }
+
+        private static WifiRadioInfo? FindClientNetwork(
+            List<WifiRadioInfo> networks,
+            JsonElement client,
+            string band)
+        {
+            string ssid = GetFlexibleString(client, "ssid", "wifi_name", "network");
+            string runtimeInterface = GetFlexibleString(client, "ifname", "device", "wlan");
+
+            if (ssid.Length > 0)
+            {
+                WifiRadioInfo? bySsid = networks.FirstOrDefault(n =>
+                    n.Band == band && n.Ssid.Equals(ssid, StringComparison.OrdinalIgnoreCase));
+                if (bySsid != null)
+                {
+                    return bySsid;
+                }
+            }
+
+            if (runtimeInterface.Length > 0)
+            {
+                WifiRadioInfo? byInterface = networks.FirstOrDefault(n =>
+                    n.Band == band && n.Interface.Equals(runtimeInterface, StringComparison.OrdinalIgnoreCase));
+                if (byInterface != null)
+                {
+                    return byInterface;
+                }
+            }
+
+            // Firmware commonly reports only "2.4G" or "5G".  In that case
+            // use the primary enabled AP for that band.
+            return networks.FirstOrDefault(n =>
+                n.Band == band && !n.Status.Equals("Disabled", StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static string FormatSignal(string signal)
+        {
+            if (string.IsNullOrWhiteSpace(signal))
+            {
+                return "-";
+            }
+
+            string value = signal.Trim();
+            return value.Contains("dbm", StringComparison.OrdinalIgnoreCase)
+                ? value
+                : $"{value} dBm";
+        }
+
+        private static string FormatWifiSecurity(string encryption)
+        {
+            string value = encryption?.Trim().ToLowerInvariant() ?? string.Empty;
+            if (value == "none" || value == "open") return "Open";
+            if (value.Contains("sae") && value.Contains("psk")) return "WPA2 / WPA3";
+            if (value.Contains("sae")) return "WPA3";
+            if (value.Contains("psk2")) return "WPA2";
+            if (value.Contains("psk")) return "WPA";
+            return string.IsNullOrWhiteSpace(encryption) ? "Unknown" : encryption.Trim();
         }
 
         private static string InferBandFromChannel(string channelValue)

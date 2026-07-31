@@ -149,65 +149,120 @@
                     </Border>
                 </Grid>
 
-                <!-- Wi-Fi dashboard and maintenance -->
+                <!-- Wi-Fi networks and maintenance -->
                 <Grid Margin="0,0,0,16">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="2*"/>
                         <ColumnDefinition Width="16"/>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="16"/>
-                        <ColumnDefinition Width="1.15*"/>
                     </Grid.ColumnDefinitions>
 
                     <Border Grid.Column="0" Style="{DynamicResource Card}">
                         <StackPanel>
-                            <Grid>
+                            <Grid Margin="0,0,0,14">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Style="{DynamicResource Text.SectionTitle}" Text="2.4 GHz Wi-Fi"/>
+                                <StackPanel>
+                                    <TextBlock Style="{DynamicResource Text.SectionTitle}" Text="Wi-Fi networks"/>
+                                    <TextBlock Margin="0,5,0,0" Style="{DynamicResource Text.Secondary}"
+                                               Text="Configured wireless networks and the clients associated with each SSID."/>
+                                </StackPanel>
                                 <Border Grid.Column="1" Style="{StaticResource Network.HealthBadge}">
                                     <TextBlock FontSize="11" FontWeight="SemiBold"
                                                Foreground="{DynamicResource Brush.Success}"
-                                               Text="{Binding Wifi24Status}"/>
+                                               Text="{Binding WifiNetworks.Count, StringFormat={}{0} networks}"/>
                                 </Border>
                             </Grid>
-                            <TextBlock Margin="0,14,0,0" Style="{StaticResource Network.Value}" Text="{Binding Wifi24Ssid}"/>
-                            <TextBlock Margin="0,7,0,0" Style="{DynamicResource Text.Muted}" Text="{Binding Wifi24Channel}"/>
-                            <TextBlock Margin="0,4,0,0" Style="{DynamicResource Text.Muted}" Text="{Binding Wifi24Clients}"/>
-                            <Separator Margin="0,12,0,8" Opacity="0.35"/>
-                            <TextBlock Style="{DynamicResource Text.Muted}" Text="{Binding Wifi24Security}"/>
-                            <TextBlock Margin="0,4,0,0" Style="{DynamicResource Text.Muted}"
-                                       TextWrapping="Wrap" Text="{Binding Wifi24Details}"/>
+
+                            <ItemsControl ItemsSource="{Binding WifiNetworks}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Margin="0,0,0,12"
+                                                Padding="16"
+                                                Background="{DynamicResource Brush.SurfaceMuted}"
+                                                BorderBrush="{DynamicResource Brush.Border}"
+                                                BorderThickness="1"
+                                                CornerRadius="10">
+                                            <StackPanel>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel>
+                                                        <TextBlock FontSize="17" FontWeight="SemiBold"
+                                                                   Foreground="{DynamicResource Brush.TextPrimary}"
+                                                                   Text="{Binding Ssid}"/>
+                                                        <TextBlock Margin="0,4,0,0" Style="{DynamicResource Text.Muted}">
+                                                            <Run Text="{Binding Band}"/><Run Text="  •  Channel "/><Run Text="{Binding Channel}"/>
+                                                        </TextBlock>
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+                                                        <TextBlock HorizontalAlignment="Right" FontWeight="SemiBold"
+                                                                   Foreground="{DynamicResource Brush.Success}"
+                                                                   Text="{Binding Status}"/>
+                                                        <TextBlock Margin="0,4,0,0" HorizontalAlignment="Right"
+                                                                   Style="{DynamicResource Text.Muted}"
+                                                                   Text="{Binding ClientCount, StringFormat={}{0} connected}"/>
+                                                    </StackPanel>
+                                                </Grid>
+
+                                                <Grid Margin="0,12,0,10">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel Grid.Column="0">
+                                                        <TextBlock Style="{StaticResource Network.Label}" Text="INTERFACE"/>
+                                                        <TextBlock Style="{StaticResource Network.Value}" Text="{Binding Interface}"/>
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="1">
+                                                        <TextBlock Style="{StaticResource Network.Label}" Text="RADIO"/>
+                                                        <TextBlock Style="{StaticResource Network.Value}" Text="{Binding Radio}"/>
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="2">
+                                                        <TextBlock Style="{StaticResource Network.Label}" Text="SECURITY"/>
+                                                        <TextBlock Style="{StaticResource Network.Value}" Text="{Binding Security}"/>
+                                                    </StackPanel>
+                                                </Grid>
+
+                                                <TextBlock Margin="0,4,0,8" FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource Brush.TextPrimary}"
+                                                           Text="Connected clients"/>
+                                                <ItemsControl ItemsSource="{Binding Clients}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Grid Margin="0,3">
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="1.4*"/>
+                                                                    <ColumnDefinition Width="*"/>
+                                                                    <ColumnDefinition Width="1.35*"/>
+                                                                    <ColumnDefinition Width="Auto"/>
+                                                                </Grid.ColumnDefinitions>
+                                                                <TextBlock Grid.Column="0" Text="{Binding Name}" TextTrimming="CharacterEllipsis"
+                                                                           Foreground="{DynamicResource Brush.TextPrimary}"/>
+                                                                <TextBlock Grid.Column="1" Text="{Binding IpAddress}"
+                                                                           Foreground="{DynamicResource Brush.TextSecondary}"/>
+                                                                <TextBlock Grid.Column="2" Text="{Binding MacAddress}"
+                                                                           Foreground="{DynamicResource Brush.TextMuted}"/>
+                                                                <TextBlock Grid.Column="3" Text="{Binding Signal}"
+                                                                           Foreground="{DynamicResource Brush.TextMuted}"/>
+                                                            </Grid>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                         </StackPanel>
                     </Border>
 
                     <Border Grid.Column="2" Style="{DynamicResource Card}">
-                        <StackPanel>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Style="{DynamicResource Text.SectionTitle}" Text="5 GHz Wi-Fi"/>
-                                <Border Grid.Column="1" Style="{StaticResource Network.HealthBadge}">
-                                    <TextBlock FontSize="11" FontWeight="SemiBold"
-                                               Foreground="{DynamicResource Brush.Success}"
-                                               Text="{Binding Wifi5Status}"/>
-                                </Border>
-                            </Grid>
-                            <TextBlock Margin="0,14,0,0" Style="{StaticResource Network.Value}" Text="{Binding Wifi5Ssid}"/>
-                            <TextBlock Margin="0,7,0,0" Style="{DynamicResource Text.Muted}" Text="{Binding Wifi5Channel}"/>
-                            <TextBlock Margin="0,4,0,0" Style="{DynamicResource Text.Muted}" Text="{Binding Wifi5Clients}"/>
-                            <Separator Margin="0,12,0,8" Opacity="0.35"/>
-                            <TextBlock Style="{DynamicResource Text.Muted}" Text="{Binding Wifi5Security}"/>
-                            <TextBlock Margin="0,4,0,0" Style="{DynamicResource Text.Muted}"
-                                       TextWrapping="Wrap" Text="{Binding Wifi5Details}"/>
-                        </StackPanel>
-                    </Border>
-
-                    <Border Grid.Column="4" Style="{DynamicResource Card}">
                         <StackPanel>
                             <TextBlock Style="{DynamicResource Text.SectionTitle}" Text="Quick maintenance"/>
                             <TextBlock Margin="0,5,0,14" Style="{DynamicResource Text.Secondary}"

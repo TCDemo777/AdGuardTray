@@ -148,7 +148,7 @@
                         <TextBlock
                             Margin="0,4,0,0"
                             Style="{StaticResource Text.Muted}"
-                            Text="Rolling download and upload samples from the router interface" />
+                            Text="Smoothed rolling throughput from the router interface" />
                     </StackPanel>
 
                     <Border
@@ -159,7 +159,9 @@
                         <lvc:CartesianChart
                             MinHeight="210"
                             Background="Transparent"
-                            Series="{Binding NetworkTrafficSeries}" />
+                            Series="{Binding NetworkTrafficSeries}"
+                            XAxes="{Binding NetworkTrafficXAxes}"
+                            YAxes="{Binding NetworkTrafficYAxes}" />
                     </Border>
 
                     <Grid Grid.Row="3" Margin="0,14,0,0">
