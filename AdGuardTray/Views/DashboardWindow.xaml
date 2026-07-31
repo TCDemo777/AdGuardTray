@@ -8,16 +8,39 @@
         MinWidth="900"
         MinHeight="600"
         WindowStartupLocation="CenterScreen"
-        Background="#F3F5F7">
+        Background="{DynamicResource Brush.WindowBackground}">
     <Window.Resources>
-        <Style TargetType="Button">
-            <Setter Property="Height" Value="38"/><Setter Property="Padding" Value="16,0"/>
-            <Setter Property="Background" Value="#EEF3F8"/><Setter Property="Foreground" Value="#172033"/>
-            <Setter Property="BorderBrush" Value="#CBD5E1"/><Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="FontWeight" Value="SemiBold"/><Setter Property="Cursor" Value="Hand"/>
+        <Style TargetType="Button" BasedOn="{StaticResource Button.Secondary}">
+            <Setter Property="Height" Value="38"/>
+            <Setter Property="Padding" Value="16,0"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
         </Style>
-        <Style TargetType="TextBox"><Setter Property="MinHeight" Value="36"/><Setter Property="Padding" Value="9,6"/><Setter Property="BorderBrush" Value="#CBD5E1"/></Style>
-        <Style TargetType="ComboBox"><Setter Property="MinHeight" Value="36"/><Setter Property="Padding" Value="8,4"/></Style>
+
+        <Style TargetType="TextBox">
+            <Setter Property="MinHeight" Value="36"/>
+            <Setter Property="Padding" Value="9,6"/>
+            <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+        </Style>
+
+        <Style TargetType="ComboBox">
+            <Setter Property="MinHeight" Value="36"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+        </Style>
+
+        <Style x:Key="StatusPill" TargetType="Border">
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Padding" Value="8,3"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+            <Setter Property="Background" Value="{DynamicResource Brush.SurfaceMuted}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -34,8 +57,8 @@
         <Border Grid.Row="0"
                 Grid.Column="0"
                 Grid.ColumnSpan="2"
-                Background="White"
-                BorderBrush="#DDDDDD"
+                Background="{DynamicResource Brush.Surface}"
+                BorderBrush="{DynamicResource Brush.Border}"
                 BorderThickness="0,0,0,1">
             <Grid Margin="20,0">
                 <StackPanel VerticalAlignment="Center">
@@ -62,7 +85,7 @@
                            Margin="20,22,20,14"
                            FontSize="12"
                            FontWeight="SemiBold"
-                           Foreground="#AAB2BC"
+                           Foreground="{DynamicResource Brush.TextMuted}"
                            Text="NAVIGATION"/>
 
                 <StackPanel Grid.Row="1">
@@ -190,18 +213,70 @@
             <views:OverviewView/>
         </ContentControl>
 
-        <StatusBar Grid.Row="2"
-                   Grid.Column="0"
-                   Grid.ColumnSpan="2">
-            <StatusBarItem>
-                <TextBlock FontWeight="SemiBold" Foreground="{Binding OverallStatusColour}" Text="{Binding StatusMessage}"/>
-            </StatusBarItem>
+        <Border Grid.Row="2"
+                Grid.Column="0"
+                Grid.ColumnSpan="2"
+                Background="{DynamicResource Brush.Surface}"
+                BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="0,1,0,0">
+            <Grid Margin="14,5">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
 
-            <Separator/>
+                <ScrollViewer Grid.Column="0"
+                              HorizontalScrollBarVisibility="Hidden"
+                              VerticalScrollBarVisibility="Disabled">
+                    <StackPanel Orientation="Horizontal">
+                        <Border Style="{StaticResource StatusPill}">
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse Width="7" Height="7" Margin="0,0,6,0" Fill="{Binding RouterStatusColour}"/>
+                                <TextBlock Foreground="{DynamicResource Brush.TextSecondary}" Text="Router "/>
+                                <TextBlock FontWeight="SemiBold" Foreground="{Binding RouterStatusColour}" Text="{Binding RouterStatusText}"/>
+                            </StackPanel>
+                        </Border>
 
-            <StatusBarItem>
-                <TextBlock Text="{Binding LastRefresh}"/>
-            </StatusBarItem>
-        </StatusBar>
+                        <Border Style="{StaticResource StatusPill}">
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse Width="7" Height="7" Margin="0,0,6,0" Fill="{Binding InternetStatusColour}"/>
+                                <TextBlock Foreground="{DynamicResource Brush.TextSecondary}" Text="Internet "/>
+                                <TextBlock FontWeight="SemiBold" Foreground="{Binding InternetStatusColour}" Text="{Binding InternetStatusText}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource StatusPill}">
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse Width="7" Height="7" Margin="0,0,6,0" Fill="{Binding AdGuardStatusColour}"/>
+                                <TextBlock Foreground="{DynamicResource Brush.TextSecondary}" Text="AdGuard "/>
+                                <TextBlock FontWeight="SemiBold" Foreground="{Binding AdGuardStatusColour}" Text="{Binding AdGuardStatusText}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource StatusPill}">
+                            <TextBlock Foreground="{DynamicResource Brush.TextSecondary}">
+                                <Run Text="CPU "/>
+                                <Run FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" Text="{Binding CpuUsage}"/>
+                            </TextBlock>
+                        </Border>
+
+                        <Border Style="{StaticResource StatusPill}">
+                            <TextBlock Foreground="{DynamicResource Brush.TextSecondary}">
+                                <Run Text="RAM "/>
+                                <Run FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" Text="{Binding MemoryUsage}"/>
+                            </TextBlock>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Margin="12,0,0,0"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource Brush.TextMuted}"
+                               FontSize="11"
+                               Text="{Binding LastRefresh}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
     </Grid>
 </Window>
