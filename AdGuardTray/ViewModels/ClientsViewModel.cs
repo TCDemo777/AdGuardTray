@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO;
 using System.Linq;
-using System.Text.Json;
 using System.Threading.Tasks;
 using AdGuardTray.Models;
 using AdGuardTray.Services;
@@ -15,11 +13,10 @@ namespace AdGuardTray.ViewModels
     public partial class ClientsViewModel : ObservableObject
     {
         private readonly SettingsService _settingsService;
+        private readonly ClientProfileService _clientProfileService;
+        private readonly Dictionary<string, ClientProfile> _clientProfiles;
+        private DateTime _lastProfileSaveUtc = DateTime.MinValue;
         private readonly List<ClientInfo> _allClients = new();
-        private readonly HashSet<string> _favoriteKeys =
-            new(StringComparer.OrdinalIgnoreCase);
-
-        private readonly string _favoritesFilePath;
         private RouterManager? _routerManager;
         private readonly Dictionary<string, WifiClientInfo> _liveClientLookup =
             new(StringComparer.OrdinalIgnoreCase);
@@ -66,6 +63,15 @@ namespace AdGuardTray.ViewModels
         private string selectedClientSignal = "—";
 
         [ObservableProperty]
+        private string profileNickname = string.Empty;
+
+        [ObservableProperty]
+        private string profileNotes = string.Empty;
+
+        [ObservableProperty]
+        private string profileCategory = string.Empty;
+
+        [ObservableProperty]
         private string statusMessage = "No client data loaded.";
 
         [ObservableProperty]
@@ -86,20 +92,9 @@ namespace AdGuardTray.ViewModels
         public ClientsViewModel()
         {
             _settingsService = new SettingsService();
+            _clientProfileService = new ClientProfileService();
+            _clientProfiles = _clientProfileService.Load();
 
-            string appData = Environment.GetFolderPath(
-                Environment.SpecialFolder.LocalApplicationData);
-
-            string folder = Path.Combine(
-                appData,
-                "AdGuardTray");
-
-            Directory.CreateDirectory(folder);
-
-            _favoritesFilePath =
-                Path.Combine(folder, "client-favourites.json");
-
-            LoadFavorites();
         }
 
         [RelayCommand]
@@ -204,6 +199,7 @@ namespace AdGuardTray.ViewModels
                 _allClients.AddRange(clients);
 
                 ApplyFilterAndSort(selectedKey);
+                SaveProfiles();
 
                 StatusMessage = _allClients.Count switch
                 {
@@ -241,21 +237,74 @@ namespace AdGuardTray.ViewModels
                 return;
             }
 
-            string key = ClientKey(client);
+            ClientProfile profile = GetOrCreateProfile(client);
+            profile.IsFavorite = !profile.IsFavorite;
+            profile.LastSeenUtc = DateTime.UtcNow;
+            client.IsFavorite = profile.IsFavorite;
 
-            if (_favoriteKeys.Contains(key))
-            {
-                _favoriteKeys.Remove(key);
-                client.IsFavorite = false;
-            }
-            else
-            {
-                _favoriteKeys.Add(key);
-                client.IsFavorite = true;
-            }
-
-            SaveFavorites();
+            SaveProfiles(force: true);
             ApplyFilterAndSort();
+        }
+
+        [RelayCommand]
+        private void SaveSelectedClientProfile()
+        {
+            if (SelectedClient is null)
+            {
+                StatusMessage = "Select a client before saving a profile.";
+                return;
+            }
+
+            ClientProfile profile = GetOrCreateProfile(SelectedClient);
+            profile.Nickname = ProfileNickname.Trim();
+            profile.Notes = ProfileNotes.Trim();
+            profile.Category = ProfileCategory.Trim();
+            profile.LastSeenUtc = DateTime.UtcNow;
+
+            ApplyProfile(SelectedClient, profile);
+            SaveProfiles(force: true);
+            ApplyFilterAndSort(ClientKey(SelectedClient));
+            StatusMessage = $"Profile saved for {SelectedClient.Name}.";
+        }
+
+        [RelayCommand]
+        private void ClearSelectedClientProfile()
+        {
+            if (SelectedClient is null)
+            {
+                return;
+            }
+
+            string key = ClientKey(SelectedClient);
+            bool wasFavorite = SelectedClient.IsFavorite;
+            _clientProfiles.Remove(key);
+            if (wasFavorite)
+            {
+                _clientProfiles[key] = new ClientProfile
+                {
+                    Key = key,
+                    IsFavorite = true,
+                    FirstSeenUtc = SelectedClient.FirstSeenUtc == default
+                        ? DateTime.UtcNow
+                        : SelectedClient.FirstSeenUtc,
+                    LastSeenUtc = DateTime.UtcNow
+                };
+            }
+
+            SelectedClient.Name = HasUsefulValue(SelectedClient.RouterName)
+                ? SelectedClient.RouterName
+                : SelectedClient.Name;
+            SelectedClient.Notes = string.Empty;
+            SelectedClient.CustomCategory = string.Empty;
+            SelectedClient.IsFavorite = wasFavorite;
+
+            ProfileNickname = string.Empty;
+            ProfileNotes = string.Empty;
+            ProfileCategory = string.Empty;
+
+            SaveProfiles(force: true);
+            ApplyFilterAndSort(key);
+            StatusMessage = "Custom client profile cleared.";
         }
 
         [RelayCommand]
@@ -361,6 +410,7 @@ namespace AdGuardTray.ViewModels
 
             UpdateSelectedClientConnectionDetails(value);
             LoadSelectedClientActivity(value);
+            LoadProfileEditor(value);
         }
 
         private async Task RefreshSelectedClientWifiDetailsAsync(ClientInfo? client)
@@ -867,8 +917,14 @@ namespace AdGuardTray.ViewModels
             client.Manufacturer =
                 DetectManufacturer(client.MacAddress, client.Name);
 
-            client.IsFavorite =
-                _favoriteKeys.Contains(ClientKey(client));
+            if (!HasUsefulValue(client.RouterName))
+            {
+                client.RouterName = client.Name;
+            }
+
+            ClientProfile profile = GetOrCreateProfile(client);
+            profile.LastSeenUtc = DateTime.UtcNow;
+            ApplyProfile(client, profile);
 
             (client.HealthText, client.HealthColour) =
                 DetectHealth(client);
@@ -1042,53 +1098,73 @@ namespace AdGuardTray.ViewModels
             return ("Unknown", "#687386");
         }
 
-        private void LoadFavorites()
+        private ClientProfile GetOrCreateProfile(ClientInfo client)
         {
-            try
+            string key = ClientKey(client);
+            if (!_clientProfiles.TryGetValue(key, out ClientProfile? profile))
             {
-                if (!File.Exists(_favoritesFilePath))
+                profile = new ClientProfile
                 {
-                    return;
-                }
-
-                string json =
-                    File.ReadAllText(_favoritesFilePath);
-
-                string[] keys =
-                    JsonSerializer.Deserialize<string[]>(json) ??
-                    Array.Empty<string>();
-
-                foreach (string key in keys)
-                {
-                    _favoriteKeys.Add(key);
-                }
+                    Key = key,
+                    FirstSeenUtc = DateTime.UtcNow,
+                    LastSeenUtc = DateTime.UtcNow
+                };
+                _clientProfiles[key] = profile;
             }
-            catch
+
+            return profile;
+        }
+
+        private static void ApplyProfile(ClientInfo client, ClientProfile profile)
+        {
+            client.FirstSeenUtc = profile.FirstSeenUtc;
+            client.LastObservedUtc = profile.LastSeenUtc;
+            client.Notes = profile.Notes;
+            client.CustomCategory = profile.Category;
+            client.IsFavorite = profile.IsFavorite;
+
+            if (!string.IsNullOrWhiteSpace(profile.Nickname))
             {
-                // A damaged favourites file should never stop Clients loading.
+                client.Name = profile.Nickname;
+            }
+
+            if (!string.IsNullOrWhiteSpace(profile.Category))
+            {
+                client.DeviceType = profile.Category;
             }
         }
 
-        private void SaveFavorites()
+        private void LoadProfileEditor(ClientInfo? client)
         {
+            if (client is null)
+            {
+                ProfileNickname = string.Empty;
+                ProfileNotes = string.Empty;
+                ProfileCategory = string.Empty;
+                return;
+            }
+
+            ClientProfile profile = GetOrCreateProfile(client);
+            ProfileNickname = profile.Nickname;
+            ProfileNotes = profile.Notes;
+            ProfileCategory = profile.Category;
+        }
+
+        private void SaveProfiles(bool force = false)
+        {
+            if (!force && DateTime.UtcNow - _lastProfileSaveUtc < TimeSpan.FromMinutes(1))
+            {
+                return;
+            }
+
             try
             {
-                string json = JsonSerializer.Serialize(
-                    _favoriteKeys.OrderBy(x => x).ToArray(),
-                    new JsonSerializerOptions
-                    {
-                        WriteIndented = true
-                    });
-
-                File.WriteAllText(
-                    _favoritesFilePath,
-                    json);
+                _clientProfileService.Save(_clientProfiles.Values);
+                _lastProfileSaveUtc = DateTime.UtcNow;
             }
             catch (Exception ex)
             {
-                StatusMessage =
-                    "Favourite changed, but it could not be saved: " +
-                    ex.Message;
+                StatusMessage = "Client profile changed, but it could not be saved: " + ex.Message;
             }
         }
 

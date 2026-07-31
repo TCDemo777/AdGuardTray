@@ -1,8 +1,15 @@
+using System;
+
 namespace AdGuardTray.Models
 {
     public class ClientInfo
     {
         public string Name { get; set; } = "-";
+        public string RouterName { get; set; } = "-";
+        public string Notes { get; set; } = string.Empty;
+        public string CustomCategory { get; set; } = string.Empty;
+        public DateTime FirstSeenUtc { get; set; }
+        public DateTime LastObservedUtc { get; set; }
         public string IpAddress { get; set; } = "-";
         public string MacAddress { get; set; } = "-";
         public int TotalQueries { get; set; }
@@ -52,6 +59,12 @@ namespace AdGuardTray.Models
         public string WifiNetwork { get; set; } = "-";
         public string SignalStrength { get; set; } = "-";
         public string LiveInterface { get; set; } = "-";
+
+        public string FirstSeenDisplay =>
+            FirstSeenUtc == default ? "—" : FirstSeenUtc.ToLocalTime().ToString("g");
+
+        public string LastObservedDisplay =>
+            LastObservedUtc == default ? "—" : LastObservedUtc.ToLocalTime().ToString("g");
 
         public string FavoriteGlyph =>
             IsFavorite ? "★" : "☆";

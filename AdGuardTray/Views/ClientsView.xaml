@@ -82,9 +82,11 @@
 
         <Grid Grid.Row="4">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="3*"/>
+                <ColumnDefinition Width="5*"/>
                 <ColumnDefinition Width="12"/>
-                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="4*"/>
+                <ColumnDefinition Width="12"/>
+                <ColumnDefinition Width="4*"/>
             </Grid.ColumnDefinitions>
 
             <Border Padding="14" Background="{DynamicResource Brush.Surface}" CornerRadius="10"
@@ -101,19 +103,21 @@
                     </StackPanel>
                     <StackPanel Margin="0,0,0,12">
                         <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Text="MAC ADDRESS"/>
-                        <TextBlock Margin="0,4,0,0" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Text="{Binding SelectedClient.MacAddress, TargetNullValue=—}"/>
+                        <TextBlock Margin="0,4,0,0" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
+                                   Text="{Binding SelectedClient.MacAddress, TargetNullValue=—}"/>
                     </StackPanel>
                     <StackPanel Margin="0,0,16,0">
                         <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Text="CONNECTION"/>
                         <TextBlock Margin="0,4,0,0" FontWeight="SemiBold" Text="{Binding SelectedClient.ConnectionType, TargetNullValue=—}"/>
                     </StackPanel>
                     <StackPanel Margin="0,0,16,0">
-                        <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Text="DEVICE TYPE"/>
-                        <TextBlock Margin="0,4,0,0" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Text="{Binding SelectedClient.DeviceType, TargetNullValue=—}"/>
+                        <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Text="FIRST SEEN"/>
+                        <TextBlock Margin="0,4,0,0" FontWeight="SemiBold" Text="{Binding SelectedClient.FirstSeenDisplay, TargetNullValue=—}"/>
                     </StackPanel>
                     <StackPanel>
                         <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Text="DNS ACTIVITY"/>
-                        <TextBlock Margin="0,4,0,0" FontWeight="SemiBold" Text="{Binding SelectedClient.TotalQueries, TargetNullValue=—, StringFormat={}{0} queries}"/>
+                        <TextBlock Margin="0,4,0,0" FontWeight="SemiBold"
+                                   Text="{Binding SelectedClient.TotalQueries, TargetNullValue=—, StringFormat={}{0} queries}"/>
                     </StackPanel>
                 </UniformGrid>
             </Border>
@@ -124,12 +128,62 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="8"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="8"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="8"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <StackPanel>
+                        <TextBlock FontSize="15" FontWeight="Bold" Text="Client Profile"/>
+                        <TextBlock Margin="0,3,0,0" FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}"
+                                   Text="Saved locally by MAC address"/>
+                    </StackPanel>
+                    <TextBox Grid.Row="2" Height="34" VerticalContentAlignment="Center"
+                             ToolTip="Friendly name shown instead of the router hostname"
+                             Text="{Binding ProfileNickname, UpdateSourceTrigger=PropertyChanged}"/>
+                    <ComboBox Grid.Row="4" Height="34" IsEditable="True"
+                              ToolTip="Choose or enter a device category"
+                              Text="{Binding ProfileCategory, UpdateSourceTrigger=PropertyChanged}">
+                        <ComboBoxItem Content="Computer"/>
+                        <ComboBoxItem Content="Mobile device"/>
+                        <ComboBoxItem Content="Games console"/>
+                        <ComboBoxItem Content="Media or smart TV"/>
+                        <ComboBoxItem Content="Server or NAS"/>
+                        <ComboBoxItem Content="Printer"/>
+                        <ComboBoxItem Content="Smart home / IoT"/>
+                    </ComboBox>
+                    <Grid Grid.Row="6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="8"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="8"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox MinHeight="52" AcceptsReturn="True" TextWrapping="Wrap"
+                                 VerticalScrollBarVisibility="Auto" ToolTip="Private notes stored on this PC"
+                                 Text="{Binding ProfileNotes, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Button Grid.Column="2" MinWidth="64" Height="34" VerticalAlignment="Bottom"
+                                Command="{Binding SaveSelectedClientProfileCommand}" Content="Save"/>
+                        <Button Grid.Column="4" MinWidth="64" Height="34" VerticalAlignment="Bottom"
+                                Command="{Binding ClearSelectedClientProfileCommand}" Content="Clear"/>
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <Border Grid.Column="4" Padding="14" Background="{DynamicResource Brush.Surface}" CornerRadius="10"
+                    BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="8"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
                     <StackPanel>
                         <TextBlock FontSize="15" FontWeight="Bold" Text="Recent Activity"/>
                         <TextBlock Margin="0,3,0,0" FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}"
-                                   Text="DNS changes and connectivity actions from this session"/>
+                                   Text="DNS changes and actions from this session"/>
                     </StackPanel>
                     <ListBox Grid.Row="2" ItemsSource="{Binding SelectedClientActivity}"
                              BorderThickness="0" Background="Transparent"
