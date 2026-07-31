@@ -228,6 +228,12 @@ namespace AdGuardTray.ViewModels
         private string wifi24Clients = "0 clients";
 
         [ObservableProperty]
+        private string wifi24Details = "Interface unavailable";
+
+        [ObservableProperty]
+        private string wifi24Security = "Security unavailable";
+
+        [ObservableProperty]
         private string wifi24Status = "Unavailable";
 
         [ObservableProperty]
@@ -238,6 +244,12 @@ namespace AdGuardTray.ViewModels
 
         [ObservableProperty]
         private string wifi5Clients = "0 clients";
+
+        [ObservableProperty]
+        private string wifi5Details = "Interface unavailable";
+
+        [ObservableProperty]
+        private string wifi5Security = "Security unavailable";
 
         [ObservableProperty]
         private string wifi5Status = "Unavailable";
@@ -369,11 +381,19 @@ namespace AdGuardTray.ViewModels
             Wifi24Ssid = radio24?.Ssid ?? "Not detected";
             Wifi24Channel = radio24 == null ? "-" : $"Channel {radio24.Channel}";
             Wifi24Clients = $"{radio24?.ClientCount ?? 0} clients";
+            Wifi24Details = radio24 == null
+                ? "Interface unavailable"
+                : $"Interface {radio24.InterfaceName} · {radio24.Radio}";
+            Wifi24Security = radio24?.Security ?? "Security unavailable";
             Wifi24Status = radio24?.Status ?? "Unavailable";
 
             Wifi5Ssid = radio5?.Ssid ?? "Not detected";
             Wifi5Channel = radio5 == null ? "-" : $"Channel {radio5.Channel}";
             Wifi5Clients = $"{radio5?.ClientCount ?? 0} clients";
+            Wifi5Details = radio5 == null
+                ? "Interface unavailable"
+                : $"Interface {radio5.InterfaceName} · {radio5.Radio}";
+            Wifi5Security = radio5?.Security ?? "Security unavailable";
             Wifi5Status = radio5?.Status ?? "Unavailable";
         }
 

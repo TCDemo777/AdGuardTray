@@ -176,6 +176,10 @@
                             <TextBlock Margin="0,14,0,0" Style="{StaticResource Network.Value}" Text="{Binding Wifi24Ssid}"/>
                             <TextBlock Margin="0,7,0,0" Style="{DynamicResource Text.Muted}" Text="{Binding Wifi24Channel}"/>
                             <TextBlock Margin="0,4,0,0" Style="{DynamicResource Text.Muted}" Text="{Binding Wifi24Clients}"/>
+                            <Separator Margin="0,12,0,8" Opacity="0.35"/>
+                            <TextBlock Style="{DynamicResource Text.Muted}" Text="{Binding Wifi24Security}"/>
+                            <TextBlock Margin="0,4,0,0" Style="{DynamicResource Text.Muted}"
+                                       TextWrapping="Wrap" Text="{Binding Wifi24Details}"/>
                         </StackPanel>
                     </Border>
 
@@ -196,6 +200,10 @@
                             <TextBlock Margin="0,14,0,0" Style="{StaticResource Network.Value}" Text="{Binding Wifi5Ssid}"/>
                             <TextBlock Margin="0,7,0,0" Style="{DynamicResource Text.Muted}" Text="{Binding Wifi5Channel}"/>
                             <TextBlock Margin="0,4,0,0" Style="{DynamicResource Text.Muted}" Text="{Binding Wifi5Clients}"/>
+                            <Separator Margin="0,12,0,8" Opacity="0.35"/>
+                            <TextBlock Style="{DynamicResource Text.Muted}" Text="{Binding Wifi5Security}"/>
+                            <TextBlock Margin="0,4,0,0" Style="{DynamicResource Text.Muted}"
+                                       TextWrapping="Wrap" Text="{Binding Wifi5Details}"/>
                         </StackPanel>
                     </Border>
 

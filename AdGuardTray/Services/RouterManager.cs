@@ -98,33 +98,129 @@ namespace AdGuardTray.Services
 
         public async Task<List<WifiRadioInfo>> GetWifiRadiosAsync()
         {
-            string output = await _ssh.RunCommandAsync(
-                "for i in $(iwinfo 2>/dev/null | awk '/ESSID:/ {print $1}'); do " +
-                "info=$(iwinfo $i info 2>/dev/null); " +
-                "ssid=$(printf '%s\n' \"$info\" | sed -n 's/.*ESSID: \"\(.*\)\"/\1/p' | head -1); " +
-                "ch=$(printf '%s\n' \"$info\" | sed -n 's/.*Channel: \([0-9][0-9]*\).*/\1/p' | head -1); " +
-                "freq=$(printf '%s\n' \"$info\" | sed -n 's/.*Frequency: \([0-9.]*\) GHz.*/\1/p' | head -1); " +
-                "clients=$(iwinfo $i assoclist 2>/dev/null | grep -c '^[0-9A-Fa-f][0-9A-Fa-f]:' || true); " +
-                "[ -n \"$ssid\" ] || ssid='Hidden / disabled'; " +
-                "printf '%s|%s|%s|%s|%s\n' \"$i\" \"$ssid\" \"$freq\" \"$ch\" \"$clients\"; done");
+            // GL-MT6000 uses MediaTek radio identifiers such as mt798611/mt798612,
+            // while associated stations are exposed by separate hostapd.* ubus objects.
+            // Read configuration from UCI, then match hostapd interfaces by SSID or band.
+            string command = """
+                for s in $(uci show wireless 2>/dev/null | sed -n 's/^wireless\.\([^.=]*\)=wifi-iface$/\1/p'); do
+                    mode=$(uci -q get wireless.$s.mode)
+                    [ -z "$mode" -o "$mode" = "ap" ] || continue
+                    dev=$(uci -q get wireless.$s.device)
+                    [ -n "$dev" ] || continue
+                    ssid=$(uci -q get wireless.$s.ssid)
+                    [ -n "$ssid" ] || ssid='Hidden network'
+                    band=$(uci -q get wireless.$dev.band)
+                    [ -n "$band" ] || band=$(uci -q get wireless.$dev.hwmode)
+                    channel=$(uci -q get wireless.$dev.channel)
+                    [ -n "$channel" ] || channel='auto'
+                    disabled=$(uci -q get wireless.$s.disabled)
+                    rdisabled=$(uci -q get wireless.$dev.disabled)
+                    clients=0
+                    live_ifaces=''
 
+                    case "$band" in
+                        *2g*|*11g*|*11b*) wanted_band='2g' ;;
+                        *5g*|*11a*|*11ac*|*11ax*) wanted_band='5g' ;;
+                        *)
+                            if [ "$channel" != 'auto' ] && [ "$channel" -le 14 ] 2>/dev/null; then wanted_band='2g'; else wanted_band='5g'; fi
+                            ;;
+                    esac
+
+                    for h in $(ubus list 'hostapd.*' 2>/dev/null); do
+                        status=$(ubus call "$h" get_status 2>/dev/null)
+                        hssid=$(printf '%s' "$status" | jsonfilter -e '@.ssid' 2>/dev/null)
+                        hfreq=$(printf '%s' "$status" | jsonfilter -e '@.freq' 2>/dev/null)
+                        hchan=$(printf '%s' "$status" | jsonfilter -e '@.channel' 2>/dev/null)
+                        hband=''
+                        if [ -n "$hfreq" ]; then
+                            [ "$hfreq" -lt 3000 ] 2>/dev/null && hband='2g' || hband='5g'
+                        elif [ -n "$hchan" ]; then
+                            [ "$hchan" -le 14 ] 2>/dev/null && hband='2g' || hband='5g'
+                        fi
+
+                        if [ "$hssid" = "$ssid" ] || { [ -n "$hband" ] && [ "$hband" = "$wanted_band" ]; }; then
+                            iface=${h#hostapd.}
+                            case " $live_ifaces " in *" $iface "*) continue ;; esac
+                            live_ifaces="$live_ifaces $iface"
+                            count=$(ubus call "$h" get_clients 2>/dev/null | grep -Eo '[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}' | tr 'A-F' 'a-f' | sort -u | wc -l)
+                            clients=$((clients + count))
+                            [ "$hssid" = "$ssid" ] && break
+                        fi
+                    done
+
+                    state='Online'
+                    [ "$disabled" = "1" -o "$rdisabled" = "1" ] && state='Disabled'
+                    live_ifaces=$(printf '%s' "$live_ifaces" | sed 's/^ *//')
+                    [ -n "$live_ifaces" ] || live_ifaces="$dev"
+                    printf '%s|%s|%s|%s|%s|%s|%s\n' "$dev" "$ssid" "$band" "$channel" "$clients" "$state" "$live_ifaces"
+                done
+                """;
+
+            string output = await _ssh.RunCommandAsync(command);
             var radios = new List<WifiRadioInfo>();
+
             foreach (string line in output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
             {
                 string[] parts = line.Split('|');
-                if (parts.Length < 5) continue;
-                string frequency = parts[2].Trim();
+                if (parts.Length < 6)
+                {
+                    continue;
+                }
+
+                string rawBand = parts[2].Trim().ToLowerInvariant();
+                string band = rawBand.Contains("2g") || rawBand.Contains("11g") || rawBand.Contains("11b")
+                    ? "2.4 GHz"
+                    : rawBand.Contains("5g") || rawBand.Contains("11a") || rawBand.Contains("11ac") || rawBand.Contains("11ax")
+                        ? "5 GHz"
+                        : rawBand.Contains("6g")
+                            ? "6 GHz"
+                            : InferBandFromChannel(parts[3]);
+
                 radios.Add(new WifiRadioInfo
                 {
-                    Radio = parts[0].Trim(),
-                    Ssid = parts[1].Trim(),
-                    Band = frequency.StartsWith("2") ? "2.4 GHz" : frequency.StartsWith("5") ? "5 GHz" : frequency.StartsWith("6") ? "6 GHz" : frequency + " GHz",
-                    Channel = string.IsNullOrWhiteSpace(parts[3]) ? "-" : parts[3].Trim(),
+                    Radio = parts.Length > 6 && !string.IsNullOrWhiteSpace(parts[6])
+                        ? parts[6].Trim()
+                        : string.IsNullOrWhiteSpace(parts[0]) ? "-" : parts[0].Trim(),
+                    Ssid = string.IsNullOrWhiteSpace(parts[1]) ? "Hidden network" : parts[1].Trim(),
+                    Band = band,
+                    Channel = string.IsNullOrWhiteSpace(parts[3]) ? "auto" : parts[3].Trim(),
                     ClientCount = int.TryParse(parts[4].Trim(), out int count) ? count : 0,
-                    Status = parts[1].Contains("disabled", StringComparison.OrdinalIgnoreCase) ? "Disabled" : "Online"
+                    Status = string.IsNullOrWhiteSpace(parts[5]) ? "Configured" : parts[5].Trim()
                 });
             }
-            return radios;
+
+            return radios
+                .GroupBy(r => r.Band, StringComparer.OrdinalIgnoreCase)
+                .Select(group =>
+                {
+                    WifiRadioInfo first = group.First();
+                    return new WifiRadioInfo
+                    {
+                        Radio = string.Join(", ", group.Select(r => r.Radio)
+                            .Where(value => !string.IsNullOrWhiteSpace(value) && value != "-")
+                            .Distinct(StringComparer.OrdinalIgnoreCase)),
+                        Ssid = string.Join(", ", group.Select(r => r.Ssid)
+                            .Where(value => !string.IsNullOrWhiteSpace(value))
+                            .Distinct(StringComparer.OrdinalIgnoreCase)),
+                        Band = first.Band,
+                        Channel = first.Channel,
+                        ClientCount = group.Sum(r => r.ClientCount),
+                        Status = group.Any(r => r.Status.Equals("Online", StringComparison.OrdinalIgnoreCase))
+                            ? "Online"
+                            : first.Status
+                    };
+                })
+                .ToList();
+        }
+
+        private static string InferBandFromChannel(string channelValue)
+        {
+            if (int.TryParse(channelValue?.Trim(), out int channel))
+            {
+                return channel <= 14 ? "2.4 GHz" : "5 GHz";
+            }
+
+            return "Unknown";
         }
 
         public async Task<string> RestartWifiAsync()

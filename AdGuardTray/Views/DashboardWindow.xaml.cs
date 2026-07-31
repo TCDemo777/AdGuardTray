@@ -279,10 +279,20 @@ namespace AdGuardTray.Views
                 _viewModel.Latency =
                     network.Latency;
 
-                List<WifiRadioInfo> wifiRadios =
-                    await router.GetWifiRadiosAsync();
+                try
+                {
+                    List<WifiRadioInfo> wifiRadios =
+                        await router.GetWifiRadiosAsync();
 
-                _viewModel.UpdateWifiRadios(wifiRadios);
+                    _viewModel.UpdateWifiRadios(wifiRadios);
+                }
+                catch
+                {
+                    // Wi-Fi discovery differs between GL.iNet/OpenWrt firmware
+                    // builds. A discovery failure must not invalidate the main
+                    // authenticated router session or the rest of the dashboard.
+                    _viewModel.UpdateWifiRadios(Array.Empty<WifiRadioInfo>());
+                }
 
                 _viewModel.StatusMessage =
                     statistics.TotalQueries < 0
