@@ -45,6 +45,74 @@ namespace AdGuardTray.Views
                 password);
         }
 
+        private async Task RunRouterToolAsync(
+            string action,
+            Func<RouterManager, string, Task<string>> operation)
+        {
+            string target =
+                DiagnosticTargetBox.Text.Trim();
+
+            DiagnosticsTextBox.Text =
+                $"Running {action} for {target} from the router...";
+
+            AppendLog(
+                $"{action} requested for {target}.");
+
+            try
+            {
+                string result =
+                    await operation(
+                        CreateRouterManager(),
+                        target);
+
+                DiagnosticsTextBox.Text =
+                    string.IsNullOrWhiteSpace(result)
+                        ? $"{action} completed with no output."
+                        : result.Trim();
+
+                AppendLog(
+                    $"{action} completed.");
+            }
+            catch (Exception ex)
+            {
+                DiagnosticsTextBox.Text =
+                    ex.ToString();
+
+                AppendLog(
+                    $"{action} failed: {ex.Message}");
+            }
+        }
+
+        private async void PingTool_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            await RunRouterToolAsync(
+                "Ping",
+                (router, target) =>
+                    router.PingAsync(target));
+        }
+
+        private async void TracerouteTool_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            await RunRouterToolAsync(
+                "Traceroute",
+                (router, target) =>
+                    router.TracerouteAsync(target));
+        }
+
+        private async void DnsLookupTool_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            await RunRouterToolAsync(
+                "DNS lookup",
+                (router, target) =>
+                    router.DnsLookupAsync(target));
+        }
+
         private async void RunDiagnostics_Click(
             object sender,
             RoutedEventArgs e)

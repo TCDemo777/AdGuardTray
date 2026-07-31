@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using System.Windows;
 using AdGuardTray.Models;
@@ -45,6 +45,59 @@ namespace AdGuardTray.Views
     settings.RouterIp,
     settings.Username,
     password);
+        }
+
+        private async Task RunDiagnosticAsync(
+            string action,
+            Func<RouterManager, string, Task<string>> diagnostic)
+        {
+            string target = TargetBox.Text.Trim();
+            OutputBox.Text = $"Running {action} for {target} from the router...";
+
+            try
+            {
+                RouterManager routerManager =
+                    await CreateRouterManagerAsync();
+
+                string result =
+                    await diagnostic(routerManager, target);
+
+                OutputBox.Text =
+                    string.IsNullOrWhiteSpace(result)
+                        ? $"{action} completed with no output."
+                        : result.Trim();
+            }
+            catch (Exception ex)
+            {
+                OutputBox.Text = ex.Message;
+            }
+        }
+
+        private async void PingButton_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            await RunDiagnosticAsync(
+                "ping",
+                (router, target) => router.PingAsync(target));
+        }
+
+        private async void TracerouteButton_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            await RunDiagnosticAsync(
+                "traceroute",
+                (router, target) => router.TracerouteAsync(target));
+        }
+
+        private async void DnsLookupButton_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            await RunDiagnosticAsync(
+                "DNS lookup",
+                (router, target) => router.DnsLookupAsync(target));
         }
 
         private async void RouterInfoButton_Click(

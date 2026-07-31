@@ -1,12 +1,12 @@
 <UserControl x:Class="AdGuardTray.Views.ClientsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             Background="{DynamicResource Brush.WindowBackground}"
-    Foreground="{DynamicResource Brush.TextPrimary}">
-    <Grid Background="{DynamicResource Brush.WindowBackground}">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="14"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="12"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="12"/>
             <RowDefinition Height="*"/>
@@ -22,59 +22,108 @@
         <Border Grid.Row="2" Padding="14" Background="{DynamicResource Brush.Surface}" CornerRadius="10"
                 BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
             <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="12"/>
-                    <ColumnDefinition Width="170"/>
-                    <ColumnDefinition Width="10"/>
-                    <ColumnDefinition Width="115"/>
-                    <ColumnDefinition Width="14"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="14"/>
-                    <ColumnDefinition Width="100"/>
-                    <ColumnDefinition Width="10"/>
-                    <ColumnDefinition Width="120"/>
-                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="10"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-                <TextBox Height="36"
-                         VerticalContentAlignment="Center"
-                         Text="{Binding SearchText,
-                                        UpdateSourceTrigger=PropertyChanged}"
-                         ToolTip="Search name, address, manufacturer, device type or health"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="180"/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition Width="120"/>
+                    </Grid.ColumnDefinitions>
 
-                <ComboBox x:Name="SortOptionComboBox"
-                          Grid.Column="2"
-                          Height="36"
-                          VerticalContentAlignment="Center"
-                          ItemsSource="{Binding SortOptions}"
-                          SelectedItem="{Binding SelectedSortOption,
-                                                 Mode=OneWay}"
-                          SelectionChanged="SortOptionComboBox_SelectionChanged"/>
+                    <TextBox Height="36"
+                             MinWidth="220"
+                             VerticalContentAlignment="Center"
+                             Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                             ToolTip="Search name, address, manufacturer, device type or health"/>
 
-                <Button Grid.Column="4"
-                        Height="36"
-                        Command="{Binding ToggleSortDirectionCommand}"
-                        Content="{Binding SortDirectionText}"/>
+                    <ComboBox x:Name="SortOptionComboBox"
+                              Grid.Column="2"
+                              Height="36"
+                              VerticalContentAlignment="Center"
+                              ItemsSource="{Binding SortOptions}"
+                              SelectedItem="{Binding SelectedSortOption, Mode=OneWay}"
+                              SelectionChanged="SortOptionComboBox_SelectionChanged"/>
 
-                <CheckBox Grid.Column="6"
-                          VerticalAlignment="Center"
-                          FontWeight="SemiBold"
-                          IsChecked="{Binding ShowFavoritesOnly}"
-                          Content="Favourites only"/>
+                    <Button Grid.Column="4"
+                            Height="36"
+                            Command="{Binding ToggleSortDirectionCommand}"
+                            Content="{Binding SortDirectionText}"/>
+                </Grid>
 
-                <Button Grid.Column="8"
-                        Height="36"
-                        Command="{Binding LoadClientsCommand}"
-                        Content="Refresh"/>
+                <WrapPanel Grid.Row="2" HorizontalAlignment="Left" VerticalAlignment="Center">
+                    <CheckBox Margin="0,0,18,8"
+                              VerticalAlignment="Center"
+                              FontWeight="SemiBold"
+                              IsChecked="{Binding ShowFavoritesOnly}"
+                              Content="Favourites only"/>
 
-                <Button Grid.Column="10"
-                        Height="36"
-                        Click="ViewDetailsButton_Click"
-                        Content="View Details"/>
+                    <Button MinWidth="100" Height="36" Margin="0,0,10,8"
+                            Command="{Binding LoadClientsCommand}"
+                            Content="Refresh"/>
+                    <Button MinWidth="110" Height="36" Margin="0,0,10,8"
+                            Command="{Binding PingSelectedClientCommand}"
+                            Content="Ping Client"/>
+                    <Button MinWidth="115" Height="36" Margin="0,0,10,8"
+                            Command="{Binding WakeSelectedClientCommand}"
+                            Content="Wake Client"/>
+                    <Button MinWidth="115" Height="36" Margin="0,0,0,8"
+                            Click="ViewDetailsButton_Click"
+                            Content="View Details"/>
+                </WrapPanel>
             </Grid>
         </Border>
 
-        <Border Grid.Row="4" Padding="10" Background="{DynamicResource Brush.SurfaceMuted}" CornerRadius="10"
+        <Border Grid.Row="4" Padding="14" Background="{DynamicResource Brush.Surface}" CornerRadius="10"
+                BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1.4*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel>
+                    <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Text="SELECTED CLIENT"/>
+                    <TextBlock Margin="0,4,0,0" FontSize="17" FontWeight="Bold"
+                               Text="{Binding SelectedClient.Name, TargetNullValue=No client selected}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1">
+                    <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Text="IP ADDRESS"/>
+                    <TextBlock Margin="0,4,0,0" FontWeight="SemiBold"
+                               Text="{Binding SelectedClient.IpAddress, TargetNullValue=—}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2">
+                    <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Text="MAC ADDRESS"/>
+                    <TextBlock Margin="0,4,0,0" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
+                               Text="{Binding SelectedClient.MacAddress, TargetNullValue=—}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="3">
+                    <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Text="DEVICE TYPE"/>
+                    <TextBlock Margin="0,4,0,0" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
+                               Text="{Binding SelectedClient.DeviceType, TargetNullValue=—}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="4">
+                    <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Text="DNS ACTIVITY"/>
+                    <TextBlock Margin="0,4,0,0" FontWeight="SemiBold"
+                               Text="{Binding SelectedClient.TotalQueries, TargetNullValue=—, StringFormat={}{0} queries}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="6" Padding="10" Background="{DynamicResource Brush.SurfaceMuted}" CornerRadius="10"
                 BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
             <ListBox x:Name="ClientsGrid"
                      ItemsSource="{Binding Clients}"
@@ -241,9 +290,20 @@
             </ListBox>
         </Border>
 
-        <TextBlock Grid.Row="5"
-                   Margin="2,9,0,0"
-                   Foreground="{DynamicResource Brush.TextSecondary}"
-                   Text="{Binding StatusMessage}"/>
+        <Grid Grid.Row="7" Margin="2,9,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="18"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Foreground="{DynamicResource Brush.TextSecondary}"
+                       Text="{Binding StatusMessage}"/>
+
+            <TextBlock Grid.Column="2"
+                       HorizontalAlignment="Right"
+                       Foreground="{DynamicResource Brush.TextSecondary}"
+                       Text="{Binding PingResult}"/>
+        </Grid>
     </Grid>
 </UserControl>

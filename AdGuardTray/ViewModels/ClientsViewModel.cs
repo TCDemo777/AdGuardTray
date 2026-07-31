@@ -58,6 +58,15 @@ namespace AdGuardTray.ViewModels
         [ObservableProperty]
         private bool isLoading;
 
+        [ObservableProperty]
+        private bool isPinging;
+
+        [ObservableProperty]
+        private bool isWaking;
+
+        [ObservableProperty]
+        private string pingResult = "Select a client to run a connectivity check.";
+
         public string SortDirectionText =>
             SortDescending ? "Descending" : "Ascending";
 
@@ -187,11 +196,95 @@ namespace AdGuardTray.ViewModels
         }
 
         [RelayCommand]
+        private async Task PingSelectedClientAsync()
+        {
+            if (SelectedClient is null)
+            {
+                PingResult = "Select a client first.";
+                return;
+            }
+
+            if (_routerManager is null)
+            {
+                PingResult = "Load the client list before running a ping.";
+                return;
+            }
+
+            if (IsPinging)
+            {
+                return;
+            }
+
+            IsPinging = true;
+            PingResult = $"Pinging {SelectedClient.IpAddress}...";
+
+            try
+            {
+                PingResult = await _routerManager.PingClientAsync(
+                    SelectedClient.IpAddress);
+            }
+            catch (Exception ex)
+            {
+                PingResult = "Ping failed: " + ex.Message;
+            }
+            finally
+            {
+                IsPinging = false;
+            }
+        }
+
+
+        [RelayCommand]
+        private async Task WakeSelectedClientAsync()
+        {
+            if (SelectedClient is null)
+            {
+                PingResult = "Select a client first.";
+                return;
+            }
+
+            if (_routerManager is null)
+            {
+                PingResult = "Load the client list before sending Wake-on-LAN.";
+                return;
+            }
+
+            if (IsWaking)
+            {
+                return;
+            }
+
+            IsWaking = true;
+            PingResult = $"Sending Wake-on-LAN to {SelectedClient.Name}...";
+
+            try
+            {
+                PingResult = await _routerManager.WakeClientAsync(
+                    SelectedClient.MacAddress);
+            }
+            catch (Exception ex)
+            {
+                PingResult = "Wake-on-LAN failed: " + ex.Message;
+            }
+            finally
+            {
+                IsWaking = false;
+            }
+        }
+
+        [RelayCommand]
         private void ToggleSortDirection()
         {
             SortDescending = !SortDescending;
             OnPropertyChanged(nameof(SortDirectionText));
             ApplyFilterAndSort();
+        }
+
+        partial void OnSelectedClientChanged(ClientInfo? value)
+        {
+            PingResult = value is null
+                ? "Select a client to run a connectivity check."
+                : $"Ready to ping or wake {value.Name} ({value.IpAddress}).";
         }
 
         partial void OnSearchTextChanged(string value)

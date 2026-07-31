@@ -48,6 +48,9 @@ namespace AdGuardTray.ViewModels
         private string _blockedQueriesText = "—";
         private string _blockPercentageText = "—";
         private string _topBlockedDomain = "No blocked domains yet";
+        private string _queryLogSearch = "";
+        private bool _showBlockedQueriesOnly;
+        private string _queryLogStatus = "Loading recent DNS activity...";
 
         public ProtectionViewModel()
         {
@@ -75,6 +78,9 @@ namespace AdGuardTray.ViewModels
                 new SortDescription(
                     nameof(BlockedServiceItem.Name),
                     ListSortDirection.Ascending));
+            QueryLogView = CollectionViewSource.GetDefaultView(QueryLogEntries);
+            QueryLogView.Filter = FilterQueryLogEntry;
+            RefreshQueryLogCommand = new AsyncRelayCommand(() => RefreshQueryLogAsync(true), () => !IsBusy);
             AddDenyRuleCommand = new AsyncRelayCommand(() => AddRuleAsync(false), () => !IsBusy);
             AddAllowRuleCommand = new AsyncRelayCommand(() => AddRuleAsync(true), () => !IsBusy);
             DeleteRuleCommand = new AsyncRelayCommand(DeleteRuleAsync, () => !IsBusy && SelectedRule is not null);
@@ -87,6 +93,8 @@ namespace AdGuardTray.ViewModels
         public ICollectionView BlockedServicesView { get; }
         public ObservableCollection<CustomFilteringRule> FilteringRules { get; } = new();
         public ObservableCollection<DnsRewriteRule> DnsRewrites { get; } = new();
+        public ObservableCollection<QueryLogEntry> QueryLogEntries { get; } = new();
+        public ICollectionView QueryLogView { get; }
 
         public bool IsBusy { get => _isBusy; private set { if (SetProperty(ref _isBusy, value)) { OnPropertyChanged(nameof(ControlsEnabled)); NotifyCommands(); } } }
         public bool ControlsEnabled => !IsBusy;
@@ -112,6 +120,9 @@ namespace AdGuardTray.ViewModels
         public string BlockedQueriesText { get => _blockedQueriesText; private set => SetProperty(ref _blockedQueriesText, value); }
         public string BlockPercentageText { get => _blockPercentageText; private set => SetProperty(ref _blockPercentageText, value); }
         public string TopBlockedDomain { get => _topBlockedDomain; private set => SetProperty(ref _topBlockedDomain, value); }
+        public string QueryLogSearch { get => _queryLogSearch; set { if (SetProperty(ref _queryLogSearch, value)) QueryLogView.Refresh(); } }
+        public bool ShowBlockedQueriesOnly { get => _showBlockedQueriesOnly; set { if (SetProperty(ref _showBlockedQueriesOnly, value)) QueryLogView.Refresh(); } }
+        public string QueryLogStatus { get => _queryLogStatus; private set => SetProperty(ref _queryLogStatus, value); }
 
         public bool FilteringEnabled { get => _filteringEnabled; set { if (SetProperty(ref _filteringEnabled, value) && !_isInitialising) _ = UpdateOptionAsync("DNS filtering", r => r.SetFilteringEnabledAsync(value)); } }
         public bool SafeBrowsingEnabled { get => _safeBrowsingEnabled; set { if (SetProperty(ref _safeBrowsingEnabled, value) && !_isInitialising) _ = UpdateOptionAsync("Safe Browsing", r => r.SetSafeBrowsingEnabledAsync(value)); } }
@@ -139,6 +150,7 @@ namespace AdGuardTray.ViewModels
         public IAsyncRelayCommand SaveBlockedServicesCommand { get; }
         public IRelayCommand SelectAllServicesCommand { get; }
         public IRelayCommand ClearAllServicesCommand { get; }
+        public IAsyncRelayCommand RefreshQueryLogCommand { get; }
         public IAsyncRelayCommand AddDenyRuleCommand { get; }
         public IAsyncRelayCommand AddAllowRuleCommand { get; }
         public IAsyncRelayCommand DeleteRuleCommand { get; }
@@ -168,6 +180,7 @@ namespace AdGuardTray.ViewModels
                 (var services, _blockedConfig) = await router.GetBlockedServicesAsync();
                 var rules = await router.GetCustomFilteringRulesAsync();
                 var rewrites = await router.GetDnsRewritesAsync();
+                var queryLog = await router.GetQueryLogAsync();
 
                 ApplyStatus(status);
                 ApplyStatistics(statistics);
@@ -211,6 +224,7 @@ namespace AdGuardTray.ViewModels
                 foreach (var rule in rules) FilteringRules.Add(rule);
                 DnsRewrites.Clear();
                 foreach (var rewrite in rewrites) DnsRewrites.Add(rewrite);
+                ApplyQueryLog(queryLog);
                 Message = "Protection settings refreshed.";
             }
             catch (Exception ex)
@@ -239,6 +253,7 @@ namespace AdGuardTray.ViewModels
             try
             {
                 ApplyStatistics(await GetRouterManager().GetAdGuardStatisticsAsync());
+                await RefreshQueryLogAsync(false);
             }
             catch
             {
@@ -254,6 +269,47 @@ namespace AdGuardTray.ViewModels
             BlockPercentageText = statistics.BlockPercentage.ToString("0.0") + "%";
             TopBlockedDomain = statistics.TopBlockedDomains.FirstOrDefault()?.Name
                 ?? "No blocked domains yet";
+        }
+
+
+        private async Task RefreshQueryLogAsync(bool showMessage)
+        {
+            try
+            {
+                ApplyQueryLog(await GetRouterManager().GetQueryLogAsync());
+                if (showMessage) Message = "Recent DNS activity refreshed.";
+            }
+            catch (Exception ex)
+            {
+                QueryLogStatus = "Recent DNS activity is unavailable.";
+                if (showMessage) Message = "Unable to refresh DNS activity: " + ex.Message;
+            }
+        }
+
+        private void ApplyQueryLog(System.Collections.Generic.IEnumerable<QueryLogEntry> entries)
+        {
+            QueryLogEntries.Clear();
+            foreach (QueryLogEntry entry in entries.Take(200))
+                QueryLogEntries.Add(entry);
+
+            QueryLogView.Refresh();
+            QueryLogStatus = QueryLogEntries.Count == 0
+                ? (QueryLogEnabled ? "No recent DNS requests were returned." : "Query logging is currently disabled.")
+                : $"Showing {QueryLogEntries.Count:N0} recent DNS requests.";
+        }
+
+        private bool FilterQueryLogEntry(object item)
+        {
+            if (item is not QueryLogEntry entry) return false;
+            if (ShowBlockedQueriesOnly && !entry.IsBlocked) return false;
+
+            string search = QueryLogSearch.Trim();
+            return search.Length == 0 ||
+                   entry.Domain.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                   entry.Client.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                   entry.ClientName.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                   entry.ClientAddress.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                   entry.Status.Contains(search, StringComparison.OrdinalIgnoreCase);
         }
 
         private async Task RefreshProtectionStatusAsync(bool showMessage)
@@ -472,7 +528,7 @@ namespace AdGuardTray.ViewModels
 
         private void NotifyCommands()
         {
-            foreach (var command in new[] { RefreshAllCommand, EnableProtectionCommand, DisableProtectionCommand, ResumeProtectionCommand, Pause30Command, Pause1HourCommand, Pause4HoursCommand, PauseUntilTomorrowCommand, ApplyStandardProfileCommand, ApplyFamilyProfileCommand, ApplyPrivacyProfileCommand, SaveBlockedServicesCommand, AddDenyRuleCommand, AddAllowRuleCommand, DeleteRuleCommand, AddRewriteCommand, DeleteRewriteCommand }) command.NotifyCanExecuteChanged();
+            foreach (var command in new[] { RefreshAllCommand, EnableProtectionCommand, DisableProtectionCommand, ResumeProtectionCommand, Pause30Command, Pause1HourCommand, Pause4HoursCommand, PauseUntilTomorrowCommand, ApplyStandardProfileCommand, ApplyFamilyProfileCommand, ApplyPrivacyProfileCommand, SaveBlockedServicesCommand, RefreshQueryLogCommand, AddDenyRuleCommand, AddAllowRuleCommand, DeleteRuleCommand, AddRewriteCommand, DeleteRewriteCommand }) command.NotifyCanExecuteChanged();
             SelectAllServicesCommand.NotifyCanExecuteChanged();
             ClearAllServicesCommand.NotifyCanExecuteChanged();
         }
