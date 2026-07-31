@@ -40,4 +40,13 @@
     <SolidColorBrush x:Key="Brush.TextSecondary" Color="{StaticResource Color.TextSecondary}" />
     <SolidColorBrush x:Key="Brush.TextMuted" Color="{StaticResource Color.TextMuted}" />
     <SolidColorBrush x:Key="Brush.TextOnAccent" Color="{StaticResource Color.TextOnAccent}" />
+
+    <!-- Semantic tinted surfaces -->
+    <SolidColorBrush x:Key="Brush.PrimarySubtle" Color="#FFEFF6FF" />
+    <SolidColorBrush x:Key="Brush.PrimarySubtleBorder" Color="#FFBFDBFE" />
+    <SolidColorBrush x:Key="Brush.SuccessSubtle" Color="#FFF0FDF4" />
+    <SolidColorBrush x:Key="Brush.SuccessSubtleBorder" Color="#FFBBF7D0" />
+    <SolidColorBrush x:Key="Brush.WarningSubtle" Color="#FFFFF7ED" />
+    <SolidColorBrush x:Key="Brush.DangerSubtle" Color="#FFFEF2F2" />
+    <SolidColorBrush x:Key="Brush.DangerSubtleBorder" Color="#FFFECACA" />
 </ResourceDictionary>

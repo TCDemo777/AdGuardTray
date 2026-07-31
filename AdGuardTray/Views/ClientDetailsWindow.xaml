@@ -6,7 +6,7 @@
         Height="820"
         MinWidth="1000"
         MinHeight="700"
-        Background="#F6F8FA"
+        Background="{DynamicResource Brush.SurfaceMuted}"
         WindowStartupLocation="CenterOwner">
     <Window.Resources>
         <Style x:Key="CardStyle" TargetType="Border">
@@ -69,9 +69,9 @@
                         Command="{Binding TogglePauseCommand}" Content="{Binding PauseButtonText}"/>
             </StackPanel>
             <StackPanel>
-                <TextBlock FontSize="27" FontWeight="Bold" Foreground="#172033"
+                <TextBlock FontSize="27" FontWeight="Bold" Foreground="{DynamicResource Brush.TextPrimary}"
                            Text="{Binding ClientName}"/>
-                <TextBlock Margin="0,5,0,0" Foreground="#667085"
+                <TextBlock Margin="0,5,0,0" Foreground="{DynamicResource Brush.TextSecondary}"
                            Text="Live DNS activity and client statistics"/>
             </StackPanel>
         </DockPanel>
@@ -96,13 +96,13 @@
                     </Grid.RowDefinitions>
                     <DockPanel LastChildFill="True">
                         <Border DockPanel.Dock="Left" Width="42" Height="42" Margin="0,0,12,0"
-                                Background="#EAF2FF" CornerRadius="21">
+                                Background="{DynamicResource Brush.PrimarySubtle}" CornerRadius="21">
                             <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center"
                                        FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
-                                       FontSize="18" Foreground="#2457A7" Text="&#xE716;"/>
+                                       FontSize="18" Foreground="{DynamicResource Brush.Primary}" Text="&#xE716;"/>
                         </Border>
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="#667085"
+                            <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextSecondary}"
                                        Text="CLIENT IDENTITY"/>
                             <TextBlock Margin="0,3,0,0" FontSize="15" FontWeight="SemiBold"
                                        TextTrimming="CharacterEllipsis" Text="{Binding ClientName}"/>
@@ -117,7 +117,7 @@
                             </Grid.ColumnDefinitions>
 
                             <StackPanel>
-                                <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="#8A94A6" Text="IP ADDRESS"/>
+                                <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextMuted}" Text="IP ADDRESS"/>
                                 <DockPanel Margin="0,5,0,0" LastChildFill="True">
                                     <Button DockPanel.Dock="Right" Style="{StaticResource CopyButtonStyle}"
                                             Command="{Binding CopyIpCommand}" Content="Copy"/>
@@ -128,7 +128,7 @@
                             </StackPanel>
 
                             <StackPanel Grid.Column="2">
-                                <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="#8A94A6" Text="MAC ADDRESS"/>
+                                <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextMuted}" Text="MAC ADDRESS"/>
                                 <DockPanel Margin="0,5,0,0" LastChildFill="True">
                                     <Button DockPanel.Dock="Right" Style="{StaticResource CopyButtonStyle}"
                                             Command="{Binding CopyMacCommand}" Content="Copy"/>
@@ -143,28 +143,28 @@
 
             <Border Grid.Column="2" Style="{StaticResource CardStyle}">
                 <StackPanel>
-                    <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="#667085" Text="TOTAL QUERIES"/>
-                    <TextBlock Margin="0,8,0,3" FontSize="25" FontWeight="Bold" Foreground="#2457A7"
+                    <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextSecondary}" Text="TOTAL QUERIES"/>
+                    <TextBlock Margin="0,8,0,3" FontSize="25" FontWeight="Bold" Foreground="{DynamicResource Brush.Primary}"
                                Text="{Binding TotalQueries, StringFormat={}{0:N0}}"/>
-                    <TextBlock FontSize="12" Foreground="#8A94A6" Text="Requests from this client"/>
+                    <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextMuted}" Text="Requests from this client"/>
                 </StackPanel>
             </Border>
 
             <Border Grid.Column="4" Style="{StaticResource CardStyle}">
                 <StackPanel>
-                    <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="#667085" Text="BLOCKED"/>
-                    <TextBlock Margin="0,8,0,3" FontSize="25" FontWeight="Bold" Foreground="#C62828"
+                    <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextSecondary}" Text="BLOCKED"/>
+                    <TextBlock Margin="0,8,0,3" FontSize="25" FontWeight="Bold" Foreground="{DynamicResource Brush.Danger}"
                                Text="{Binding BlockedQueries, StringFormat={}{0:N0}}"/>
-                    <TextBlock FontSize="12" Foreground="#8A94A6" Text="Protection actions"/>
+                    <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextMuted}" Text="Protection actions"/>
                 </StackPanel>
             </Border>
 
             <Border Grid.Column="6" Style="{StaticResource CardStyle}">
                 <StackPanel>
-                    <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="#667085" Text="BLOCK RATE"/>
-                    <TextBlock Margin="0,8,0,3" FontSize="25" FontWeight="Bold" Foreground="#A44A13"
+                    <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextSecondary}" Text="BLOCK RATE"/>
+                    <TextBlock Margin="0,8,0,3" FontSize="25" FontWeight="Bold" Foreground="{DynamicResource Brush.Warning}"
                                Text="{Binding BlockRate, StringFormat={}{0:F1}%}"/>
-                    <TextBlock FontSize="12" Foreground="#8A94A6" TextTrimming="CharacterEllipsis"
+                    <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextMuted}" TextTrimming="CharacterEllipsis"
                                ToolTip="{Binding LastSeen}" Text="{Binding LastSeen, StringFormat=Last seen: {0}}"/>
                 </StackPanel>
             </Border>
@@ -191,19 +191,19 @@
                     </Grid.RowDefinitions>
                     <StackPanel>
                         <DockPanel LastChildFill="True">
-                            <Border DockPanel.Dock="Right" Padding="8,3" Background="#EEF4FF" CornerRadius="9">
-                                <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="#2457A7" Text="TOP 5"/>
+                            <Border DockPanel.Dock="Right" Padding="8,3" Background="{DynamicResource Brush.PrimarySubtle}" CornerRadius="9">
+                                <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource Brush.Primary}" Text="TOP 5"/>
                             </Border>
-                            <TextBlock FontSize="18" FontWeight="Bold" Foreground="#172033"
+                            <TextBlock FontSize="18" FontWeight="Bold" Foreground="{DynamicResource Brush.TextPrimary}"
                                        Text="Top requested domains"/>
                         </DockPanel>
-                        <TextBlock Margin="0,3,0,0" FontSize="12" Foreground="#667085"
+                        <TextBlock Margin="0,3,0,0" FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}"
                                    Text="Most frequently requested destinations for this client"/>
                     </StackPanel>
 
                     <Grid Grid.Row="2">
                         <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   Foreground="#8A94A6" Text="No requested domains recorded.">
+                                   Foreground="{DynamicResource Brush.TextMuted}" Text="No requested domains recorded.">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="Visibility" Value="Visible"/>
@@ -233,19 +233,19 @@
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
-                                            <Border Width="24" Height="24" Background="#EEF4FF" CornerRadius="12" VerticalAlignment="Center">
+                                            <Border Width="24" Height="24" Background="{DynamicResource Brush.PrimarySubtle}" CornerRadius="12" VerticalAlignment="Center">
                                                 <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                           FontSize="11" FontWeight="Bold" Foreground="#2457A7"
+                                                           FontSize="11" FontWeight="Bold" Foreground="{DynamicResource Brush.Primary}"
                                                            Text="{Binding Rank}"/>
                                             </Border>
                                             <TextBlock Grid.Column="1" Margin="0,0,10,0" VerticalAlignment="Center"
                                                        FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
                                                        Text="{Binding Domain}"/>
                                             <TextBlock Grid.Column="2" VerticalAlignment="Center" FontWeight="SemiBold"
-                                                       Foreground="#2457A7" Text="{Binding Count, StringFormat={}{0:N0}}"/>
+                                                       Foreground="{DynamicResource Brush.Primary}" Text="{Binding Count, StringFormat={}{0:N0}}"/>
                                         </Grid>
                                         <Grid Grid.Row="2">
-                                            <Border Background="#EAF0F8" CornerRadius="6"/>
+                                            <Border Background="{DynamicResource Brush.Border}" CornerRadius="6"/>
                                             <ProgressBar Height="12" Maximum="100" Value="{Binding Percentage}"
                                                          Foreground="#3B82F6" Background="Transparent" BorderThickness="0"/>
                                         </Grid>
@@ -266,19 +266,19 @@
                     </Grid.RowDefinitions>
                     <StackPanel>
                         <DockPanel LastChildFill="True">
-                            <Border DockPanel.Dock="Right" Padding="8,3" Background="#FDECEC" CornerRadius="9">
-                                <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="#C62828" Text="TOP 5"/>
+                            <Border DockPanel.Dock="Right" Padding="8,3" Background="{DynamicResource Brush.DangerSubtle}" CornerRadius="9">
+                                <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource Brush.Danger}" Text="TOP 5"/>
                             </Border>
-                            <TextBlock FontSize="18" FontWeight="Bold" Foreground="#172033"
+                            <TextBlock FontSize="18" FontWeight="Bold" Foreground="{DynamicResource Brush.TextPrimary}"
                                        Text="Top blocked domains"/>
                         </DockPanel>
-                        <TextBlock Margin="0,3,0,0" FontSize="12" Foreground="#667085"
+                        <TextBlock Margin="0,3,0,0" FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}"
                                    Text="Domains stopped most often for this client"/>
                     </StackPanel>
 
                     <Grid Grid.Row="2">
                         <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   Foreground="#8A94A6" Text="No blocked domains recorded.">
+                                   Foreground="{DynamicResource Brush.TextMuted}" Text="No blocked domains recorded.">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="Visibility" Value="Visible"/>
@@ -308,21 +308,21 @@
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
-                                            <Border Width="24" Height="24" Background="#FDECEC" CornerRadius="12" VerticalAlignment="Center">
+                                            <Border Width="24" Height="24" Background="{DynamicResource Brush.DangerSubtle}" CornerRadius="12" VerticalAlignment="Center">
                                                 <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                           FontSize="11" FontWeight="Bold" Foreground="#C62828"
+                                                           FontSize="11" FontWeight="Bold" Foreground="{DynamicResource Brush.Danger}"
                                                            Text="{Binding Rank}"/>
                                             </Border>
                                             <TextBlock Grid.Column="1" Margin="0,0,10,0" VerticalAlignment="Center"
                                                        FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
                                                        Text="{Binding Domain}"/>
                                             <TextBlock Grid.Column="2" VerticalAlignment="Center" FontWeight="SemiBold"
-                                                       Foreground="#C62828" Text="{Binding Count, StringFormat={}{0:N0}}"/>
+                                                       Foreground="{DynamicResource Brush.Danger}" Text="{Binding Count, StringFormat={}{0:N0}}"/>
                                         </Grid>
                                         <Grid Grid.Row="2">
-                                            <Border Background="#FBEAEA" CornerRadius="6"/>
+                                            <Border Background="{DynamicResource Brush.DangerSubtle}" CornerRadius="6"/>
                                             <ProgressBar Height="12" Maximum="100" Value="{Binding Percentage}"
-                                                         Foreground="#E13227" Background="Transparent" BorderThickness="0"/>
+                                                         Foreground="{DynamicResource Brush.Danger}" Background="Transparent" BorderThickness="0"/>
                                         </Grid>
                                     </Grid>
                                 </DataTemplate>
@@ -340,14 +340,14 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
                     <DockPanel>
-                        <TextBlock FontSize="17" FontWeight="Bold" Foreground="#172033"
+                        <TextBlock FontSize="17" FontWeight="Bold" Foreground="{DynamicResource Brush.TextPrimary}"
                                    Text="Recent DNS Requests"/>
-                        <TextBlock DockPanel.Dock="Right" Foreground="#8A94A6"
+                        <TextBlock DockPanel.Dock="Right" Foreground="{DynamicResource Brush.TextMuted}"
                                    Text="Latest 200 requests"/>
                     </DockPanel>
                     <Grid Grid.Row="2">
                         <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   Foreground="#8A94A6" Text="No recent DNS requests recorded.">
+                                   Foreground="{DynamicResource Brush.TextMuted}" Text="No recent DNS requests recorded.">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="Visibility" Value="Visible"/>
@@ -362,7 +362,7 @@
 
                         <DataGrid AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
                                   CanUserResizeRows="False" IsReadOnly="True" HeadersVisibility="Column"
-                                  GridLinesVisibility="None" RowHeight="40" AlternatingRowBackground="#F8FAFC"
+                                  GridLinesVisibility="None" RowHeight="40" AlternatingRowBackground="{DynamicResource Brush.SurfaceMuted}"
                                   ItemsSource="{Binding RecentQueries}">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Width="155" Header="Time" Binding="{Binding Time}"/>
@@ -411,7 +411,7 @@
             </Border>
         </Grid>
 
-        <TextBlock Grid.Row="5" Margin="2,11,0,0" Foreground="#667085"
+        <TextBlock Grid.Row="5" Margin="2,11,0,0" Foreground="{DynamicResource Brush.TextSecondary}"
                    Text="{Binding StatusMessage}"/>
         </Grid>
     </ScrollViewer>

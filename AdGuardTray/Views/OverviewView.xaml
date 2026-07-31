@@ -2,7 +2,9 @@
     x:Class="AdGuardTray.Views.OverviewView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:controls="clr-namespace:AdGuardTray.Controls">
+    xmlns:controls="clr-namespace:AdGuardTray.Controls"
+    Background="{DynamicResource Brush.WindowBackground}"
+    Foreground="{DynamicResource Brush.TextPrimary}">
 
     <UserControl.Resources>
         <Style x:Key="Overview.DetailLabel" TargetType="TextBlock" BasedOn="{StaticResource Text.Secondary}">
@@ -28,8 +30,8 @@
 
         <Style x:Key="Overview.StatusBadge" TargetType="Border">
             <Setter Property="Padding" Value="10,5" />
-            <Setter Property="Background" Value="{StaticResource Brush.SurfaceMuted}" />
-            <Setter Property="BorderBrush" Value="{StaticResource Brush.Border}" />
+            <Setter Property="Background" Value="{DynamicResource Brush.SurfaceMuted}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="12" />
             <Setter Property="VerticalAlignment" Value="Center" />
@@ -40,7 +42,7 @@
         </Style>
     </UserControl.Resources>
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+    <ScrollViewer Background="{DynamicResource Brush.WindowBackground}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="0,0,6,24">
 
             <!-- Page heading -->
@@ -101,7 +103,7 @@
                     Height="146"
                     AccentBrush="{Binding RouterStatusColour}"
                     FooterText="{Binding RouterModel}"
-                    IconBackground="#EFF6FF"
+                    IconBackground="{DynamicResource Brush.PrimarySubtle}"
                     IconGlyph="&#xE968;"
                     Subtitle="Router connection"
                     Title="ROUTER"
@@ -112,7 +114,7 @@
                     Height="146"
                     AccentBrush="{Binding AdGuardStatusColour}"
                     FooterText="{Binding AdGuardVersion}"
-                    IconBackground="#F0FDF4"
+                    IconBackground="{DynamicResource Brush.SuccessSubtle}"
                     IconGlyph="&#xE72E;"
                     Subtitle="DNS filtering"
                     Title="ADGUARD"
@@ -123,7 +125,7 @@
                     Height="146"
                     AccentBrush="{Binding InternetStatusColour}"
                     FooterText="{Binding Latency}"
-                    IconBackground="#EFF6FF"
+                    IconBackground="{DynamicResource Brush.PrimarySubtle}"
                     IconGlyph="&#xE774;"
                     Subtitle="WAN connectivity"
                     Title="INTERNET"
@@ -134,7 +136,7 @@
                     Height="146"
                     AccentBrush="{Binding CpuHealthColour}"
                     FooterText="{Binding CpuUsage}"
-                    IconBackground="#FFF7ED"
+                    IconBackground="{DynamicResource Brush.WarningSubtle}"
                     IconGlyph="&#xE950;"
                     Subtitle="Processor load"
                     Title="CPU"
@@ -145,7 +147,7 @@
                     Height="146"
                     AccentBrush="{Binding MemoryHealthColour}"
                     FooterText="{Binding MemoryUsage}"
-                    IconBackground="#F5F3FF"
+                    IconBackground="{DynamicResource Brush.PrimarySubtle}"
                     IconGlyph="&#xE7F8;"
                     Subtitle="Memory usage"
                     Title="MEMORY"
@@ -193,14 +195,14 @@
                                     Width="38"
                                     Height="38"
                                     Margin="0,0,12,0"
-                                    Background="#EFF6FF"
+                                    Background="{DynamicResource Brush.PrimarySubtle}"
                                     CornerRadius="10">
                                     <TextBlock
                                         HorizontalAlignment="Center"
                                         VerticalAlignment="Center"
                                         FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
                                         FontSize="18"
-                                        Foreground="{StaticResource Brush.Primary}"
+                                        Foreground="{DynamicResource Brush.Primary}"
                                         Text="&#xE968;" />
                                 </Border>
                                 <TextBlock
@@ -331,14 +333,14 @@
                                     Width="38"
                                     Height="38"
                                     Margin="0,0,12,0"
-                                    Background="#F0FDF4"
+                                    Background="{DynamicResource Brush.SuccessSubtle}"
                                     CornerRadius="10">
                                     <TextBlock
                                         HorizontalAlignment="Center"
                                         VerticalAlignment="Center"
                                         FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
                                         FontSize="18"
-                                        Foreground="{StaticResource Brush.Success}"
+                                        Foreground="{DynamicResource Brush.Success}"
                                         Text="&#xE72E;" />
                                 </Border>
                                 <TextBlock
@@ -426,7 +428,7 @@
                                 <TextBlock
                                     Grid.Column="1"
                                     Style="{StaticResource Overview.DetailValue}"
-                                    Foreground="{StaticResource Brush.Danger}"
+                                    Foreground="{DynamicResource Brush.Danger}"
                                     Text="{Binding AdGuardBlocked}" />
                             </Grid>
 
@@ -467,14 +469,14 @@
                                     Width="38"
                                     Height="38"
                                     Margin="0,0,12,0"
-                                    Background="#EFF6FF"
+                                    Background="{DynamicResource Brush.PrimarySubtle}"
                                     CornerRadius="10">
                                     <TextBlock
                                         HorizontalAlignment="Center"
                                         VerticalAlignment="Center"
                                         FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
                                         FontSize="18"
-                                        Foreground="{StaticResource Brush.Primary}"
+                                        Foreground="{DynamicResource Brush.Primary}"
                                         Text="&#xE774;" />
                                 </Border>
                                 <TextBlock
