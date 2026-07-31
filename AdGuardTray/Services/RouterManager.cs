@@ -214,7 +214,7 @@ namespace AdGuardTray.Services
 
                         string name = GetFlexibleString(client, "name", "hostname", "host_name");
                         string ip = GetFlexibleString(client, "ip", "ipaddr", "ip_address");
-                        string signal = GetFlexibleString(client, "signal", "rssi");
+                        string signal = GetFlexibleString(client, "signal", "rssi", "wifi_signal", "signal_strength", "rssi_dbm");
 
                         network.Clients.Add(new WifiClientInfo
                         {
@@ -223,7 +223,7 @@ namespace AdGuardTray.Services
                             MacAddress = mac,
                             Signal = FormatSignal(signal),
                             Band = band,
-                            Interface = network.Interface,
+                            Interface = string.IsNullOrWhiteSpace(iface) ? network.Interface : iface,
                             Ssid = network.Ssid
                         });
                     }
@@ -272,7 +272,7 @@ namespace AdGuardTray.Services
                     string ssid = GetFlexibleString(client, "ssid", "wifi", "network");
                     string name = GetFlexibleString(client, "name", "hostname", "host_name");
                     string ip = GetFlexibleString(client, "ip", "ipaddr", "ip_address");
-                    string signal = GetFlexibleString(client, "signal", "rssi");
+                    string signal = GetFlexibleString(client, "signal", "rssi", "wifi_signal", "signal_strength", "rssi_dbm");
 
                     clients.Add(new WifiClientInfo
                     {
@@ -448,6 +448,226 @@ namespace AdGuardTray.Services
             // use the primary enabled AP for that band.
             return networks.FirstOrDefault(n =>
                 n.Band == band && !n.Status.Equals("Disabled", StringComparison.OrdinalIgnoreCase));
+        }
+
+        public async Task<WifiClientInfo?> GetWifiClientDetailsAsync(
+            string macAddress,
+            string ipAddress)
+        {
+            string normalisedMac = NormaliseMacAddress(macAddress);
+            string targetIp = (ipAddress ?? string.Empty).Trim();
+
+            // GL.iNet's own client inventory is the most reliable source for
+            // deciding whether a device is on 2.4 GHz, 5 GHz or Ethernet.
+            WifiClientInfo? inventoryMatch = null;
+            string clientJson = await _ssh.RunCommandAsync(
+                "ubus call gl-clients list 2>/dev/null || true");
+
+            if (!string.IsNullOrWhiteSpace(clientJson))
+            {
+                try
+                {
+                    using JsonDocument document = JsonDocument.Parse(clientJson);
+                    foreach (JsonElement client in EnumerateClientObjects(document.RootElement))
+                    {
+                        if (!GetFlexibleBoolean(client, "online", true))
+                        {
+                            continue;
+                        }
+
+                        string candidateMac = GetFlexibleString(
+                            client, "mac", "macaddr", "mac_address");
+                        string candidateIp = GetFlexibleString(
+                            client, "ip", "ipaddr", "ip_address");
+
+                        bool macMatches = normalisedMac.Length == 12 &&
+                            NormaliseMacAddress(candidateMac) == normalisedMac;
+                        bool ipMatches = targetIp.Length > 0 && targetIp != "-" &&
+                            candidateIp.Equals(targetIp, StringComparison.OrdinalIgnoreCase);
+
+                        if (!macMatches && !ipMatches)
+                        {
+                            continue;
+                        }
+
+                        string rawConnection = GetFlexibleString(
+                            client, "iface", "interface", "connection", "type");
+                        string band = NormaliseClientBand(rawConnection);
+                        string ssid = GetFlexibleString(
+                            client, "ssid", "wifi_name", "wifi", "network");
+                        string runtimeInterface = GetFlexibleString(
+                            client, "ifname", "device", "wlan");
+                        string signal = GetFlexibleString(
+                            client, "signal", "rssi", "wifi_signal",
+                            "signal_strength", "rssi_dbm");
+
+                        inventoryMatch = new WifiClientInfo
+                        {
+                            Name = GetFlexibleString(client, "name", "hostname", "host_name"),
+                            IpAddress = string.IsNullOrWhiteSpace(candidateIp) ? targetIp : candidateIp,
+                            MacAddress = string.IsNullOrWhiteSpace(candidateMac) ? macAddress : candidateMac,
+                            Band = band,
+                            Ssid = ssid,
+                            Interface = runtimeInterface,
+                            Signal = FormatSignal(signal)
+                        };
+                        break;
+                    }
+                }
+                catch (JsonException)
+                {
+                    // Continue with the configured-network and driver fallbacks.
+                }
+            }
+
+            List<WifiRadioInfo> networks = await GetWifiRadiosAsync();
+
+            if (inventoryMatch is not null)
+            {
+                WifiRadioInfo? mappedNetwork = null;
+
+                if (HasUsefulWifiValue(inventoryMatch.Ssid))
+                {
+                    mappedNetwork = networks.FirstOrDefault(network =>
+                        network.Ssid.Equals(
+                            inventoryMatch.Ssid,
+                            StringComparison.OrdinalIgnoreCase));
+                }
+
+                mappedNetwork ??= networks.FirstOrDefault(network =>
+                    network.Clients.Any(client =>
+                        (normalisedMac.Length == 12 &&
+                         NormaliseMacAddress(client.MacAddress) == normalisedMac) ||
+                        (targetIp.Length > 0 && targetIp != "-" &&
+                         client.IpAddress.Equals(targetIp, StringComparison.OrdinalIgnoreCase))));
+
+                mappedNetwork ??= networks.FirstOrDefault(network =>
+                    HasUsefulWifiValue(inventoryMatch.Band) &&
+                    network.Band.Equals(
+                        inventoryMatch.Band,
+                        StringComparison.OrdinalIgnoreCase));
+
+                if (mappedNetwork is not null)
+                {
+                    inventoryMatch.Ssid = mappedNetwork.Ssid;
+                    inventoryMatch.Band = mappedNetwork.Band;
+
+                    if (!HasUsefulWifiValue(inventoryMatch.Interface))
+                    {
+                        inventoryMatch.Interface = mappedNetwork.Interface;
+                    }
+
+                    WifiClientInfo? mappedClient = mappedNetwork.Clients.FirstOrDefault(client =>
+                        (normalisedMac.Length == 12 &&
+                         NormaliseMacAddress(client.MacAddress) == normalisedMac) ||
+                        (targetIp.Length > 0 && targetIp != "-" &&
+                         client.IpAddress.Equals(targetIp, StringComparison.OrdinalIgnoreCase)));
+
+                    if (mappedClient is not null && HasUsefulWifiValue(mappedClient.Signal))
+                    {
+                        inventoryMatch.Signal = mappedClient.Signal;
+                    }
+                }
+            }
+
+            // Ask the wireless driver for RSSI and the live AP interface. Some
+            // Flint 2 firmware builds omit these values, so this is enrichment
+            // only and must not discard the GL.iNet inventory result.
+            if (normalisedMac.Length == 12)
+            {
+                string formattedMac = string.Join(":",
+                    Enumerable.Range(0, 6)
+                        .Select(index => normalisedMac.Substring(index * 2, 2)));
+
+                string command =
+                    "target='" + formattedMac + "'; " +
+                    "for iface in $(iw dev 2>/dev/null | awk '$1 == \"Interface\" {print $2}'); do " +
+                    "station=$(iw dev \"$iface\" station get \"$target\" 2>/dev/null); " +
+                    "if [ -n \"$station\" ]; then " +
+                    "ssid=$(iw dev \"$iface\" info 2>/dev/null | sed -n 's/^[[:space:]]*ssid //p' | head -n1); " +
+                    "signal=$(printf '%s\\n' \"$station\" | awk '/signal:/ {print $2; exit}'); " +
+                    "printf '%s|%s|%s\\n' \"$iface\" \"$ssid\" \"$signal\"; exit 0; fi; " +
+                    "done";
+
+                string output = await _ssh.RunCommandAsync(command);
+                string firstLine = output
+                    .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                    .FirstOrDefault() ?? string.Empty;
+                string[] parts = firstLine.Split('|');
+
+                if (parts.Length >= 2 && !string.IsNullOrWhiteSpace(parts[0]))
+                {
+                    inventoryMatch ??= new WifiClientInfo
+                    {
+                        MacAddress = macAddress,
+                        IpAddress = string.IsNullOrWhiteSpace(targetIp) ? "-" : targetIp
+                    };
+
+                    inventoryMatch.Interface = parts[0].Trim();
+                    if (HasUsefulWifiValue(parts[1]))
+                    {
+                        inventoryMatch.Ssid = parts[1].Trim();
+                    }
+                    if (parts.Length > 2 && HasUsefulWifiValue(parts[2]))
+                    {
+                        inventoryMatch.Signal = FormatSignal(parts[2]);
+                    }
+                }
+            }
+
+            if (inventoryMatch is not null && HasUsefulWifiValue(inventoryMatch.Ssid))
+            {
+                if (!HasUsefulWifiValue(inventoryMatch.Signal))
+                {
+                    inventoryMatch.Signal = "Not reported";
+                }
+                return inventoryMatch;
+            }
+
+            // Final fallback: use the already-populated per-SSID lists.
+            foreach (WifiRadioInfo network in networks)
+            {
+                WifiClientInfo? client = network.Clients.FirstOrDefault(item =>
+                    (normalisedMac.Length == 12 &&
+                     NormaliseMacAddress(item.MacAddress) == normalisedMac) ||
+                    (targetIp.Length > 0 && targetIp != "-" &&
+                     item.IpAddress.Equals(targetIp, StringComparison.OrdinalIgnoreCase)));
+
+                if (client is null)
+                {
+                    continue;
+                }
+
+                client.Ssid = network.Ssid;
+                client.Band = network.Band;
+                if (!HasUsefulWifiValue(client.Interface))
+                {
+                    client.Interface = network.Interface;
+                }
+                if (!HasUsefulWifiValue(client.Signal))
+                {
+                    client.Signal = "Not reported";
+                }
+                return client;
+            }
+
+            return inventoryMatch;
+        }
+
+        private static string NormaliseMacAddress(string? macAddress)
+        {
+            return new string((macAddress ?? string.Empty)
+                .Where(Uri.IsHexDigit)
+                .Select(char.ToUpperInvariant)
+                .ToArray());
+        }
+
+        private static bool HasUsefulWifiValue(string? value)
+        {
+            return !string.IsNullOrWhiteSpace(value) &&
+                value != "-" && value != "—" &&
+                !value.Equals("Unknown", StringComparison.OrdinalIgnoreCase) &&
+                !value.Equals("Not reported", StringComparison.OrdinalIgnoreCase);
         }
 
         private static string FormatSignal(string signal)

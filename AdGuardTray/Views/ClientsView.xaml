@@ -101,14 +101,6 @@
                     <TextBlock Margin="0,4,0,0" FontWeight="SemiBold" Text="{Binding SelectedClient.ConnectionType, TargetNullValue=—}"/>
                 </StackPanel>
                 <StackPanel Margin="0,0,16,0">
-                    <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Text="WI-FI NETWORK"/>
-                    <TextBlock Margin="0,4,0,0" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Text="{Binding SelectedClient.WifiNetwork, TargetNullValue=—}"/>
-                </StackPanel>
-                <StackPanel Margin="0,0,16,0">
-                    <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Text="SIGNAL"/>
-                    <TextBlock Margin="0,4,0,0" FontWeight="SemiBold" Text="{Binding SelectedClient.SignalStrength, TargetNullValue=—}"/>
-                </StackPanel>
-                <StackPanel Margin="0,0,16,0">
                     <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Text="DEVICE TYPE"/>
                     <TextBlock Margin="0,4,0,0" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Text="{Binding SelectedClient.DeviceType, TargetNullValue=—}"/>
                 </StackPanel>

@@ -21,6 +21,8 @@ namespace AdGuardTray.ViewModels
 
         private readonly string _favoritesFilePath;
         private RouterManager? _routerManager;
+        private readonly Dictionary<string, WifiClientInfo> _liveClientLookup =
+            new(StringComparer.OrdinalIgnoreCase);
 
         public ObservableCollection<ClientInfo> Clients { get; } = new();
 
@@ -51,6 +53,12 @@ namespace AdGuardTray.ViewModels
 
         [ObservableProperty]
         private ClientInfo? selectedClient;
+
+        [ObservableProperty]
+        private string selectedClientWifiNetwork = "—";
+
+        [ObservableProperty]
+        private string selectedClientSignal = "—";
 
         [ObservableProperty]
         private string statusMessage = "No client data loaded.";
@@ -129,11 +137,56 @@ namespace AdGuardTray.ViewModels
                         password);
                 }
 
+                string? selectedKey = SelectedClient is null
+                    ? null
+                    : ClientKey(SelectedClient);
+
                 List<ClientInfo> clients =
                     await _routerManager.GetAdGuardClientsAsync();
 
-                List<WifiClientInfo> liveClients =
+                // Use the same per-SSID mapping as the Network tab so selected
+                // clients receive the resolved Wi-Fi name, interface and signal.
+                List<WifiRadioInfo> wifiNetworks =
+                    await _routerManager.GetWifiRadiosAsync();
+
+                // Flatten the per-network client lists while explicitly carrying
+                // the parent SSID/band/interface onto each client.  The Network
+                // view can display a client under an SSID even when the GL.iNet
+                // payload omits SSID on the child object, so relying on the child
+                // record alone loses the network name in the Clients view.
+                List<WifiClientInfo> liveClients = wifiNetworks
+                    .SelectMany(network => network.Clients.Select(client =>
+                    {
+                        client.Ssid = HasUsefulValue(client.Ssid)
+                            ? client.Ssid
+                            : network.Ssid;
+                        client.Band = HasUsefulValue(client.Band)
+                            ? client.Band
+                            : network.Band;
+                        client.Interface = HasUsefulValue(client.Interface)
+                            ? client.Interface
+                            : network.Interface;
+                        return client;
+                    }))
+                    .ToList();
+
+                // Retain Ethernet and any firmware-only clients that are not
+                // represented in the Wi-Fi network collection.
+                List<WifiClientInfo> inventoryClients =
                     await _routerManager.GetGlClientInventoryAsync();
+
+                foreach (WifiClientInfo inventoryClient in inventoryClients)
+                {
+                    bool alreadyPresent = liveClients.Any(item =>
+                        ClientIdentityEquals(item, inventoryClient));
+
+                    if (!alreadyPresent)
+                    {
+                        liveClients.Add(inventoryClient);
+                    }
+                }
+
+                RebuildLiveClientLookup(liveClients);
 
                 foreach (ClientInfo client in clients)
                 {
@@ -144,7 +197,7 @@ namespace AdGuardTray.ViewModels
                 _allClients.Clear();
                 _allClients.AddRange(clients);
 
-                ApplyFilterAndSort();
+                ApplyFilterAndSort(selectedKey);
 
                 StatusMessage = _allClients.Count switch
                 {
@@ -289,6 +342,8 @@ namespace AdGuardTray.ViewModels
             PingResult = value is null
                 ? "Select a client to run a connectivity check."
                 : $"Ready to ping or wake {value.Name} ({value.IpAddress}).";
+
+            UpdateSelectedClientConnectionDetails(value);
         }
 
         partial void OnSearchTextChanged(string value)
@@ -311,8 +366,10 @@ namespace AdGuardTray.ViewModels
             OnPropertyChanged(nameof(SortDirectionText));
         }
 
-        private void ApplyFilterAndSort()
+        private void ApplyFilterAndSort(string? preferredSelectionKey = null)
         {
+            string? selectionKey = preferredSelectionKey ??
+                (SelectedClient is null ? null : ClientKey(SelectedClient));
             string search = SearchText.Trim();
 
             IEnumerable<ClientInfo> query = _allClients;
@@ -395,6 +452,14 @@ namespace AdGuardTray.ViewModels
                 Clients.Add(client);
             }
 
+            if (!string.IsNullOrWhiteSpace(selectionKey))
+            {
+                SelectedClient = Clients.FirstOrDefault(client =>
+                    ClientKey(client).Equals(
+                        selectionKey,
+                        StringComparison.OrdinalIgnoreCase));
+            }
+
             if (!IsLoading && _allClients.Count > 0)
             {
                 StatusMessage =
@@ -458,17 +523,136 @@ namespace AdGuardTray.ViewModels
             };
         }
 
+        private static bool ClientIdentityEquals(
+            WifiClientInfo left,
+            WifiClientInfo right)
+        {
+            string leftMac = NormaliseMac(left.MacAddress);
+            string rightMac = NormaliseMac(right.MacAddress);
+
+            if (leftMac.Length == 12 && rightMac.Length == 12)
+            {
+                return leftMac.Equals(
+                    rightMac,
+                    StringComparison.OrdinalIgnoreCase);
+            }
+
+            return !string.IsNullOrWhiteSpace(left.IpAddress) &&
+                   left.IpAddress != "-" &&
+                   left.IpAddress.Equals(
+                       right.IpAddress,
+                       StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void RebuildLiveClientLookup(IEnumerable<WifiClientInfo> liveClients)
+        {
+            _liveClientLookup.Clear();
+
+            foreach (WifiClientInfo live in liveClients
+                .OrderByDescending(item => HasUsefulValue(item.Ssid))
+                .ThenByDescending(item => HasUsefulValue(item.Signal)))
+            {
+                string macKey = NormaliseMac(live.MacAddress);
+                if (macKey.Length == 12 && !_liveClientLookup.ContainsKey("mac:" + macKey))
+                {
+                    _liveClientLookup["mac:" + macKey] = live;
+                }
+
+                if (!string.IsNullOrWhiteSpace(live.IpAddress) && live.IpAddress != "-")
+                {
+                    string ipKey = "ip:" + live.IpAddress.Trim();
+                    if (!_liveClientLookup.ContainsKey(ipKey))
+                    {
+                        _liveClientLookup[ipKey] = live;
+                    }
+                }
+
+                if (HasUsefulValue(live.Name) &&
+                    !live.Name.Equals("Unknown device", StringComparison.OrdinalIgnoreCase))
+                {
+                    string nameKey = "name:" + NormaliseName(live.Name);
+                    if (nameKey.Length > 5 && !_liveClientLookup.ContainsKey(nameKey))
+                    {
+                        _liveClientLookup[nameKey] = live;
+                    }
+                }
+            }
+
+            UpdateSelectedClientConnectionDetails(SelectedClient);
+        }
+
+        private void UpdateSelectedClientConnectionDetails(ClientInfo? client)
+        {
+            if (client is null)
+            {
+                SelectedClientWifiNetwork = "—";
+                SelectedClientSignal = "—";
+                return;
+            }
+
+            WifiClientInfo? live = null;
+            string macKey = NormaliseMac(client.MacAddress);
+            if (macKey.Length == 12)
+            {
+                _liveClientLookup.TryGetValue("mac:" + macKey, out live);
+            }
+
+            if (live is null && !string.IsNullOrWhiteSpace(client.IpAddress) && client.IpAddress != "-")
+            {
+                _liveClientLookup.TryGetValue("ip:" + client.IpAddress.Trim(), out live);
+            }
+
+            if (live is null && HasUsefulValue(client.Name))
+            {
+                _liveClientLookup.TryGetValue("name:" + NormaliseName(client.Name), out live);
+            }
+
+            // The ClientInfo instance is enriched during LoadClientsAsync from
+            // the same per-SSID records used by the Network tab. Prefer those
+            // values, then use the cache as a fallback. No second router query
+            // is allowed to overwrite the working mapping after selection.
+            SelectedClientWifiNetwork = HasUsefulValue(client.WifiNetwork)
+                ? client.WifiNetwork
+                : live is not null && HasUsefulValue(live.Ssid) ? live.Ssid : "—";
+
+            SelectedClientSignal = HasUsefulValue(client.SignalStrength)
+                ? client.SignalStrength
+                : live is not null && HasUsefulValue(live.Signal) ? live.Signal : "Not reported";
+        }
+
         private static void ApplyLiveConnectionDetails(
             ClientInfo client,
             IEnumerable<WifiClientInfo> liveClients)
         {
-            WifiClientInfo? live = liveClients.FirstOrDefault(item =>
-                (!string.IsNullOrWhiteSpace(client.MacAddress) &&
-                 client.MacAddress != "-" &&
-                 item.MacAddress.Equals(client.MacAddress, StringComparison.OrdinalIgnoreCase)) ||
-                (!string.IsNullOrWhiteSpace(client.IpAddress) &&
-                 client.IpAddress != "-" &&
-                 item.IpAddress.Equals(client.IpAddress, StringComparison.OrdinalIgnoreCase)));
+            string clientMac = NormaliseMac(client.MacAddress);
+
+            WifiClientInfo? live = liveClients
+                .Where(item =>
+                {
+                    string itemMac = NormaliseMac(item.MacAddress);
+
+                    bool macMatches =
+                        clientMac.Length == 12 &&
+                        itemMac.Length == 12 &&
+                        itemMac.Equals(
+                            clientMac,
+                            StringComparison.OrdinalIgnoreCase);
+
+                    bool ipMatches =
+                        !string.IsNullOrWhiteSpace(client.IpAddress) &&
+                        client.IpAddress != "-" &&
+                        item.IpAddress.Equals(
+                            client.IpAddress,
+                            StringComparison.OrdinalIgnoreCase);
+
+                    return macMatches || ipMatches;
+                })
+                // Prefer the per-SSID record used by the Network tab over the
+                // more limited GL.iNet inventory fallback.
+                .OrderByDescending(item => HasUsefulValue(item.Ssid))
+                .ThenByDescending(item => HasUsefulValue(item.Signal))
+                .ThenByDescending(item => HasUsefulValue(item.Interface))
+                .FirstOrDefault();
 
             if (live is null)
             {
@@ -488,6 +672,40 @@ namespace AdGuardTray.ViewModels
             client.SignalStrength = live.Signal;
             client.LiveInterface = live.Interface;
         }
+
+
+        private static string NormaliseMac(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value) || value == "-")
+            {
+                return string.Empty;
+            }
+
+            return new string(value
+                .Where(char.IsLetterOrDigit)
+                .Select(char.ToUpperInvariant)
+                .ToArray());
+        }
+
+        private static string NormaliseName(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            return new string(value
+                .Trim()
+                .Where(char.IsLetterOrDigit)
+                .Select(char.ToUpperInvariant)
+                .ToArray());
+        }
+
+        private static bool HasUsefulValue(string? value) =>
+            !string.IsNullOrWhiteSpace(value) &&
+            value != "-" &&
+            !value.Equals("Unknown", StringComparison.OrdinalIgnoreCase) &&
+            !value.Equals("Unknown network", StringComparison.OrdinalIgnoreCase);
 
         private void EnrichClient(ClientInfo client)
         {
