@@ -96,6 +96,96 @@ namespace AdGuardTray.Services
                 .GetNetworkInfoAsync();
         }
 
+        public async Task<List<WifiRadioInfo>> GetWifiRadiosAsync()
+        {
+            string output = await _ssh.RunCommandAsync(
+                "for i in $(iwinfo 2>/dev/null | awk '/ESSID:/ {print $1}'); do " +
+                "info=$(iwinfo $i info 2>/dev/null); " +
+                "ssid=$(printf '%s\n' \"$info\" | sed -n 's/.*ESSID: \"\(.*\)\"/\1/p' | head -1); " +
+                "ch=$(printf '%s\n' \"$info\" | sed -n 's/.*Channel: \([0-9][0-9]*\).*/\1/p' | head -1); " +
+                "freq=$(printf '%s\n' \"$info\" | sed -n 's/.*Frequency: \([0-9.]*\) GHz.*/\1/p' | head -1); " +
+                "clients=$(iwinfo $i assoclist 2>/dev/null | grep -c '^[0-9A-Fa-f][0-9A-Fa-f]:' || true); " +
+                "[ -n \"$ssid\" ] || ssid='Hidden / disabled'; " +
+                "printf '%s|%s|%s|%s|%s\n' \"$i\" \"$ssid\" \"$freq\" \"$ch\" \"$clients\"; done");
+
+            var radios = new List<WifiRadioInfo>();
+            foreach (string line in output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                string[] parts = line.Split('|');
+                if (parts.Length < 5) continue;
+                string frequency = parts[2].Trim();
+                radios.Add(new WifiRadioInfo
+                {
+                    Radio = parts[0].Trim(),
+                    Ssid = parts[1].Trim(),
+                    Band = frequency.StartsWith("2") ? "2.4 GHz" : frequency.StartsWith("5") ? "5 GHz" : frequency.StartsWith("6") ? "6 GHz" : frequency + " GHz",
+                    Channel = string.IsNullOrWhiteSpace(parts[3]) ? "-" : parts[3].Trim(),
+                    ClientCount = int.TryParse(parts[4].Trim(), out int count) ? count : 0,
+                    Status = parts[1].Contains("disabled", StringComparison.OrdinalIgnoreCase) ? "Disabled" : "Online"
+                });
+            }
+            return radios;
+        }
+
+        public async Task<string> RestartWifiAsync()
+        {
+            string result = await _ssh.RunCommandAsync("wifi reload >/tmp/adguardtray_wifi_reload.log 2>&1; rc=$?; echo $rc");
+            return result.Trim().EndsWith("0", StringComparison.Ordinal)
+                ? "Wi-Fi restart requested successfully."
+                : "The router could not restart Wi-Fi.";
+        }
+
+        public async Task<string> RestartWanAsync()
+        {
+            string result = await _ssh.RunCommandAsync("ifdown wan >/dev/null 2>&1; sleep 2; ifup wan >/dev/null 2>&1; echo $?");
+            return result.Trim().EndsWith("0", StringComparison.Ordinal)
+                ? "WAN reconnect requested successfully."
+                : "The router could not reconnect WAN.";
+        }
+
+        public async Task<NetworkTrafficSnapshot>
+            GetNetworkTrafficSnapshotAsync()
+        {
+            // Resolve the physical device used by the logical WAN interface,
+            // then read the kernel byte counters. The fallbacks cover common
+            // GL.iNet/OpenWrt interface layouts.
+            string output =
+                await _ssh.RunCommandAsync(
+                    "dev=$(ubus call network.interface.wan status 2>/dev/null | jsonfilter -e '@.l3_device' 2>/dev/null); " +
+                    "[ -n \"$dev\" ] || dev=$(ubus call network.interface.wan status 2>/dev/null | jsonfilter -e '@.device' 2>/dev/null); " +
+                    "[ -n \"$dev\" ] || dev=$(ip route show default 2>/dev/null | awk 'NR==1 {print $5}'); " +
+                    "[ -n \"$dev\" ] || dev=eth1; " +
+                    "rx=$(cat /sys/class/net/$dev/statistics/rx_bytes 2>/dev/null || echo 0); " +
+                    "tx=$(cat /sys/class/net/$dev/statistics/tx_bytes 2>/dev/null || echo 0); " +
+                    "printf '%s|%s|%s' \"$dev\" \"$rx\" \"$tx\"");
+
+            string[] parts =
+                output.Trim().Split('|');
+
+            return new NetworkTrafficSnapshot
+            {
+                InterfaceName =
+                    parts.Length > 0 &&
+                    !string.IsNullOrWhiteSpace(parts[0])
+                        ? parts[0].Trim()
+                        : "-",
+
+                ReceivedBytes =
+                    parts.Length > 1 &&
+                    long.TryParse(parts[1].Trim(), out long received)
+                        ? received
+                        : 0,
+
+                TransmittedBytes =
+                    parts.Length > 2 &&
+                    long.TryParse(parts[2].Trim(), out long transmitted)
+                        ? transmitted
+                        : 0,
+
+                CapturedAtUtc = DateTime.UtcNow
+            };
+        }
+
         //
         // AdGuard Status
         //

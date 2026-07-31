@@ -18,6 +18,15 @@ namespace AdGuardTray.Views
         private readonly DashboardViewModel _viewModel;
         private readonly SettingsService _settingsService;
         private readonly DispatcherTimer _refreshTimer;
+        private readonly DispatcherTimer _trafficTimer;
+        private bool _trafficRefreshInProgress;
+
+        private NetworkTrafficSnapshot? _previousTrafficSnapshot;
+        private double _peakDownloadMbps;
+        private double _peakUploadMbps;
+        private double _downloadTotalMbps;
+        private double _uploadTotalMbps;
+        private int _trafficSampleCount;
 
         private readonly Brush _selectedNavigationBackground =
             new SolidColorBrush(
@@ -64,6 +73,17 @@ namespace AdGuardTray.Views
                 await RefreshDashboard();
             };
 
+            _trafficTimer =
+                new DispatcherTimer
+                {
+                    Interval = TimeSpan.FromSeconds(2)
+                };
+
+            _trafficTimer.Tick += async (s, e) =>
+            {
+                await RefreshNetworkTrafficAsync();
+            };
+
             ProtectionStateNotifier.StateChanged +=
                 ProtectionStateNotifier_StateChanged;
         }
@@ -75,6 +95,7 @@ namespace AdGuardTray.Views
             await RefreshDashboard();
 
             _refreshTimer.Start();
+            _trafficTimer.Start();
         }
 
         private async Task RefreshDashboard()
@@ -258,6 +279,11 @@ namespace AdGuardTray.Views
                 _viewModel.Latency =
                     network.Latency;
 
+                List<WifiRadioInfo> wifiRadios =
+                    await router.GetWifiRadiosAsync();
+
+                _viewModel.UpdateWifiRadios(wifiRadios);
+
                 _viewModel.StatusMessage =
                     statistics.TotalQueries < 0
                         ? "Connected - AdGuard statistics unavailable"
@@ -285,6 +311,108 @@ namespace AdGuardTray.Views
                 ShowConnectionError(
                     ex.Message);
             }
+        }
+
+        private async Task RefreshNetworkTrafficAsync()
+        {
+            if (_trafficRefreshInProgress)
+            {
+                return;
+            }
+
+            _trafficRefreshInProgress = true;
+
+            try
+            {
+                AppSettings settings = _settingsService.Load();
+
+                if (string.IsNullOrWhiteSpace(settings.RouterIp) ||
+                    string.IsNullOrWhiteSpace(settings.Username))
+                {
+                    return;
+                }
+
+                string password =
+                    _settingsService.DecryptPassword(
+                        settings.EncryptedPassword);
+
+                var router = new RouterManager(
+                    settings.RouterIp,
+                    settings.Username,
+                    password);
+
+                NetworkTrafficSnapshot snapshot =
+                    await router.GetNetworkTrafficSnapshotAsync();
+
+                UpdateNetworkTraffic(snapshot);
+            }
+            catch
+            {
+                // The main refresh reports connection errors. A missed live
+                // traffic sample should not clear the rest of the dashboard.
+            }
+            finally
+            {
+                _trafficRefreshInProgress = false;
+            }
+        }
+
+        private void UpdateNetworkTraffic(
+            NetworkTrafficSnapshot snapshot)
+        {
+            if (_previousTrafficSnapshot == null)
+            {
+                _previousTrafficSnapshot = snapshot;
+                _viewModel.UpdateNetworkTraffic(
+                    0, 0, 0, 0, 0, 0, snapshot.InterfaceName);
+                return;
+            }
+
+            double elapsedSeconds =
+                Math.Max(
+                    0.25,
+                    (snapshot.CapturedAtUtc -
+                     _previousTrafficSnapshot.CapturedAtUtc)
+                    .TotalSeconds);
+
+            long receivedDelta =
+                Math.Max(
+                    0,
+                    snapshot.ReceivedBytes -
+                    _previousTrafficSnapshot.ReceivedBytes);
+
+            long transmittedDelta =
+                Math.Max(
+                    0,
+                    snapshot.TransmittedBytes -
+                    _previousTrafficSnapshot.TransmittedBytes);
+
+            double downloadMbps =
+                receivedDelta * 8d / elapsedSeconds / 1_000_000d;
+
+            double uploadMbps =
+                transmittedDelta * 8d / elapsedSeconds / 1_000_000d;
+
+            _peakDownloadMbps =
+                Math.Max(_peakDownloadMbps, downloadMbps);
+
+            _peakUploadMbps =
+                Math.Max(_peakUploadMbps, uploadMbps);
+
+            _downloadTotalMbps += downloadMbps;
+            _uploadTotalMbps += uploadMbps;
+            _trafficSampleCount++;
+
+            _viewModel.UpdateNetworkTraffic(
+                downloadMbps,
+                uploadMbps,
+                _peakDownloadMbps,
+                _peakUploadMbps,
+                _downloadTotalMbps / _trafficSampleCount,
+                _uploadTotalMbps / _trafficSampleCount,
+                snapshot.InterfaceName);
+
+            _previousTrafficSnapshot = snapshot;
         }
 
         public Task RefreshNowAsync()
@@ -315,6 +443,8 @@ namespace AdGuardTray.Views
                 return;
             }
 
+            _refreshTimer.Stop();
+            _trafficTimer.Stop();
             base.OnClosing(e);
         }
 
@@ -412,6 +542,14 @@ namespace AdGuardTray.Views
 
             _viewModel.Latency =
                 "-";
+
+            _previousTrafficSnapshot = null;
+            _peakDownloadMbps = 0;
+            _peakUploadMbps = 0;
+            _downloadTotalMbps = 0;
+            _uploadTotalMbps = 0;
+            _trafficSampleCount = 0;
+            _viewModel.ClearNetworkTraffic();
 
             _viewModel.StatusMessage =
                 message;

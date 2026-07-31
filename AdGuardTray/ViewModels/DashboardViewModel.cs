@@ -218,6 +218,71 @@ namespace AdGuardTray.ViewModels
         [ObservableProperty]
         private string latency = "-";
 
+        [ObservableProperty]
+        private string wifi24Ssid = "-";
+
+        [ObservableProperty]
+        private string wifi24Channel = "-";
+
+        [ObservableProperty]
+        private string wifi24Clients = "0 clients";
+
+        [ObservableProperty]
+        private string wifi24Status = "Unavailable";
+
+        [ObservableProperty]
+        private string wifi5Ssid = "-";
+
+        [ObservableProperty]
+        private string wifi5Channel = "-";
+
+        [ObservableProperty]
+        private string wifi5Clients = "0 clients";
+
+        [ObservableProperty]
+        private string wifi5Status = "Unavailable";
+
+        [ObservableProperty]
+        private string wanInterface = "-";
+
+        [ObservableProperty]
+        private string currentDownload = "0 Mbps";
+
+        [ObservableProperty]
+        private string currentUpload = "0 Mbps";
+
+        [ObservableProperty]
+        private string peakDownload = "0 Mbps";
+
+        [ObservableProperty]
+        private string peakUpload = "0 Mbps";
+
+        [ObservableProperty]
+        private string averageDownload = "0 Mbps";
+
+        [ObservableProperty]
+        private string averageUpload = "0 Mbps";
+
+        public ObservableCollection<double> DownloadHistory { get; } = new();
+
+        public ObservableCollection<double> UploadHistory { get; } = new();
+
+        public ISeries[] NetworkTrafficSeries { get; } =
+        {
+            new LineSeries<double>
+            {
+                Name = "Download",
+                GeometrySize = 0,
+                LineSmoothness = 0.35
+            },
+            new LineSeries<double>
+            {
+                Name = "Upload",
+                GeometrySize = 0,
+                LineSmoothness = 0.35
+            }
+        };
+
         public string DnsServer
         {
             get => ExternalDns;
@@ -296,9 +361,100 @@ namespace AdGuardTray.ViewModels
                 : "#C62828";
 
 
+        public void UpdateWifiRadios(IEnumerable<WifiRadioInfo> radios)
+        {
+            WifiRadioInfo? radio24 = radios.FirstOrDefault(r => r.Band.StartsWith("2.4", StringComparison.OrdinalIgnoreCase));
+            WifiRadioInfo? radio5 = radios.FirstOrDefault(r => r.Band.StartsWith("5", StringComparison.OrdinalIgnoreCase));
+
+            Wifi24Ssid = radio24?.Ssid ?? "Not detected";
+            Wifi24Channel = radio24 == null ? "-" : $"Channel {radio24.Channel}";
+            Wifi24Clients = $"{radio24?.ClientCount ?? 0} clients";
+            Wifi24Status = radio24?.Status ?? "Unavailable";
+
+            Wifi5Ssid = radio5?.Ssid ?? "Not detected";
+            Wifi5Channel = radio5 == null ? "-" : $"Channel {radio5.Channel}";
+            Wifi5Clients = $"{radio5?.ClientCount ?? 0} clients";
+            Wifi5Status = radio5?.Status ?? "Unavailable";
+        }
+
         //
         // Collection updates
         //
+
+        public void UpdateNetworkTraffic(
+            double downloadMbps,
+            double uploadMbps,
+            double peakDownloadMbps,
+            double peakUploadMbps,
+            double averageDownloadMbps,
+            double averageUploadMbps,
+            string interfaceName)
+        {
+            WanInterface = string.IsNullOrWhiteSpace(interfaceName)
+                ? "-"
+                : interfaceName;
+
+            CurrentDownload = FormatTrafficRate(downloadMbps);
+            CurrentUpload = FormatTrafficRate(uploadMbps);
+            PeakDownload = FormatTrafficRate(peakDownloadMbps);
+            PeakUpload = FormatTrafficRate(peakUploadMbps);
+            AverageDownload = FormatTrafficRate(averageDownloadMbps);
+            AverageUpload = FormatTrafficRate(averageUploadMbps);
+
+            AddTrafficPoint(DownloadHistory, downloadMbps);
+            AddTrafficPoint(UploadHistory, uploadMbps);
+
+            ((LineSeries<double>)NetworkTrafficSeries[0]).Values =
+                DownloadHistory.ToArray();
+
+            ((LineSeries<double>)NetworkTrafficSeries[1]).Values =
+                UploadHistory.ToArray();
+        }
+
+        public void ClearNetworkTraffic()
+        {
+            WanInterface = "-";
+            CurrentDownload = "0 Mbps";
+            CurrentUpload = "0 Mbps";
+            PeakDownload = "0 Mbps";
+            PeakUpload = "0 Mbps";
+            AverageDownload = "0 Mbps";
+            AverageUpload = "0 Mbps";
+            DownloadHistory.Clear();
+            UploadHistory.Clear();
+
+            ((LineSeries<double>)NetworkTrafficSeries[0]).Values =
+                Array.Empty<double>();
+            ((LineSeries<double>)NetworkTrafficSeries[1]).Values =
+                Array.Empty<double>();
+        }
+
+        private static void AddTrafficPoint(
+            ObservableCollection<double> collection,
+            double value)
+        {
+            collection.Add(Math.Max(0, value));
+
+            while (collection.Count > 60)
+            {
+                collection.RemoveAt(0);
+            }
+        }
+
+        private static string FormatTrafficRate(double megabitsPerSecond)
+        {
+            if (megabitsPerSecond >= 1000)
+            {
+                return $"{megabitsPerSecond / 1000d:0.00} Gbps";
+            }
+
+            if (megabitsPerSecond >= 1)
+            {
+                return $"{megabitsPerSecond:0.0} Mbps";
+            }
+
+            return $"{megabitsPerSecond * 1000d:0} Kbps";
+        }
 
         public void UpdateAdGuardStatistics(
             AdGuardStatistics statistics)

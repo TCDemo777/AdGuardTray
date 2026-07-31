@@ -74,6 +74,121 @@
                 </StackPanel>
             </Grid>
 
+            <!-- Live network activity -->
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock
+                    Style="{StaticResource Text.SectionTitle}"
+                    Text="Live network activity" />
+                <Border
+                    Grid.Column="1"
+                    Background="{DynamicResource Brush.SurfaceMuted}"
+                    BorderBrush="{DynamicResource Brush.Border}"
+                    BorderThickness="1"
+                    Style="{StaticResource Analytics.Badge}">
+                    <TextBlock
+                        FontSize="11"
+                        FontWeight="SemiBold"
+                        Foreground="{DynamicResource Brush.TextSecondary}"
+                        Text="{Binding WanInterface, StringFormat=WAN INTERFACE: {0}}" />
+                </Border>
+            </Grid>
+
+            <WrapPanel Margin="0,0,-12,12">
+                <controls:StatisticCard
+                    Width="250"
+                    Margin="0,0,12,12"
+                    AccentBrush="{DynamicResource Brush.Success}"
+                    IconBackground="{DynamicResource Brush.SuccessSubtle}"
+                    IconGlyph="&#xE896;"
+                    Subtitle="Current inbound WAN rate"
+                    Title="DOWNLOAD"
+                    Value="{Binding CurrentDownload}" />
+
+                <controls:StatisticCard
+                    Width="250"
+                    Margin="0,0,12,12"
+                    AccentBrush="{DynamicResource Brush.Primary}"
+                    IconBackground="{DynamicResource Brush.PrimarySubtle}"
+                    IconGlyph="&#xE898;"
+                    Subtitle="Current outbound WAN rate"
+                    Title="UPLOAD"
+                    Value="{Binding CurrentUpload}" />
+
+                <controls:StatisticCard
+                    Width="250"
+                    Margin="0,0,12,12"
+                    AccentBrush="{DynamicResource Brush.Warning}"
+                    IconBackground="{DynamicResource Brush.WarningSubtle}"
+                    IconGlyph="&#xE9D9;"
+                    Subtitle="Highest download this session"
+                    Title="PEAK DOWNLOAD"
+                    Value="{Binding PeakDownload}" />
+            </WrapPanel>
+
+            <Border
+                MinHeight="300"
+                Margin="0,0,0,20"
+                Style="{StaticResource Card}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="14" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <StackPanel>
+                        <TextBlock
+                            Style="{StaticResource Text.SectionTitle}"
+                            Text="WAN throughput" />
+                        <TextBlock
+                            Margin="0,4,0,0"
+                            Style="{StaticResource Text.Muted}"
+                            Text="Rolling download and upload samples from the router interface" />
+                    </StackPanel>
+
+                    <Border
+                        Grid.Row="2"
+                        Padding="8"
+                        Background="{DynamicResource Brush.SurfaceMuted}"
+                        CornerRadius="10">
+                        <lvc:CartesianChart
+                            MinHeight="210"
+                            Background="Transparent"
+                            Series="{Binding NetworkTrafficSeries}" />
+                    </Border>
+
+                    <Grid Grid.Row="3" Margin="0,14,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource Text.CardCaption}" Text="AVERAGE DOWNLOAD" />
+                            <TextBlock Margin="0,3,0,0" Style="{StaticResource Text.Secondary}" Text="{Binding AverageDownload}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Style="{StaticResource Text.CardCaption}" Text="AVERAGE UPLOAD" />
+                            <TextBlock Margin="0,3,0,0" Style="{StaticResource Text.Secondary}" Text="{Binding AverageUpload}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Style="{StaticResource Text.CardCaption}" Text="PEAK DOWNLOAD" />
+                            <TextBlock Margin="0,3,0,0" Style="{StaticResource Text.Secondary}" Text="{Binding PeakDownload}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="3">
+                            <TextBlock Style="{StaticResource Text.CardCaption}" Text="PEAK UPLOAD" />
+                            <TextBlock Margin="0,3,0,0" Style="{StaticResource Text.Secondary}" Text="{Binding PeakUpload}" />
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </Border>
+
             <!-- Summary -->
             <TextBlock
                 Margin="0,0,0,12"
