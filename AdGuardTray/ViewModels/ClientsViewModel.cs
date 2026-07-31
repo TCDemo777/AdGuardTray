@@ -132,8 +132,12 @@ namespace AdGuardTray.ViewModels
                 List<ClientInfo> clients =
                     await _routerManager.GetAdGuardClientsAsync();
 
+                List<WifiClientInfo> liveClients =
+                    await _routerManager.GetGlClientInventoryAsync();
+
                 foreach (ClientInfo client in clients)
                 {
+                    ApplyLiveConnectionDetails(client, liveClients);
                     EnrichClient(client);
                 }
 
@@ -452,6 +456,37 @@ namespace AdGuardTray.ViewModels
                     ? grouped.ThenByDescending(x => IpSortKey(x.IpAddress))
                     : grouped.ThenBy(x => IpSortKey(x.IpAddress))
             };
+        }
+
+        private static void ApplyLiveConnectionDetails(
+            ClientInfo client,
+            IEnumerable<WifiClientInfo> liveClients)
+        {
+            WifiClientInfo? live = liveClients.FirstOrDefault(item =>
+                (!string.IsNullOrWhiteSpace(client.MacAddress) &&
+                 client.MacAddress != "-" &&
+                 item.MacAddress.Equals(client.MacAddress, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrWhiteSpace(client.IpAddress) &&
+                 client.IpAddress != "-" &&
+                 item.IpAddress.Equals(client.IpAddress, StringComparison.OrdinalIgnoreCase)));
+
+            if (live is null)
+            {
+                return;
+            }
+
+            if (client.MacAddress == "-") client.MacAddress = live.MacAddress;
+            if (client.IpAddress == "-") client.IpAddress = live.IpAddress;
+            if ((client.Name == "-" || client.Name.Equals("Unknown", StringComparison.OrdinalIgnoreCase)) &&
+                !live.Name.Equals("Unknown device", StringComparison.OrdinalIgnoreCase))
+            {
+                client.Name = live.Name;
+            }
+
+            client.ConnectionType = live.Band;
+            client.WifiNetwork = live.Ssid;
+            client.SignalStrength = live.Signal;
+            client.LiveInterface = live.Interface;
         }
 
         private void EnrichClient(ClientInfo client)

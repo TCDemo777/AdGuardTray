@@ -82,45 +82,41 @@
 
         <Border Grid.Row="4" Padding="14" Background="{DynamicResource Brush.Surface}" CornerRadius="10"
                 BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="1.4*"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-
-                <StackPanel>
+            <UniformGrid Columns="4" Rows="2">
+                <StackPanel Margin="0,0,16,12">
                     <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Text="SELECTED CLIENT"/>
                     <TextBlock Margin="0,4,0,0" FontSize="17" FontWeight="Bold"
                                Text="{Binding SelectedClient.Name, TargetNullValue=No client selected}"/>
                 </StackPanel>
-
-                <StackPanel Grid.Column="1">
+                <StackPanel Margin="0,0,16,12">
                     <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Text="IP ADDRESS"/>
-                    <TextBlock Margin="0,4,0,0" FontWeight="SemiBold"
-                               Text="{Binding SelectedClient.IpAddress, TargetNullValue=—}"/>
+                    <TextBlock Margin="0,4,0,0" FontWeight="SemiBold" Text="{Binding SelectedClient.IpAddress, TargetNullValue=—}"/>
                 </StackPanel>
-
-                <StackPanel Grid.Column="2">
+                <StackPanel Margin="0,0,16,12">
                     <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Text="MAC ADDRESS"/>
-                    <TextBlock Margin="0,4,0,0" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
-                               Text="{Binding SelectedClient.MacAddress, TargetNullValue=—}"/>
+                    <TextBlock Margin="0,4,0,0" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Text="{Binding SelectedClient.MacAddress, TargetNullValue=—}"/>
                 </StackPanel>
-
-                <StackPanel Grid.Column="3">
+                <StackPanel Margin="0,0,0,12">
+                    <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Text="CONNECTION"/>
+                    <TextBlock Margin="0,4,0,0" FontWeight="SemiBold" Text="{Binding SelectedClient.ConnectionType, TargetNullValue=—}"/>
+                </StackPanel>
+                <StackPanel Margin="0,0,16,0">
+                    <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Text="WI-FI NETWORK"/>
+                    <TextBlock Margin="0,4,0,0" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Text="{Binding SelectedClient.WifiNetwork, TargetNullValue=—}"/>
+                </StackPanel>
+                <StackPanel Margin="0,0,16,0">
+                    <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Text="SIGNAL"/>
+                    <TextBlock Margin="0,4,0,0" FontWeight="SemiBold" Text="{Binding SelectedClient.SignalStrength, TargetNullValue=—}"/>
+                </StackPanel>
+                <StackPanel Margin="0,0,16,0">
                     <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Text="DEVICE TYPE"/>
-                    <TextBlock Margin="0,4,0,0" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
-                               Text="{Binding SelectedClient.DeviceType, TargetNullValue=—}"/>
+                    <TextBlock Margin="0,4,0,0" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Text="{Binding SelectedClient.DeviceType, TargetNullValue=—}"/>
                 </StackPanel>
-
-                <StackPanel Grid.Column="4">
+                <StackPanel>
                     <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Text="DNS ACTIVITY"/>
-                    <TextBlock Margin="0,4,0,0" FontWeight="SemiBold"
-                               Text="{Binding SelectedClient.TotalQueries, TargetNullValue=—, StringFormat={}{0} queries}"/>
+                    <TextBlock Margin="0,4,0,0" FontWeight="SemiBold" Text="{Binding SelectedClient.TotalQueries, TargetNullValue=—, StringFormat={}{0} queries}"/>
                 </StackPanel>
-            </Grid>
+            </UniformGrid>
         </Border>
 
         <Border Grid.Row="6" Padding="10" Background="{DynamicResource Brush.SurfaceMuted}" CornerRadius="10"

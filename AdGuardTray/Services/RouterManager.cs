@@ -221,7 +221,10 @@ namespace AdGuardTray.Services
                             Name = string.IsNullOrWhiteSpace(name) ? "Unknown device" : name,
                             IpAddress = string.IsNullOrWhiteSpace(ip) ? "-" : ip,
                             MacAddress = mac,
-                            Signal = FormatSignal(signal)
+                            Signal = FormatSignal(signal),
+                            Band = band,
+                            Interface = network.Interface,
+                            Ssid = network.Ssid
                         });
                     }
                 }
@@ -233,6 +236,63 @@ namespace AdGuardTray.Services
             }
 
             return networks;
+        }
+
+        public async Task<List<WifiClientInfo>> GetGlClientInventoryAsync()
+        {
+            string clientJson = await _ssh.RunCommandAsync(
+                "ubus call gl-clients list 2>/dev/null || true");
+
+            var clients = new List<WifiClientInfo>();
+            if (string.IsNullOrWhiteSpace(clientJson))
+            {
+                return clients;
+            }
+
+            try
+            {
+                using JsonDocument document = JsonDocument.Parse(clientJson);
+                foreach (JsonElement client in EnumerateClientObjects(document.RootElement))
+                {
+                    if (!GetFlexibleBoolean(client, "online", true))
+                    {
+                        continue;
+                    }
+
+                    string mac = GetFlexibleString(client, "mac", "macaddr", "mac_address");
+                    if (string.IsNullOrWhiteSpace(mac) || clients.Any(item =>
+                            item.MacAddress.Equals(mac, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        continue;
+                    }
+
+                    string rawInterface = GetFlexibleString(
+                        client, "iface", "interface", "connection", "type");
+                    string band = NormaliseClientBand(rawInterface);
+                    string ssid = GetFlexibleString(client, "ssid", "wifi", "network");
+                    string name = GetFlexibleString(client, "name", "hostname", "host_name");
+                    string ip = GetFlexibleString(client, "ip", "ipaddr", "ip_address");
+                    string signal = GetFlexibleString(client, "signal", "rssi");
+
+                    clients.Add(new WifiClientInfo
+                    {
+                        Name = string.IsNullOrWhiteSpace(name) ? "Unknown device" : name,
+                        IpAddress = string.IsNullOrWhiteSpace(ip) ? "-" : ip,
+                        MacAddress = mac,
+                        Signal = FormatSignal(signal),
+                        Band = string.IsNullOrWhiteSpace(band) ?
+                            (rawInterface.Contains("cable", StringComparison.OrdinalIgnoreCase) ? "Ethernet" : "Unknown") : band,
+                        Interface = string.IsNullOrWhiteSpace(rawInterface) ? "-" : rawInterface,
+                        Ssid = string.IsNullOrWhiteSpace(ssid) ? "-" : ssid
+                    });
+                }
+            }
+            catch (JsonException)
+            {
+                // Return an empty inventory while leaving AdGuard client data usable.
+            }
+
+            return clients;
         }
 
         private static IEnumerable<JsonElement> EnumerateClientObjects(JsonElement element)

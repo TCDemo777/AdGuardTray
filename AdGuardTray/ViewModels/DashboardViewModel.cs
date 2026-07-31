@@ -370,7 +370,8 @@ namespace AdGuardTray.ViewModels
 
             WifiNetworks.Clear();
             foreach (WifiRadioInfo network in networkList
-                         .OrderBy(r => r.Band)
+                         .OrderByDescending(r => r.ClientCount)
+                         .ThenBy(r => r.Band)
                          .ThenBy(r => r.Ssid, StringComparer.OrdinalIgnoreCase))
             {
                 WifiNetworks.Add(network);

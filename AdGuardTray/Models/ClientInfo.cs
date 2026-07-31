@@ -47,6 +47,12 @@ namespace AdGuardTray.Models
         public string HealthColour { get; set; } = "#687386";
         public bool IsFavorite { get; set; }
 
+        // Live connection metadata from the GL.iNet client inventory.
+        public string ConnectionType { get; set; } = "Unknown";
+        public string WifiNetwork { get; set; } = "-";
+        public string SignalStrength { get; set; } = "-";
+        public string LiveInterface { get; set; } = "-";
+
         public string FavoriteGlyph =>
             IsFavorite ? "★" : "☆";
 
