@@ -10,8 +10,8 @@
         WindowStartupLocation="CenterOwner">
     <Window.Resources>
         <Style x:Key="CardStyle" TargetType="Border">
-            <Setter Property="Background" Value="White"/>
-            <Setter Property="BorderBrush" Value="#DDE3EA"/>
+            <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="12"/>
             <Setter Property="Padding" Value="16"/>
@@ -53,6 +53,8 @@
                   PanningMode="VerticalOnly">
         <Grid Margin="22">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="16"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="16"/>
             <RowDefinition Height="Auto"/>
@@ -170,7 +172,58 @@
             </Border>
         </Grid>
 
-        <Grid Grid.Row="4">
+
+        <Border Grid.Row="4" Style="{StaticResource CardStyle}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1.15*"/>
+                    <ColumnDefinition Width="16"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel>
+                    <TextBlock FontSize="18" FontWeight="Bold" Foreground="{DynamicResource Brush.TextPrimary}"
+                               Text="Personalise this client"/>
+                    <TextBlock Margin="0,4,0,14" FontSize="12" TextWrapping="Wrap"
+                               Foreground="{DynamicResource Brush.TextSecondary}"
+                               Text="Set a friendly display name, category and private notes. These details are stored on this PC and matched by MAC address."/>
+
+                    <TextBlock Margin="0,0,0,5" FontSize="11" FontWeight="SemiBold"
+                               Foreground="{DynamicResource Brush.TextSecondary}" Text="DISPLAY NAME"/>
+                    <TextBox Height="36" VerticalContentAlignment="Center"
+                             Text="{Binding ProfileNickname, UpdateSourceTrigger=PropertyChanged}"/>
+
+                    <TextBlock Margin="0,12,0,5" FontSize="11" FontWeight="SemiBold"
+                               Foreground="{DynamicResource Brush.TextSecondary}" Text="DEVICE CATEGORY"/>
+                    <ComboBox Height="36" IsEditable="True"
+                              Text="{Binding ProfileCategory, UpdateSourceTrigger=PropertyChanged}">
+                        <ComboBoxItem Content="Computer"/>
+                        <ComboBoxItem Content="Mobile device"/>
+                        <ComboBoxItem Content="Games console"/>
+                        <ComboBoxItem Content="Media or smart TV"/>
+                        <ComboBoxItem Content="Server or NAS"/>
+                        <ComboBoxItem Content="Printer"/>
+                        <ComboBoxItem Content="Smart home / IoT"/>
+                    </ComboBox>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2">
+                    <TextBlock Margin="0,0,0,5" FontSize="11" FontWeight="SemiBold"
+                               Foreground="{DynamicResource Brush.TextSecondary}" Text="PRIVATE NOTES"/>
+                    <TextBox MinHeight="126" AcceptsReturn="True" TextWrapping="Wrap"
+                             VerticalScrollBarVisibility="Auto"
+                             Text="{Binding ProfileNotes, UpdateSourceTrigger=PropertyChanged}"/>
+                    <WrapPanel Margin="0,12,0,0" HorizontalAlignment="Right">
+                        <Button MinWidth="110" Height="36" Margin="0,0,10,0"
+                                Command="{Binding ClearProfileCommand}" Content="Clear Profile"/>
+                        <Button MinWidth="120" Height="36"
+                                Command="{Binding SaveProfileCommand}" Content="Save Profile"/>
+                    </WrapPanel>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="6">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="16"/>
@@ -411,7 +464,7 @@
             </Border>
         </Grid>
 
-        <TextBlock Grid.Row="5" Margin="2,11,0,0" Foreground="{DynamicResource Brush.TextSecondary}"
+        <TextBlock Grid.Row="7" Margin="2,11,0,0" Foreground="{DynamicResource Brush.TextSecondary}"
                    Text="{Binding StatusMessage}"/>
         </Grid>
     </ScrollViewer>

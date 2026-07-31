@@ -160,7 +160,23 @@ namespace AdGuardTray.Views
                     Owner = Window.GetWindow(this)
                 };
 
-            window.ShowDialog();
+            // Keep the card list stable while the user is viewing or editing
+            // the selected client. Automatic refresh resumes when the details
+            // window closes.
+            bool resumeRefresh = _refreshTimer.IsEnabled;
+            _refreshTimer.Stop();
+
+            try
+            {
+                window.ShowDialog();
+            }
+            finally
+            {
+                if (resumeRefresh && IsLoaded)
+                {
+                    _refreshTimer.Start();
+                }
+            }
         }
     }
 }

@@ -15,6 +15,8 @@ namespace AdGuardTray.ViewModels
     public partial class ClientDetailsViewModel : ObservableObject
     {
         private readonly SettingsService _settingsService;
+        private readonly ClientProfileService _clientProfileService;
+        private readonly Dictionary<string, ClientProfile> _clientProfiles;
         private readonly DispatcherTimer _refreshTimer;
         private readonly ClientInfo _client;
 
@@ -29,7 +31,10 @@ namespace AdGuardTray.ViewModels
         public ObservableCollection<DomainStat> TopBlockedDomains { get; } =
             new();
 
-        public string ClientName => _client.Name;
+        public string ClientName =>
+            string.IsNullOrWhiteSpace(ProfileNickname)
+                ? _client.Name
+                : ProfileNickname;
         public string IpAddress => _client.IpAddress;
         public string MacAddress => _client.MacAddress;
         public string LastSeen => _client.LastSeen;
@@ -51,6 +56,15 @@ namespace AdGuardTray.ViewModels
         [ObservableProperty]
         private bool isPaused;
 
+        [ObservableProperty]
+        private string profileNickname = string.Empty;
+
+        [ObservableProperty]
+        private string profileCategory = string.Empty;
+
+        [ObservableProperty]
+        private string profileNotes = string.Empty;
+
         public string PauseButtonText =>
             IsPaused ? "Resume" : "Pause";
 
@@ -59,6 +73,10 @@ namespace AdGuardTray.ViewModels
         {
             _client = client;
             _settingsService = new SettingsService();
+            _clientProfileService = new ClientProfileService();
+            _clientProfiles = _clientProfileService.Load();
+
+            LoadProfile();
 
             _refreshTimer =
                 new DispatcherTimer
@@ -149,6 +167,104 @@ namespace AdGuardTray.ViewModels
             {
                 IsLoading = false;
             }
+        }
+
+
+        [RelayCommand]
+        private void SaveProfile()
+        {
+            string key = ClientKey(_client);
+            if (!_clientProfiles.TryGetValue(key, out ClientProfile? profile))
+            {
+                profile = new ClientProfile
+                {
+                    Key = key,
+                    FirstSeenUtc = _client.FirstSeenUtc == default
+                        ? DateTime.UtcNow
+                        : _client.FirstSeenUtc
+                };
+                _clientProfiles[key] = profile;
+            }
+
+            profile.Nickname = ProfileNickname.Trim();
+            profile.Category = ProfileCategory.Trim();
+            profile.Notes = ProfileNotes.Trim();
+            profile.IsFavorite = _client.IsFavorite;
+            profile.LastSeenUtc = DateTime.UtcNow;
+
+            _clientProfileService.Save(_clientProfiles.Values);
+
+            if (!string.IsNullOrWhiteSpace(profile.Nickname))
+            {
+                _client.Name = profile.Nickname;
+            }
+
+            _client.CustomCategory = profile.Category;
+            _client.Notes = profile.Notes;
+
+            OnPropertyChanged(nameof(ClientName));
+            ClientRefreshNotifier.RequestRefresh();
+            StatusMessage = $"Profile saved for {ClientName}.";
+        }
+
+        [RelayCommand]
+        private void ClearProfile()
+        {
+            string key = ClientKey(_client);
+            bool wasFavorite = _client.IsFavorite;
+
+            _clientProfiles.Remove(key);
+            if (wasFavorite)
+            {
+                _clientProfiles[key] = new ClientProfile
+                {
+                    Key = key,
+                    IsFavorite = true,
+                    FirstSeenUtc = _client.FirstSeenUtc == default
+                        ? DateTime.UtcNow
+                        : _client.FirstSeenUtc,
+                    LastSeenUtc = DateTime.UtcNow
+                };
+            }
+
+            ProfileNickname = string.Empty;
+            ProfileCategory = string.Empty;
+            ProfileNotes = string.Empty;
+            _client.CustomCategory = string.Empty;
+            _client.Notes = string.Empty;
+
+            _clientProfileService.Save(_clientProfiles.Values);
+            OnPropertyChanged(nameof(ClientName));
+            ClientRefreshNotifier.RequestRefresh();
+            StatusMessage = "Custom client profile cleared.";
+        }
+
+        private void LoadProfile()
+        {
+            string key = ClientKey(_client);
+            if (!_clientProfiles.TryGetValue(key, out ClientProfile? profile))
+            {
+                return;
+            }
+
+            ProfileNickname = profile.Nickname;
+            ProfileCategory = profile.Category;
+            ProfileNotes = profile.Notes;
+        }
+
+        private static string ClientKey(ClientInfo client)
+        {
+            if (!string.IsNullOrWhiteSpace(client.MacAddress) &&
+                client.MacAddress != "-")
+            {
+                return new string(
+                    client.MacAddress
+                        .Where(char.IsLetterOrDigit)
+                        .Select(char.ToUpperInvariant)
+                        .ToArray());
+            }
+
+            return client.IpAddress.Trim();
         }
 
         [RelayCommand]
