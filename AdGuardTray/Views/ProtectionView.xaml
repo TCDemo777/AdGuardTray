@@ -390,8 +390,7 @@
                                           VerticalScrollBarVisibility="Auto"
                                           CanContentScroll="False"
                                           PanningMode="VerticalOnly">
-                                <ListBox Width="Auto"
-                                         HorizontalAlignment="Left"
+                                <ListBox HorizontalAlignment="Stretch"
                                          ItemsSource="{Binding BlockedServicesView}"
                                          Padding="0"
                                          BorderThickness="0"
@@ -403,16 +402,12 @@
                                          VirtualizingPanel.IsVirtualizing="False">
                                     <ListBox.ItemsPanel>
                                         <ItemsPanelTemplate>
-                                            <WrapPanel
-                                                       Orientation="Horizontal"
-                                                       ItemWidth="250"
-                                                       ItemHeight="46"/>
+                                            <UniformGrid Columns="3"/>
                                         </ItemsPanelTemplate>
                                     </ListBox.ItemsPanel>
 
                                     <ListBox.ItemContainerStyle>
                                         <Style TargetType="ListBoxItem">
-                                            <Setter Property="Width" Value="250"/>
                                             <Setter Property="Height" Value="46"/>
                                             <Setter Property="Padding" Value="0"/>
                                             <Setter Property="Margin" Value="0"/>
@@ -431,8 +426,7 @@
 
                                     <ListBox.ItemTemplate>
                                         <DataTemplate>
-                                            <Border Width="244"
-                                                    Height="40"
+                                            <Border Height="40"
                                                     Margin="3"
                                                     Padding="10,6"
                                                     Background="{DynamicResource Brush.Surface}"
