@@ -80,36 +80,83 @@
             </Grid>
         </Border>
 
-        <Border Grid.Row="4" Padding="14" Background="{DynamicResource Brush.Surface}" CornerRadius="10"
-                BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
-            <UniformGrid Columns="4" Rows="2">
-                <StackPanel Margin="0,0,16,12">
-                    <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Text="SELECTED CLIENT"/>
-                    <TextBlock Margin="0,4,0,0" FontSize="17" FontWeight="Bold"
-                               Text="{Binding SelectedClient.Name, TargetNullValue=No client selected}"/>
-                </StackPanel>
-                <StackPanel Margin="0,0,16,12">
-                    <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Text="IP ADDRESS"/>
-                    <TextBlock Margin="0,4,0,0" FontWeight="SemiBold" Text="{Binding SelectedClient.IpAddress, TargetNullValue=—}"/>
-                </StackPanel>
-                <StackPanel Margin="0,0,16,12">
-                    <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Text="MAC ADDRESS"/>
-                    <TextBlock Margin="0,4,0,0" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Text="{Binding SelectedClient.MacAddress, TargetNullValue=—}"/>
-                </StackPanel>
-                <StackPanel Margin="0,0,0,12">
-                    <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Text="CONNECTION"/>
-                    <TextBlock Margin="0,4,0,0" FontWeight="SemiBold" Text="{Binding SelectedClient.ConnectionType, TargetNullValue=—}"/>
-                </StackPanel>
-                <StackPanel Margin="0,0,16,0">
-                    <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Text="DEVICE TYPE"/>
-                    <TextBlock Margin="0,4,0,0" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Text="{Binding SelectedClient.DeviceType, TargetNullValue=—}"/>
-                </StackPanel>
-                <StackPanel>
-                    <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Text="DNS ACTIVITY"/>
-                    <TextBlock Margin="0,4,0,0" FontWeight="SemiBold" Text="{Binding SelectedClient.TotalQueries, TargetNullValue=—, StringFormat={}{0} queries}"/>
-                </StackPanel>
-            </UniformGrid>
-        </Border>
+        <Grid Grid.Row="4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="3*"/>
+                <ColumnDefinition Width="12"/>
+                <ColumnDefinition Width="2*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Padding="14" Background="{DynamicResource Brush.Surface}" CornerRadius="10"
+                    BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
+                <UniformGrid Columns="3" Rows="2">
+                    <StackPanel Margin="0,0,16,12">
+                        <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Text="SELECTED CLIENT"/>
+                        <TextBlock Margin="0,4,0,0" FontSize="17" FontWeight="Bold"
+                                   Text="{Binding SelectedClient.Name, TargetNullValue=No client selected}"/>
+                    </StackPanel>
+                    <StackPanel Margin="0,0,16,12">
+                        <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Text="IP ADDRESS"/>
+                        <TextBlock Margin="0,4,0,0" FontWeight="SemiBold" Text="{Binding SelectedClient.IpAddress, TargetNullValue=—}"/>
+                    </StackPanel>
+                    <StackPanel Margin="0,0,0,12">
+                        <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Text="MAC ADDRESS"/>
+                        <TextBlock Margin="0,4,0,0" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Text="{Binding SelectedClient.MacAddress, TargetNullValue=—}"/>
+                    </StackPanel>
+                    <StackPanel Margin="0,0,16,0">
+                        <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Text="CONNECTION"/>
+                        <TextBlock Margin="0,4,0,0" FontWeight="SemiBold" Text="{Binding SelectedClient.ConnectionType, TargetNullValue=—}"/>
+                    </StackPanel>
+                    <StackPanel Margin="0,0,16,0">
+                        <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Text="DEVICE TYPE"/>
+                        <TextBlock Margin="0,4,0,0" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Text="{Binding SelectedClient.DeviceType, TargetNullValue=—}"/>
+                    </StackPanel>
+                    <StackPanel>
+                        <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Text="DNS ACTIVITY"/>
+                        <TextBlock Margin="0,4,0,0" FontWeight="SemiBold" Text="{Binding SelectedClient.TotalQueries, TargetNullValue=—, StringFormat={}{0} queries}"/>
+                    </StackPanel>
+                </UniformGrid>
+            </Border>
+
+            <Border Grid.Column="2" Padding="14" Background="{DynamicResource Brush.Surface}" CornerRadius="10"
+                    BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="8"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <StackPanel>
+                        <TextBlock FontSize="15" FontWeight="Bold" Text="Recent Activity"/>
+                        <TextBlock Margin="0,3,0,0" FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}"
+                                   Text="DNS changes and connectivity actions from this session"/>
+                    </StackPanel>
+                    <ListBox Grid.Row="2" ItemsSource="{Binding SelectedClientActivity}"
+                             BorderThickness="0" Background="Transparent"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="52"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock FontSize="11" Foreground="{DynamicResource Brush.TextSecondary}"
+                                               Text="{Binding TimeDisplay}"/>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock FontWeight="SemiBold" Text="{Binding Summary}"/>
+                                        <TextBlock Margin="0,2,0,0" FontSize="11"
+                                                   Foreground="{DynamicResource Brush.TextSecondary}"
+                                                   TextTrimming="CharacterEllipsis" ToolTip="{Binding Detail}"
+                                                   Text="{Binding Detail}"/>
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
+        </Grid>
 
         <Border Grid.Row="6" Padding="10" Background="{DynamicResource Brush.SurfaceMuted}" CornerRadius="10"
                 BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">

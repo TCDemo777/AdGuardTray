@@ -23,8 +23,13 @@ namespace AdGuardTray.ViewModels
         private RouterManager? _routerManager;
         private readonly Dictionary<string, WifiClientInfo> _liveClientLookup =
             new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, List<ClientActivityItem>> _clientActivityHistory =
+            new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, (int Total, int Blocked)> _lastActivityTotals =
+            new(StringComparer.OrdinalIgnoreCase);
 
         public ObservableCollection<ClientInfo> Clients { get; } = new();
+        public ObservableCollection<ClientActivityItem> SelectedClientActivity { get; } = new();
 
         public IReadOnlyList<string> SortOptions { get; } =
             new[]
@@ -192,6 +197,7 @@ namespace AdGuardTray.ViewModels
                 {
                     ApplyLiveConnectionDetails(client, liveClients);
                     EnrichClient(client);
+                    RecordActivitySnapshot(client);
                 }
 
                 _allClients.Clear();
@@ -279,6 +285,11 @@ namespace AdGuardTray.ViewModels
             {
                 PingResult = await _routerManager.PingClientAsync(
                     SelectedClient.IpAddress);
+                AddActivityEvent(
+                    SelectedClient,
+                    "Ping",
+                    "Connectivity check completed",
+                    PingResult);
             }
             catch (Exception ex)
             {
@@ -318,6 +329,11 @@ namespace AdGuardTray.ViewModels
             {
                 PingResult = await _routerManager.WakeClientAsync(
                     SelectedClient.MacAddress);
+                AddActivityEvent(
+                    SelectedClient,
+                    "Wake",
+                    "Wake-on-LAN request sent",
+                    PingResult);
             }
             catch (Exception ex)
             {
@@ -344,6 +360,133 @@ namespace AdGuardTray.ViewModels
                 : $"Ready to ping or wake {value.Name} ({value.IpAddress}).";
 
             UpdateSelectedClientConnectionDetails(value);
+            LoadSelectedClientActivity(value);
+        }
+
+        private async Task RefreshSelectedClientWifiDetailsAsync(ClientInfo? client)
+        {
+            if (client is null || _routerManager is null)
+            {
+                return;
+            }
+
+            string selectionKey = ClientKey(client);
+            SelectedClientWifiNetwork = "Looking up…";
+            SelectedClientSignal = "Looking up…";
+
+            try
+            {
+                WifiClientInfo? live = await _routerManager.GetWifiClientDetailsAsync(
+                    client.MacAddress,
+                    client.IpAddress);
+
+                if (SelectedClient is null ||
+                    !ClientKey(SelectedClient).Equals(selectionKey, StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+
+                SelectedClientWifiNetwork = live is not null && HasUsefulValue(live.Ssid)
+                    ? live.Ssid
+                    : HasUsefulValue(client.WifiNetwork) ? client.WifiNetwork : "—";
+
+                SelectedClientSignal = live is not null && HasUsefulValue(live.Signal)
+                    ? live.Signal
+                    : HasUsefulValue(client.SignalStrength) ? client.SignalStrength : "Not reported";
+            }
+            catch
+            {
+                if (SelectedClient is not null &&
+                    ClientKey(SelectedClient).Equals(selectionKey, StringComparison.OrdinalIgnoreCase))
+                {
+                    UpdateSelectedClientConnectionDetails(client);
+                }
+            }
+        }
+
+        private void RecordActivitySnapshot(ClientInfo client)
+        {
+            string key = ClientKey(client);
+            var current = (client.TotalQueries, client.BlockedQueries);
+
+            if (_lastActivityTotals.TryGetValue(key, out var previous))
+            {
+                int queryDelta = Math.Max(0, current.TotalQueries - previous.Total);
+                int blockedDelta = Math.Max(0, current.BlockedQueries - previous.Blocked);
+
+                if (queryDelta > 0 || blockedDelta > 0)
+                {
+                    AddActivityEvent(
+                        client,
+                        "DNS",
+                        $"+{queryDelta} queries · +{blockedDelta} blocked",
+                        $"Totals: {current.TotalQueries} queries, {current.BlockedQueries} blocked");
+                }
+            }
+            else
+            {
+                AddActivityEvent(
+                    client,
+                    "Snapshot",
+                    "Client activity loaded",
+                    $"{current.TotalQueries} queries · {current.BlockedQueries} blocked");
+            }
+
+            _lastActivityTotals[key] = current;
+        }
+
+        private void AddActivityEvent(
+            ClientInfo client,
+            string eventType,
+            string summary,
+            string detail)
+        {
+            string key = ClientKey(client);
+            if (!_clientActivityHistory.TryGetValue(key, out List<ClientActivityItem>? history))
+            {
+                history = new List<ClientActivityItem>();
+                _clientActivityHistory[key] = history;
+            }
+
+            history.Insert(0, new ClientActivityItem
+            {
+                Timestamp = DateTime.Now,
+                EventType = eventType,
+                Summary = summary,
+                Detail = detail
+            });
+
+            if (history.Count > 20)
+            {
+                history.RemoveRange(20, history.Count - 20);
+            }
+
+            if (SelectedClient is not null &&
+                ClientKey(SelectedClient).Equals(key, StringComparison.OrdinalIgnoreCase))
+            {
+                LoadSelectedClientActivity(SelectedClient);
+            }
+        }
+
+        private void LoadSelectedClientActivity(ClientInfo? client)
+        {
+            SelectedClientActivity.Clear();
+
+            if (client is null)
+            {
+                return;
+            }
+
+            string key = ClientKey(client);
+            if (!_clientActivityHistory.TryGetValue(key, out List<ClientActivityItem>? history))
+            {
+                return;
+            }
+
+            foreach (ClientActivityItem item in history.Take(8))
+            {
+                SelectedClientActivity.Add(item);
+            }
         }
 
         partial void OnSearchTextChanged(string value)
@@ -567,14 +710,10 @@ namespace AdGuardTray.ViewModels
                     }
                 }
 
-                if (HasUsefulValue(live.Name) &&
-                    !live.Name.Equals("Unknown device", StringComparison.OrdinalIgnoreCase))
+                string nameKey = NormaliseClientName(live.Name);
+                if (nameKey.Length > 0 && !_liveClientLookup.ContainsKey("name:" + nameKey))
                 {
-                    string nameKey = "name:" + NormaliseName(live.Name);
-                    if (nameKey.Length > 5 && !_liveClientLookup.ContainsKey(nameKey))
-                    {
-                        _liveClientLookup[nameKey] = live;
-                    }
+                    _liveClientLookup["name:" + nameKey] = live;
                 }
             }
 
@@ -602,22 +741,22 @@ namespace AdGuardTray.ViewModels
                 _liveClientLookup.TryGetValue("ip:" + client.IpAddress.Trim(), out live);
             }
 
-            if (live is null && HasUsefulValue(client.Name))
+            if (live is null)
             {
-                _liveClientLookup.TryGetValue("name:" + NormaliseName(client.Name), out live);
+                string nameKey = NormaliseClientName(client.Name);
+                if (nameKey.Length > 0)
+                {
+                    _liveClientLookup.TryGetValue("name:" + nameKey, out live);
+                }
             }
 
-            // The ClientInfo instance is enriched during LoadClientsAsync from
-            // the same per-SSID records used by the Network tab. Prefer those
-            // values, then use the cache as a fallback. No second router query
-            // is allowed to overwrite the working mapping after selection.
-            SelectedClientWifiNetwork = HasUsefulValue(client.WifiNetwork)
-                ? client.WifiNetwork
-                : live is not null && HasUsefulValue(live.Ssid) ? live.Ssid : "—";
+            SelectedClientWifiNetwork = live is not null && HasUsefulValue(live.Ssid)
+                ? live.Ssid
+                : HasUsefulValue(client.WifiNetwork) ? client.WifiNetwork : "—";
 
-            SelectedClientSignal = HasUsefulValue(client.SignalStrength)
-                ? client.SignalStrength
-                : live is not null && HasUsefulValue(live.Signal) ? live.Signal : "Not reported";
+            SelectedClientSignal = live is not null && HasUsefulValue(live.Signal)
+                ? live.Signal
+                : HasUsefulValue(client.SignalStrength) ? client.SignalStrength : "—";
         }
 
         private static void ApplyLiveConnectionDetails(
@@ -645,7 +784,14 @@ namespace AdGuardTray.ViewModels
                             client.IpAddress,
                             StringComparison.OrdinalIgnoreCase);
 
-                    return macMatches || ipMatches;
+                    string clientName = NormaliseClientName(client.Name);
+                    string liveName = NormaliseClientName(item.Name);
+                    bool nameMatches =
+                        clientName.Length > 0 &&
+                        liveName.Length > 0 &&
+                        clientName.Equals(liveName, StringComparison.OrdinalIgnoreCase);
+
+                    return macMatches || ipMatches || nameMatches;
                 })
                 // Prefer the per-SSID record used by the Network tab over the
                 // more limited GL.iNet inventory fallback.
@@ -687,9 +833,12 @@ namespace AdGuardTray.ViewModels
                 .ToArray());
         }
 
-        private static string NormaliseName(string? value)
+        private static string NormaliseClientName(string? value)
         {
-            if (string.IsNullOrWhiteSpace(value))
+            if (string.IsNullOrWhiteSpace(value) ||
+                value == "-" ||
+                value.Equals("Unknown", StringComparison.OrdinalIgnoreCase) ||
+                value.Equals("Unknown device", StringComparison.OrdinalIgnoreCase))
             {
                 return string.Empty;
             }
