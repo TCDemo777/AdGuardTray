@@ -2,9 +2,7 @@
     x:Class="AdGuardTray.Views.OverviewView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:controls="clr-namespace:AdGuardTray.Controls"
-    Background="{DynamicResource Brush.WindowBackground}"
-    Foreground="{DynamicResource Brush.TextPrimary}">
+    xmlns:controls="clr-namespace:AdGuardTray.Controls">
 
     <UserControl.Resources>
         <Style x:Key="Overview.DetailLabel" TargetType="TextBlock" BasedOn="{StaticResource Text.Secondary}">
@@ -30,8 +28,8 @@
 
         <Style x:Key="Overview.StatusBadge" TargetType="Border">
             <Setter Property="Padding" Value="10,5" />
-            <Setter Property="Background" Value="{DynamicResource Brush.SurfaceMuted}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}" />
+            <Setter Property="Background" Value="{StaticResource Brush.SurfaceMuted}" />
+            <Setter Property="BorderBrush" Value="{StaticResource Brush.Border}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="12" />
             <Setter Property="VerticalAlignment" Value="Center" />
@@ -42,7 +40,7 @@
         </Style>
     </UserControl.Resources>
 
-    <ScrollViewer Background="{DynamicResource Brush.WindowBackground}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="0,0,6,24">
 
             <!-- Page heading -->
@@ -202,7 +200,7 @@
                                         VerticalAlignment="Center"
                                         FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
                                         FontSize="18"
-                                        Foreground="{DynamicResource Brush.Primary}"
+                                        Foreground="{StaticResource Brush.Primary}"
                                         Text="&#xE968;" />
                                 </Border>
                                 <TextBlock
@@ -256,6 +254,24 @@
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Style="{StaticResource Overview.DetailLabel}" Text="Uptime" />
                                 <TextBlock Grid.Column="1" Style="{StaticResource Overview.DetailValue}" Text="{Binding Uptime}" />
+                            </Grid>
+
+                            <Grid Style="{StaticResource Overview.DetailRow}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Style="{StaticResource Overview.DetailLabel}" Text="Temperature" />
+                                <TextBlock Grid.Column="1" Style="{StaticResource Overview.DetailValue}" Text="{Binding Temperature}" />
+                            </Grid>
+
+                            <Grid Style="{StaticResource Overview.DetailRow}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Style="{StaticResource Overview.DetailLabel}" Text="Load average" />
+                                <TextBlock Grid.Column="1" Style="{StaticResource Overview.DetailValue}" Text="{Binding LoadAverage}" />
                             </Grid>
 
                             <Separator />
@@ -340,7 +356,7 @@
                                         VerticalAlignment="Center"
                                         FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
                                         FontSize="18"
-                                        Foreground="{DynamicResource Brush.Success}"
+                                        Foreground="{StaticResource Brush.Success}"
                                         Text="&#xE72E;" />
                                 </Border>
                                 <TextBlock
@@ -428,7 +444,7 @@
                                 <TextBlock
                                     Grid.Column="1"
                                     Style="{StaticResource Overview.DetailValue}"
-                                    Foreground="{DynamicResource Brush.Danger}"
+                                    Foreground="{StaticResource Brush.Danger}"
                                     Text="{Binding AdGuardBlocked}" />
                             </Grid>
 
@@ -476,7 +492,7 @@
                                         VerticalAlignment="Center"
                                         FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
                                         FontSize="18"
-                                        Foreground="{DynamicResource Brush.Primary}"
+                                        Foreground="{StaticResource Brush.Primary}"
                                         Text="&#xE774;" />
                                 </Border>
                                 <TextBlock

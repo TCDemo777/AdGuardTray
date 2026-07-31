@@ -136,6 +136,12 @@ namespace AdGuardTray.Views
                 _viewModel.CpuUsage =
                     info.CpuUsage;
 
+                _viewModel.Temperature =
+                    info.Temperature;
+
+                _viewModel.LoadAverage =
+                    info.LoadAverage;
+
                 _viewModel.MemoryUsage =
                     info.MemoryUsage;
 
@@ -357,6 +363,12 @@ namespace AdGuardTray.Views
                 "-";
 
             _viewModel.Uptime =
+                "-";
+
+            _viewModel.Temperature =
+                "-";
+
+            _viewModel.LoadAverage =
                 "-";
 
             _viewModel.CpuUsage =

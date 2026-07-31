@@ -12,6 +12,10 @@ namespace AdGuardTray.Models
 
         public string CpuUsage { get; set; } = "-";
 
+        public string Temperature { get; set; } = "-";
+
+        public string LoadAverage { get; set; } = "-";
+
         public string MemoryUsage { get; set; } = "-";
 
         public string MemoryUsed { get; set; } = "-";

@@ -176,6 +176,53 @@ namespace AdGuardTray.Services
             }
 
 
+            //
+            // Temperature and system load
+            //
+
+            try
+            {
+                string temperature =
+                    await _ssh.RunCommandAsync(
+                        "for f in /sys/class/thermal/thermal_zone*/temp; do [ -r \"$f\" ] && cat \"$f\" && break; done");
+
+                if (double.TryParse(
+                    temperature.Trim(),
+                    System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    out double rawTemperature))
+                {
+                    double celsius =
+                        rawTemperature > 1000
+                            ? rawTemperature / 1000d
+                            : rawTemperature;
+
+                    info.Temperature =
+                        $"{celsius:0.#} °C";
+                }
+            }
+            catch
+            {
+                info.Temperature = "-";
+            }
+
+            try
+            {
+                string loadAverage =
+                    await _ssh.RunCommandAsync(
+                        "awk '{print $1 \" / \" $2 \" / \" $3}' /proc/loadavg");
+
+                info.LoadAverage =
+                    string.IsNullOrWhiteSpace(loadAverage)
+                        ? "-"
+                        : loadAverage.Trim();
+            }
+            catch
+            {
+                info.LoadAverage = "-";
+            }
+
+
 
             //
             // Memory

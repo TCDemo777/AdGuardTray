@@ -34,6 +34,12 @@ namespace AdGuardTray.ViewModels
         private string cpuUsage = "-";
 
         [ObservableProperty]
+        private string temperature = "-";
+
+        [ObservableProperty]
+        private string loadAverage = "-";
+
+        [ObservableProperty]
         private double cpuPercentage;
 
         [ObservableProperty]

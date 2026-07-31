@@ -175,6 +175,65 @@
                     </Border>
                 </Grid>
 
+                <!-- Live AdGuard statistics -->
+                <Grid Margin="0,0,0,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="1.35*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0" Style="{DynamicResource Card.Compact}">
+                        <StackPanel>
+                            <TextBlock Style="{DynamicResource Text.CardCaption}" Text="DNS QUERIES"/>
+                            <TextBlock Margin="0,8,0,0" FontSize="22" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource Brush.TextPrimary}"
+                                       Text="{Binding TotalQueriesText}"/>
+                            <TextBlock Margin="0,5,0,0" Style="{DynamicResource Text.Muted}"
+                                       Text="Current AdGuard statistics window"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="2" Style="{DynamicResource Card.Compact}">
+                        <StackPanel>
+                            <TextBlock Style="{DynamicResource Text.CardCaption}" Text="BLOCKED QUERIES"/>
+                            <TextBlock Margin="0,8,0,0" FontSize="22" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource Brush.TextPrimary}"
+                                       Text="{Binding BlockedQueriesText}"/>
+                            <TextBlock Margin="0,5,0,0" Style="{DynamicResource Text.Muted}"
+                                       Text="Ads, trackers and threats blocked"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="4" Style="{DynamicResource Card.Compact}">
+                        <StackPanel>
+                            <TextBlock Style="{DynamicResource Text.CardCaption}" Text="BLOCK RATE"/>
+                            <TextBlock Margin="0,8,0,0" FontSize="22" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource Brush.TextPrimary}"
+                                       Text="{Binding BlockPercentageText}"/>
+                            <TextBlock Margin="0,5,0,0" Style="{DynamicResource Text.Muted}"
+                                       Text="Percentage of queries blocked"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="6" Style="{DynamicResource Card.Compact}">
+                        <StackPanel>
+                            <TextBlock Style="{DynamicResource Text.CardCaption}" Text="TOP BLOCKED DOMAIN"/>
+                            <TextBlock Margin="0,8,0,0" FontSize="17" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource Brush.TextPrimary}"
+                                       TextTrimming="CharacterEllipsis"
+                                       ToolTip="{Binding TopBlockedDomain}"
+                                       Text="{Binding TopBlockedDomain}"/>
+                            <TextBlock Margin="0,5,0,0" Style="{DynamicResource Text.Muted}"
+                                       Text="Most frequently blocked domain"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
                 <!-- Status and options -->
                 <Grid Margin="0,0,0,16">
                     <Grid.ColumnDefinitions>

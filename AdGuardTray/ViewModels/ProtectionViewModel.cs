@@ -43,11 +43,16 @@ namespace AdGuardTray.ViewModels
         private DnsRewriteRule? _selectedRewrite;
         private AdGuardProtectionOptions _options = new();
         private AdGuardBlockedServicesConfig _blockedConfig = new();
+        private int _statisticsRefreshTick;
+        private string _totalQueriesText = "—";
+        private string _blockedQueriesText = "—";
+        private string _blockPercentageText = "—";
+        private string _topBlockedDomain = "No blocked domains yet";
 
         public ProtectionViewModel()
         {
             _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
-            _timer.Tick += async (_, _) => await RefreshProtectionStatusAsync(false);
+            _timer.Tick += async (_, _) => await RefreshTimedDataAsync();
 
             RefreshAllCommand = new AsyncRelayCommand(RefreshAllAsync, () => !IsBusy);
             EnableProtectionCommand = new AsyncRelayCommand(() => RunStatusActionAsync("Enabling protection...", "Protection enabled.", r => r.EnableProtectionAsync()), () => !IsBusy);
@@ -103,6 +108,10 @@ namespace AdGuardTray.ViewModels
         }
         public string BlockedServicesSelectionSummary => $"{BlockedServices.Count(s => s.IsBlocked)} selected";
         public string ProfileName { get => _profileName; private set => SetProperty(ref _profileName, value); }
+        public string TotalQueriesText { get => _totalQueriesText; private set => SetProperty(ref _totalQueriesText, value); }
+        public string BlockedQueriesText { get => _blockedQueriesText; private set => SetProperty(ref _blockedQueriesText, value); }
+        public string BlockPercentageText { get => _blockPercentageText; private set => SetProperty(ref _blockPercentageText, value); }
+        public string TopBlockedDomain { get => _topBlockedDomain; private set => SetProperty(ref _topBlockedDomain, value); }
 
         public bool FilteringEnabled { get => _filteringEnabled; set { if (SetProperty(ref _filteringEnabled, value) && !_isInitialising) _ = UpdateOptionAsync("DNS filtering", r => r.SetFilteringEnabledAsync(value)); } }
         public bool SafeBrowsingEnabled { get => _safeBrowsingEnabled; set { if (SetProperty(ref _safeBrowsingEnabled, value) && !_isInitialising) _ = UpdateOptionAsync("Safe Browsing", r => r.SetSafeBrowsingEnabledAsync(value)); } }
@@ -143,7 +152,7 @@ namespace AdGuardTray.ViewModels
         }
 
         public void Stop() => _timer.Stop();
-        public void Dispose() { _timer.Stop(); _timer.Tick -= async (_, _) => await RefreshProtectionStatusAsync(false); }
+        public void Dispose() => _timer.Stop();
 
         private async Task RefreshAllAsync()
         {
@@ -154,12 +163,14 @@ namespace AdGuardTray.ViewModels
             {
                 RouterManager router = GetRouterManager();
                 AdGuardProtectionStatus status = await router.GetAdGuardProtectionStatusAsync();
+                AdGuardStatistics statistics = await router.GetAdGuardStatisticsAsync();
                 _options = await router.GetProtectionOptionsAsync();
                 (var services, _blockedConfig) = await router.GetBlockedServicesAsync();
                 var rules = await router.GetCustomFilteringRulesAsync();
                 var rewrites = await router.GetDnsRewritesAsync();
 
                 ApplyStatus(status);
+                ApplyStatistics(statistics);
                 _isInitialising = true;
                 FilteringEnabled = _options.FilteringEnabled;
                 SafeBrowsingEnabled = _options.SafeBrowsingEnabled;
@@ -209,6 +220,40 @@ namespace AdGuardTray.ViewModels
                 Message = "Unable to refresh protection settings: " + ex.Message;
             }
             finally { _isInitialising = false; IsBusy = false; }
+        }
+
+
+        private async Task RefreshTimedDataAsync()
+        {
+            if (IsBusy) return;
+
+            await RefreshProtectionStatusAsync(false);
+            _statisticsRefreshTick++;
+
+            // The timer runs every three seconds. Refresh statistics every
+            // fifteen seconds to keep the dashboard current without making
+            // unnecessary requests to AdGuard Home.
+            if (_statisticsRefreshTick < 5) return;
+            _statisticsRefreshTick = 0;
+
+            try
+            {
+                ApplyStatistics(await GetRouterManager().GetAdGuardStatisticsAsync());
+            }
+            catch
+            {
+                // Keep the last successful statistics visible when a
+                // transient router or AdGuard request fails.
+            }
+        }
+
+        private void ApplyStatistics(AdGuardStatistics statistics)
+        {
+            TotalQueriesText = statistics.TotalQueries.ToString("N0");
+            BlockedQueriesText = statistics.BlockedQueries.ToString("N0");
+            BlockPercentageText = statistics.BlockPercentage.ToString("0.0") + "%";
+            TopBlockedDomain = statistics.TopBlockedDomains.FirstOrDefault()?.Name
+                ?? "No blocked domains yet";
         }
 
         private async Task RefreshProtectionStatusAsync(bool showMessage)
