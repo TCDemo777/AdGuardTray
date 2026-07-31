@@ -1,7 +1,8 @@
 <UserControl x:Class="AdGuardTray.Views.LogsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             Background="{DynamicResource Brush.WindowBackground}">
+             Background="{DynamicResource Brush.WindowBackground}"
+             Foreground="{DynamicResource Brush.TextPrimary}">
     <UserControl.Resources>
         <Style x:Key="Logs.SummaryValue"
                TargetType="TextBlock">
@@ -91,13 +92,15 @@
             </StackPanel>
         </Grid>
 
-        <ScrollViewer Grid.Row="2"
-                      VerticalScrollBarVisibility="Auto"
-                      HorizontalScrollBarVisibility="Disabled">
-            <StackPanel>
+        <Grid Grid.Row="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="16"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
 
                 <!-- Summary -->
-                <Grid Margin="0,0,0,16">
+                <Grid Grid.Row="0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="12"/>
@@ -165,7 +168,9 @@
                 </Grid>
 
                 <!-- Main log card -->
-                <Border Style="{DynamicResource Card}">
+                <Border Grid.Row="2"
+                        MinHeight="360"
+                        Style="{DynamicResource Card}">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -217,7 +222,6 @@
 
                         <!-- Query log -->
                         <Border Grid.Row="2"
-                                MinHeight="440"
                                 Background="{DynamicResource Brush.Surface}"
                                 BorderBrush="{DynamicResource Brush.Border}"
                                 BorderThickness="1"
@@ -243,7 +247,12 @@
                                       SelectionMode="Single"
                                       SelectionUnit="FullRow"
                                       VerticalScrollBarVisibility="Auto"
-                                      HorizontalScrollBarVisibility="Disabled">
+                                      HorizontalScrollBarVisibility="Disabled"
+                                      EnableRowVirtualization="True"
+                                      EnableColumnVirtualization="True"
+                                      VirtualizingPanel.IsVirtualizing="True"
+                                      VirtualizingPanel.VirtualizationMode="Recycling"
+                                      ScrollViewer.CanContentScroll="True">
                                 <DataGrid.Columns>
                                     <DataGridTextColumn Width="150"
                                                         Binding="{Binding Time}"
@@ -344,7 +353,6 @@
                         </Grid>
                     </Grid>
                 </Border>
-            </StackPanel>
-        </ScrollViewer>
+        </Grid>
     </Grid>
 </UserControl>

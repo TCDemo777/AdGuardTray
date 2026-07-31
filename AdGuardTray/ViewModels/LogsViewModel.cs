@@ -13,6 +13,9 @@ namespace AdGuardTray.ViewModels
 {
     public partial class LogsViewModel : ObservableObject
     {
+        // Keeping the on-screen collection bounded prevents the WPF DataGrid
+        // from creating thousands of row containers during initial navigation.
+        private const int MaxVisibleEntries = 1500;
         private readonly SettingsService _settingsService;
         private readonly DispatcherTimer _refreshTimer;
 
@@ -232,24 +235,87 @@ namespace AdGuardTray.ViewModels
                                 search));
             }
 
-            Entries.Clear();
+            List<QueryLogEntry> visibleEntries =
+                filteredEntries
+                    .Take(MaxVisibleEntries)
+                    .ToList();
 
-            foreach (QueryLogEntry entry
-                     in filteredEntries)
+            if (!VisibleEntriesMatch(
+                    visibleEntries))
             {
-                Entries.Add(
-                    entry);
+                Entries.Clear();
+
+                foreach (QueryLogEntry entry
+                         in visibleEntries)
+                {
+                    Entries.Add(
+                        entry);
+                }
             }
 
             if (!IsLoading &&
-                _allEntries.Count > 0 &&
-                !string.IsNullOrWhiteSpace(
-                    search))
+                _allEntries.Count > 0)
             {
-                StatusMessage =
-                    $"{Entries.Count} of " +
-                    $"{_allEntries.Count} entries shown.";
+                if (!string.IsNullOrWhiteSpace(
+                        search))
+                {
+                    StatusMessage =
+                        $"{Entries.Count} of " +
+                        $"{_allEntries.Count} entries shown.";
+                }
+                else if (_allEntries.Count >
+                         MaxVisibleEntries)
+                {
+                    StatusMessage =
+                        $"Showing the newest " +
+                        $"{MaxVisibleEntries:N0} of " +
+                        $"{_allEntries.Count:N0} entries.";
+                }
             }
+        }
+
+        private bool VisibleEntriesMatch(
+            IReadOnlyList<QueryLogEntry> entries)
+        {
+            if (Entries.Count !=
+                entries.Count)
+            {
+                return false;
+            }
+
+            for (int index = 0;
+                 index < entries.Count;
+                 index++)
+            {
+                QueryLogEntry current =
+                    Entries[index];
+
+                QueryLogEntry incoming =
+                    entries[index];
+
+                if (!Equals(
+                        current.Time,
+                        incoming.Time) ||
+                    !string.Equals(
+                        current.Client,
+                        incoming.Client,
+                        StringComparison.Ordinal) ||
+                    !string.Equals(
+                        current.Domain,
+                        incoming.Domain,
+                        StringComparison.Ordinal) ||
+                    !string.Equals(
+                        current.Status,
+                        incoming.Status,
+                        StringComparison.Ordinal) ||
+                    current.IsBlocked !=
+                    incoming.IsBlocked)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private static bool ContainsText(

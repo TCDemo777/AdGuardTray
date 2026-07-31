@@ -1,7 +1,52 @@
 <UserControl x:Class="AdGuardTray.Views.AboutView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <Grid>
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{DynamicResource Brush.WindowBackground}"
+             Foreground="{DynamicResource Brush.TextPrimary}">
+    <UserControl.Resources>
+        <Style TargetType="TabControl">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+        </Style>
+
+        <Style TargetType="TabItem">
+            <Setter Property="Padding" Value="16,8"/>
+            <Setter Property="Margin" Value="0,0,6,0"/>
+            <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextSecondary}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource Brush.SurfaceMuted}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="About.OutputBox" TargetType="TextBox">
+            <Setter Property="Padding" Value="12"/>
+            <Setter Property="Background" Value="{DynamicResource Brush.SurfaceMuted}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}"/>
+            <Setter Property="CaretBrush" Value="{DynamicResource Brush.TextPrimary}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontFamily" Value="Cascadia Mono, Consolas"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="IsReadOnly" Value="True"/>
+            <Setter Property="AcceptsReturn" Value="True"/>
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+        </Style>
+
+        <Style x:Key="About.ToolbarButton" TargetType="Button"
+               BasedOn="{StaticResource Button.Secondary}">
+            <Setter Property="MinWidth" Value="112"/>
+            <Setter Property="Height" Value="38"/>
+            <Setter Property="Margin" Value="8,0,0,0"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="24" Background="{DynamicResource Brush.WindowBackground}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="14"/>
@@ -9,56 +54,61 @@
         </Grid.RowDefinitions>
 
         <StackPanel>
-            <TextBlock FontSize="24"
-                       FontWeight="Bold"
-                       Text="Support"/>
+            <TextBlock Style="{DynamicResource Text.PageTitle}"
+                       Text="About"/>
             <TextBlock Margin="0,5,0,0"
-                       FontSize="14"
-                       Foreground="#667085"
-                       Text="Application information, diagnostics, system details, support logs and release history"/>
+                       Style="{DynamicResource Text.Secondary}"
+                       Text="Application information, diagnostics, live support activity and release history"/>
         </StackPanel>
 
         <TabControl Grid.Row="2"
-                    Background="Transparent"
+                    Background="{DynamicResource Brush.WindowBackground}"
+                    Foreground="{DynamicResource Brush.TextPrimary}"
+                    BorderBrush="{DynamicResource Brush.Border}"
                     BorderThickness="0">
             <TabItem Header="About">
                 <ScrollViewer Margin="0,12,0,0"
                               VerticalScrollBarVisibility="Auto">
                     <StackPanel>
                         <Border Padding="20"
-                                Background="White"
+                                Background="{DynamicResource Brush.Surface}"
                                 CornerRadius="12"
-                                BorderBrush="#DDE3EA"
+                                BorderBrush="{DynamicResource Brush.Border}"
                                 BorderThickness="1">
                             <Grid>
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="90"/>
+                                    <ColumnDefinition Width="150"/>
                                     <ColumnDefinition Width="18"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
 
-                                <Image Width="82"
-                                       Height="82"
+                                <Border Width="136" Height="136" Padding="8"
+                                        Background="{DynamicResource Brush.SurfaceMuted}"
+                                        BorderBrush="{DynamicResource Brush.Border}"
+                                        BorderThickness="1" CornerRadius="26">
+                                    <Image Width="120"
+                                       Height="120"
                                        Stretch="Uniform"
                                        Source="/Assets/AdGuardTrayLogo.png"/>
+                                </Border>
 
                                 <StackPanel Grid.Column="2">
-                                    <TextBlock FontSize="25"
+                                    <TextBlock FontSize="30"
                                                FontWeight="Bold"
                                                Text="AdGuardTray"/>
                                     <TextBlock Margin="0,3,0,0"
-                                               Foreground="#667085"
+                                               Foreground="{DynamicResource Brush.TextSecondary}"
                                                Text="Version 1.3.0"/>
                                     <TextBlock Margin="0,11,0,0"
                                                FontSize="14"
                                                LineHeight="20"
                                                TextWrapping="Wrap"
-                                               Text="A Windows desktop companion for monitoring and managing supported GL.iNet routers running AdGuard Home."/>
+                                               Text="A modern Windows desktop companion for monitoring and managing supported GL.iNet routers running AdGuard Home."/>
                                     <TextBlock Margin="0,11,0,0"
                                                FontWeight="SemiBold"
                                                Text="Created and maintained by Tristan Caldwell"/>
                                     <TextBlock Margin="0,4,0,0"
-                                               Foreground="#667085"
+                                               Foreground="{DynamicResource Brush.TextSecondary}"
                                                Text="Released under the MIT Licence."/>
 
                                     <WrapPanel Margin="0,14,0,0">
@@ -98,9 +148,9 @@
 
                         <Border Margin="0,14,0,0"
                                 Padding="20"
-                                Background="White"
+                                Background="{DynamicResource Brush.Surface}"
                                 CornerRadius="12"
-                                BorderBrush="#DDE3EA"
+                                BorderBrush="{DynamicResource Brush.Border}"
                                 BorderThickness="1">
                             <Grid>
                                 <Grid.ColumnDefinitions>
@@ -118,13 +168,13 @@
                                                TextWrapping="Wrap"
                                                Text="AdGuardTray is free and open source and is developed independently in my spare time."/>
                                     <TextBlock Margin="0,7,0,0"
-                                               Foreground="#667085"
+                                               Foreground="{DynamicResource Brush.TextSecondary}"
                                                LineHeight="20"
                                                TextWrapping="Wrap"
                                                Text="If it has helped you manage your GL.iNet router or saved you time, you can support future development through GitHub Sponsors. Every contribution helps fund development time, testing hardware and future features."/>
                                     <TextBlock Margin="0,9,0,0"
                                                FontStyle="Italic"
-                                               Foreground="#667085"
+                                               Foreground="{DynamicResource Brush.TextSecondary}"
                                                Text="Thank you for using AdGuardTray."/>
                                 </StackPanel>
 
@@ -140,16 +190,16 @@
 
                         <Border Margin="0,14,0,0"
                                 Padding="20"
-                                Background="White"
+                                Background="{DynamicResource Brush.Surface}"
                                 CornerRadius="12"
-                                BorderBrush="#DDE3EA"
+                                BorderBrush="{DynamicResource Brush.Border}"
                                 BorderThickness="1">
                             <StackPanel>
                                 <TextBlock FontSize="20"
                                            FontWeight="Bold"
                                            Text="Credits &amp; Acknowledgements"/>
                                 <TextBlock Margin="0,4,0,0"
-                                           Foreground="#667085"
+                                           Foreground="{DynamicResource Brush.TextSecondary}"
                                            TextWrapping="Wrap"
                                            Text="AdGuardTray is an independent project. Product names and trademarks remain the property of their respective owners."/>
 
@@ -200,7 +250,7 @@
                                            FontWeight="Bold"
                                            Text="Open-source components"/>
                                 <TextBlock Margin="0,5,0,10"
-                                           Foreground="#667085"
+                                           Foreground="{DynamicResource Brush.TextSecondary}"
                                            TextWrapping="Wrap"
                                            Text="Direct package references from AdGuardTray.csproj. Full notices are included in THIRD_PARTY_NOTICES.txt."/>
 
@@ -266,8 +316,8 @@
 
                                 <Border Margin="0,18,0,0"
                                         Padding="14"
-                                        Background="#F8FAFC"
-                                        BorderBrush="#E4E7EC"
+                                        Background="{DynamicResource Brush.SurfaceMuted}"
+                                        BorderBrush="{DynamicResource Brush.Border}"
                                         BorderThickness="1"
                                         CornerRadius="8">
                                     <TextBlock FontStyle="Italic"
@@ -281,8 +331,8 @@
             </TabItem>
 
             <TabItem Header="Diagnostics">
-                <Border Margin="0,12,0,0" Padding="18" Background="White"
-                        CornerRadius="12" BorderBrush="#DDE3EA" BorderThickness="1">
+                <Border Margin="0,12,0,0" Padding="18" Background="{DynamicResource Brush.Surface}"
+                        CornerRadius="12" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -291,28 +341,60 @@
                             <RowDefinition Height="10"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
-                        <DockPanel>
-                            <StackPanel>
-                                <TextBlock FontSize="18" FontWeight="Bold"
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock FontSize="18"
+                                           FontWeight="Bold"
                                            Text="Router and AdGuard diagnostics"/>
-                                <TextBlock Margin="0,4,0,0" Foreground="#667085"
+                                <TextBlock Margin="0,4,0,0"
+                                           Foreground="{DynamicResource Brush.TextSecondary}"
                                            Text="Authentication, clients, statistics, query log, protection and endpoint health"/>
                             </StackPanel>
-                            <WrapPanel DockPanel.Dock="Right">
-                                <Button Margin="0,0,8,0" MinWidth="74" Height="32"
-                                        Click="CopyDiagnostics_Click" Content="Copy"/>
-                                <Button Margin="0,0,8,0" MinWidth="74" Height="32"
-                                        Click="ExportDiagnostics_Click" Content="Export"/>
-                                <Button Margin="0,0,8,0" MinWidth="104" Height="32"
-                                        Click="RefreshClients_Click" Content="Refresh clients"/>
-                                <Button MinWidth="110" Height="32"
-                                        Click="RunDiagnostics_Click" Content="Run diagnostics"/>
-                            </WrapPanel>
-                        </DockPanel>
+
+                            <Grid Grid.Column="1"
+                                  Margin="18,0,0,0"
+                                  VerticalAlignment="Center">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="112"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="112"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="132"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="132"/>
+                                </Grid.ColumnDefinitions>
+
+                                <Button Grid.Column="0"
+                                        Height="38"
+                                        Style="{DynamicResource Button.Secondary}"
+                                        Click="CopyDiagnostics_Click"
+                                        Content="Copy"/>
+                                <Button Grid.Column="2"
+                                        Height="38"
+                                        Style="{DynamicResource Button.Secondary}"
+                                        Click="ExportDiagnostics_Click"
+                                        Content="Export"/>
+                                <Button Grid.Column="4"
+                                        Height="38"
+                                        Style="{DynamicResource Button.Secondary}"
+                                        Click="RefreshClients_Click"
+                                        Content="Refresh clients"/>
+                                <Button Grid.Column="6"
+                                        Height="38"
+                                        Style="{DynamicResource Button.Primary}"
+                                        Click="RunDiagnostics_Click"
+                                        Content="Run diagnostics"/>
+                            </Grid>
+                        </Grid>
 
                         <Border x:Name="QueryLogWarningBorder" Grid.Row="2"
-                                Padding="12" Background="#FFF7E6"
-                                BorderBrush="#F5C26B" BorderThickness="1"
+                                Padding="12" Background="{DynamicResource Brush.SurfaceMuted}"
+                                BorderBrush="{DynamicResource Brush.Warning}" BorderThickness="1"
                                 CornerRadius="8" Visibility="Collapsed">
                             <DockPanel>
                                 <Button x:Name="EnableQueryLogButton"
@@ -321,9 +403,9 @@
                                         Click="EnableQueryLog_Click"
                                         Content="Enable query log"/>
                                 <StackPanel>
-                                    <TextBlock FontWeight="Bold" Foreground="#8A4B08"
+                                    <TextBlock FontWeight="Bold" Foreground="{DynamicResource Brush.Warning}"
                                                Text="Query logging is disabled"/>
-                                    <TextBlock Margin="0,3,0,0" Foreground="#8A4B08"
+                                    <TextBlock Margin="0,3,0,0" Foreground="{DynamicResource Brush.Warning}"
                                                TextWrapping="Wrap"
                                                Text="Queries remain available from statistics. Blocked, Block rate and Last seen need new query-log entries."/>
                                 </StackPanel>
@@ -331,10 +413,8 @@
                         </Border>
 
                         <TextBox x:Name="DiagnosticsTextBox" Grid.Row="4"
-                                 Padding="12" Background="#F8FAFC"
-                                 BorderBrush="#E4E7EC" BorderThickness="1"
-                                 FontFamily="Consolas" FontSize="13"
-                                 IsReadOnly="True" AcceptsReturn="True"
+                                 MinHeight="430"
+                                 Style="{StaticResource About.OutputBox}"
                                  TextWrapping="NoWrap"
                                  VerticalScrollBarVisibility="Auto"
                                  HorizontalScrollBarVisibility="Auto"
@@ -344,61 +424,90 @@
             </TabItem>
 
             <TabItem Header="System">
-                <Border Margin="0,12,0,0" Padding="18" Background="White"
-                        CornerRadius="12" BorderBrush="#DDE3EA" BorderThickness="1">
+                <Border Margin="0,12,0,0" Padding="18" Background="{DynamicResource Brush.Surface}"
+                        CornerRadius="12" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="10"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
-                        <DockPanel>
-                            <StackPanel>
-                                <TextBlock FontSize="18" FontWeight="Bold" Text="System information"/>
-                                <TextBlock Margin="0,4,0,0" Foreground="#667085"
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock FontSize="18"
+                                           FontWeight="Bold"
+                                           Text="System information"/>
+                                <TextBlock Margin="0,4,0,0"
+                                           Foreground="{DynamicResource Brush.TextSecondary}"
                                            Text="Application, Windows, .NET, architecture, memory and router configuration"/>
                             </StackPanel>
-                            <Button DockPanel.Dock="Right" MinWidth="92" Height="32"
-                                    Click="RefreshSystem_Click" Content="Refresh"/>
-                        </DockPanel>
+                            <Button Grid.Column="1"
+                                    Width="112"
+                                    Height="38"
+                                    Margin="18,0,0,0"
+                                    Style="{DynamicResource Button.Secondary}"
+                                    Click="RefreshSystem_Click"
+                                    Content="Refresh"/>
+                        </Grid>
                         <TextBox x:Name="SystemTextBox" Grid.Row="2"
-                                 Padding="12" Background="#F8FAFC"
-                                 BorderBrush="#E4E7EC" BorderThickness="1"
-                                 FontFamily="Consolas" FontSize="13"
-                                 IsReadOnly="True" AcceptsReturn="True"
+                                 MinHeight="430"
+                                 Style="{StaticResource About.OutputBox}"
+                                 TextWrapping="Wrap"
                                  VerticalScrollBarVisibility="Auto"
-                                 HorizontalScrollBarVisibility="Auto"/>
+                                 HorizontalScrollBarVisibility="Disabled"/>
                     </Grid>
                 </Border>
             </TabItem>
 
             <TabItem Header="Logs">
-                <Border Margin="0,12,0,0" Padding="18" Background="White"
-                        CornerRadius="12" BorderBrush="#DDE3EA" BorderThickness="1">
+                <Border Margin="0,12,0,0" Padding="18" Background="{DynamicResource Brush.Surface}"
+                        CornerRadius="12" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="10"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
-                        <DockPanel>
-                            <StackPanel>
-                                <TextBlock FontSize="18" FontWeight="Bold" Text="Support log"/>
-                                <TextBlock Margin="0,4,0,0" Foreground="#667085"
-                                           Text="Actions and errors recorded during this support session"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock FontSize="18"
+                                           FontWeight="Bold"
+                                           Text="Live support activity"/>
+                                <TextBlock Margin="0,4,0,0"
+                                           Foreground="{DynamicResource Brush.TextSecondary}"
+                                           Text="Timestamped actions, diagnostics and errors from the current support session"/>
                             </StackPanel>
-                            <WrapPanel DockPanel.Dock="Right">
-                                <Button Margin="0,0,8,0" MinWidth="74" Height="32"
-                                        Click="CopyLog_Click" Content="Copy"/>
-                                <Button MinWidth="74" Height="32"
-                                        Click="ClearLog_Click" Content="Clear"/>
-                            </WrapPanel>
-                        </DockPanel>
+                            <Grid Grid.Column="1"
+                                  Margin="18,0,0,0"
+                                  VerticalAlignment="Center">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="112"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="112"/>
+                                </Grid.ColumnDefinitions>
+                                <Button Grid.Column="0"
+                                        Height="38"
+                                        Style="{DynamicResource Button.Secondary}"
+                                        Click="CopyLog_Click"
+                                        Content="Copy"/>
+                                <Button Grid.Column="2"
+                                        Height="38"
+                                        Style="{DynamicResource Button.Secondary}"
+                                        Click="ClearLog_Click"
+                                        Content="Clear"/>
+                            </Grid>
+                        </Grid>
                         <TextBox x:Name="SupportLogTextBox" Grid.Row="2"
-                                 Padding="12" Background="#F8FAFC"
-                                 BorderBrush="#E4E7EC" BorderThickness="1"
-                                 FontFamily="Consolas" FontSize="13"
-                                 IsReadOnly="True" AcceptsReturn="True"
+                                 MinHeight="430"
+                                 Style="{StaticResource About.OutputBox}"
                                  VerticalScrollBarVisibility="Auto"
                                  HorizontalScrollBarVisibility="Auto"/>
                     </Grid>
@@ -406,8 +515,8 @@
             </TabItem>
 
             <TabItem Header="Changelog">
-                <Border Margin="0,12,0,0" Padding="18" Background="White"
-                        CornerRadius="12" BorderBrush="#DDE3EA" BorderThickness="1">
+                <Border Margin="0,12,0,0" Padding="18" Background="{DynamicResource Brush.Surface}"
+                        CornerRadius="12" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -417,17 +526,15 @@
                         <DockPanel>
                             <StackPanel>
                                 <TextBlock FontSize="18" FontWeight="Bold" Text="Release history"/>
-                                <TextBlock Margin="0,4,0,0" Foreground="#667085"
+                                <TextBlock Margin="0,4,0,0" Foreground="{DynamicResource Brush.TextSecondary}"
                                            Text="Loaded directly from CHANGELOG.md"/>
                             </StackPanel>
                             <Button DockPanel.Dock="Right" MinWidth="92" Height="32"
                                     Click="ReloadChangelog_Click" Content="Reload"/>
                         </DockPanel>
                         <TextBox x:Name="ChangelogTextBox" Grid.Row="2"
-                                 Padding="12" Background="#F8FAFC"
-                                 BorderBrush="#E4E7EC" BorderThickness="1"
-                                 FontFamily="Consolas" FontSize="13"
-                                 IsReadOnly="True" AcceptsReturn="True"
+                                 MinHeight="430"
+                                 Style="{StaticResource About.OutputBox}"
                                  TextWrapping="Wrap"
                                  VerticalScrollBarVisibility="Auto"/>
                     </Grid>

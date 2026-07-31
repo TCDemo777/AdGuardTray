@@ -1,245 +1,280 @@
 <UserControl x:Class="AdGuardTray.Views.SettingsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <Grid Background="{DynamicResource Brush.WindowBackground}">
-        <Grid.Resources>
-            <Style TargetType="TextBlock">
-                <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}"/>
-            </Style>
-        </Grid.Resources>
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{DynamicResource Brush.WindowBackground}"
+             Foreground="{DynamicResource Brush.TextPrimary}">
+    <UserControl.Resources>
+        <Style x:Key="Settings.FieldLabel" TargetType="TextBlock">
+            <Setter Property="Margin" Value="0,0,0,7"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextSecondary}"/>
+        </Style>
+        <Style x:Key="Settings.Input" TargetType="TextBox">
+            <Setter Property="Height" Value="38"/>
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.BorderStrong}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+        <Style x:Key="Settings.SectionNote" TargetType="Border">
+            <Setter Property="Margin" Value="0,18,0,0"/>
+            <Setter Property="Padding" Value="14"/>
+            <Setter Property="Background" Value="{DynamicResource Brush.SurfaceMuted}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="9"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="24">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="20"/>
+            <RowDefinition Height="18"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="15"/>
+            <RowDefinition Height="14"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0">
-            <TextBlock FontSize="24"
-                       FontWeight="Bold"
-                       Text="Settings"/>
-
+        <StackPanel>
+            <TextBlock Style="{DynamicResource Text.PageTitle}" Text="Settings"/>
             <TextBlock Margin="0,5,0,0"
-                       FontSize="14"
-                       Foreground="{DynamicResource Brush.TextSecondary}"
-                       Text="Application, router and AdGuard Home configuration"/>
+                       Style="{DynamicResource Text.Secondary}"
+                       Text="Application behaviour, router credentials and AdGuard Home defaults."/>
         </StackPanel>
 
-        <Border Grid.Row="2"
+        <ScrollViewer Grid.Row="2"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <StackPanel>
+                <Grid Margin="0,0,0,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0" Style="{DynamicResource Card.Compact}">
+                        <StackPanel>
+                            <TextBlock Style="{DynamicResource Text.CardCaption}" Text="ROUTER"/>
+                            <TextBlock Margin="0,8,0,0" FontSize="18" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource Brush.TextPrimary}"
+                                       Text="{Binding RouterIp}"/>
+                            <TextBlock Margin="0,5,0,0" Style="{DynamicResource Text.Muted}"
+                                       Text="{Binding Username}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="2" Style="{DynamicResource Card.Compact}">
+                        <StackPanel>
+                            <TextBlock Style="{DynamicResource Text.CardCaption}" Text="THEME"/>
+                            <TextBlock Margin="0,8,0,0" FontSize="18" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource Brush.TextPrimary}"
+                                       Text="{Binding Theme}"/>
+                            <TextBlock Margin="0,5,0,0" Style="{DynamicResource Text.Muted}"
+                                       Text="Applied immediately"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="4" Style="{DynamicResource Card.Compact}">
+                        <StackPanel>
+                            <TextBlock Style="{DynamicResource Text.CardCaption}" Text="SAVE STATE"/>
+                            <TextBlock Margin="0,8,0,0" FontSize="18" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource Brush.TextPrimary}">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="Saved"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding HasUnsavedChanges}" Value="True">
+                                                <Setter Property="Text" Value="Unsaved changes"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource Brush.Warning}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBlock Margin="0,5,0,0" Style="{DynamicResource Text.Muted}"
+                                       Text="{Binding StatusMessage}"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="16"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+                        <Border Style="{DynamicResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{DynamicResource Text.SectionTitle}" Text="Router connection"/>
+                                <TextBlock Margin="0,5,0,18" Style="{DynamicResource Text.Secondary}"
+                                           Text="SSH credentials used to connect to the GL.iNet router."/>
+
+                                <TextBlock Style="{StaticResource Settings.FieldLabel}"
+                                           Text="ROUTER IP ADDRESS OR HOSTNAME"/>
+                                <TextBox Style="{StaticResource Settings.Input}"
+                                         Text="{Binding RouterIp, UpdateSourceTrigger=PropertyChanged}"/>
+
+                                <TextBlock Margin="0,16,0,7" Style="{StaticResource Settings.FieldLabel}"
+                                           Text="SSH USERNAME"/>
+                                <TextBox Style="{StaticResource Settings.Input}"
+                                         Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}"/>
+
+                                <TextBlock Margin="0,16,0,7" Style="{StaticResource Settings.FieldLabel}"
+                                           Text="SSH PASSWORD"/>
+                                <Grid>
+                                    <PasswordBox x:Name="PasswordInput"
+                                                 Height="38"
+                                                 Padding="10,6"
+                                                 VerticalContentAlignment="Center"
+                                                 Background="{DynamicResource Brush.Surface}"
+                                                 Foreground="{DynamicResource Brush.TextPrimary}"
+                                                 BorderBrush="{DynamicResource Brush.BorderStrong}"
+                                                 BorderThickness="1"
+                                                 PasswordChanged="PasswordInput_PasswordChanged"/>
+                                    <TextBox x:Name="PasswordTextInput"
+                                             Style="{StaticResource Settings.Input}"
+                                             Visibility="Collapsed"
+                                             Text="{Binding Password, UpdateSourceTrigger=PropertyChanged}"/>
+                                </Grid>
+
+                                <StackPanel Margin="0,13,0,0">
+                                    <CheckBox x:Name="ShowPasswordCheckBox"
+                                              Content="Show password"
+                                              Checked="ShowPasswordCheckBox_Changed"
+                                              Unchecked="ShowPasswordCheckBox_Changed"/>
+                                    <CheckBox Margin="0,10,0,0"
+                                              Content="Remember password securely for this Windows user"
+                                              IsChecked="{Binding RememberPassword}"/>
+                                </StackPanel>
+
+                                <Border Style="{StaticResource Settings.SectionNote}">
+                                    <TextBlock Style="{DynamicResource Text.Secondary}"
+                                               TextWrapping="Wrap"
+                                               Text="Saved passwords are protected with Windows Data Protection and can only be decrypted by the current Windows user."/>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2">
+                        <Border Style="{DynamicResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{DynamicResource Text.SectionTitle}" Text="Application"/>
+                                <TextBlock Margin="0,5,0,18" Style="{DynamicResource Text.Secondary}"
+                                           Text="Startup, appearance and dashboard refresh behaviour."/>
+
+                                <CheckBox Content="Start AdGuardTray with Windows"
+                                          IsChecked="{Binding StartWithWindows}"/>
+
+                                <TextBlock Margin="0,18,0,7" Style="{StaticResource Settings.FieldLabel}"
+                                           Text="APPEARANCE"/>
+                                <ComboBox Height="38"
+                                          Background="{DynamicResource Brush.Surface}"
+                                          Foreground="{DynamicResource Brush.TextPrimary}"
+                                          BorderBrush="{DynamicResource Brush.BorderStrong}"
+                                          SelectedValue="{Binding Theme, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                          SelectedValuePath="Tag">
+                                    <ComboBoxItem Content="Follow Windows" Tag="System"/>
+                                    <ComboBoxItem Content="Light" Tag="Light"/>
+                                    <ComboBoxItem Content="Dark" Tag="Dark"/>
+                                </ComboBox>
+
+                                <TextBlock Margin="0,18,0,7" Style="{StaticResource Settings.FieldLabel}"
+                                           Text="DASHBOARD REFRESH INTERVAL"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="130"/>
+                                        <ColumnDefinition Width="12"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox Grid.Column="0"
+                                             Style="{StaticResource Settings.Input}"
+                                             Text="{Binding RefreshIntervalSeconds, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <TextBlock Grid.Column="2" VerticalAlignment="Center"
+                                               Style="{DynamicResource Text.Secondary}"
+                                               Text="seconds (5–3,600)"/>
+                                </Grid>
+
+                                <Border Style="{StaticResource Settings.SectionNote}">
+                                    <TextBlock Style="{DynamicResource Text.Secondary}"
+                                               TextWrapping="Wrap"
+                                               Text="Theme changes are applied immediately. Save to keep the selected appearance and startup preferences."/>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Margin="0,16,0,0" Style="{DynamicResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{DynamicResource Text.SectionTitle}" Text="AdGuard Home"/>
+                                <TextBlock Margin="0,5,0,18" Style="{DynamicResource Text.Secondary}"
+                                           TextWrapping="Wrap"
+                                           Text="Defaults used by protection controls and background refresh."/>
+
+                                <TextBlock Style="{StaticResource Settings.FieldLabel}"
+                                           Text="DEFAULT PROTECTION PAUSE"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="130"/>
+                                        <ColumnDefinition Width="12"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox Grid.Column="0"
+                                             Style="{StaticResource Settings.Input}"
+                                             Text="{Binding DefaultPauseMinutes, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <TextBlock Grid.Column="2" VerticalAlignment="Center"
+                                               Style="{DynamicResource Text.Secondary}"
+                                               Text="minutes (1–1,440)"/>
+                                </Grid>
+
+                                <Border Style="{StaticResource Settings.SectionNote}">
+                                    <TextBlock Style="{DynamicResource Text.Secondary}"
+                                               TextWrapping="Wrap"
+                                               Text="AdGuardTray reaches AdGuard Home through the configured router connection. No separate API credentials are required."/>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="4"
+                Padding="12"
                 Background="{DynamicResource Brush.Surface}"
                 BorderBrush="{DynamicResource Brush.Border}"
                 BorderThickness="1"
                 CornerRadius="10">
-            <TabControl Margin="12">
-                <TabItem Header="App Settings">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel Margin="22"
-                                    MaxWidth="650"
-                                    HorizontalAlignment="Left">
-                            <TextBlock FontSize="18"
-                                       FontWeight="SemiBold"
-                                       Text="Application"/>
-
-                            <TextBlock Margin="0,6,0,20"
-                                       Foreground="{DynamicResource Brush.TextSecondary}"
-                                       Text="Control startup and dashboard refresh behaviour."/>
-
-                            <CheckBox Margin="0,0,0,18"
-                                      Content="Start AdGuardTray with Windows"
-                                      IsChecked="{Binding StartWithWindows}"/>
-
-                            <TextBlock FontWeight="SemiBold"
-                                       Text="Appearance"/>
-
-                            <TextBlock Margin="0,5,0,8"
-                                       Foreground="{DynamicResource Brush.TextSecondary}"
-                                       Text="Choose how AdGuardTray should display its interface."/>
-
-                            <ComboBox Width="220"
-                                      Height="34"
-                                      Margin="0,0,0,18"
-                                      HorizontalAlignment="Left"
-                                      SelectedValue="{Binding Theme,
-                                                              Mode=TwoWay,
-                                                              UpdateSourceTrigger=PropertyChanged}"
-                                      SelectedValuePath="Tag">
-                                <ComboBoxItem Content="Follow Windows" Tag="System"/>
-                                <ComboBoxItem Content="Light" Tag="Light"/>
-                                <ComboBoxItem Content="Dark" Tag="Dark"/>
-                            </ComboBox>
-
-                            <TextBlock FontWeight="SemiBold"
-                                       Text="Dashboard refresh interval"/>
-
-                            <StackPanel Margin="0,8,0,0"
-                                        Orientation="Horizontal">
-                                <TextBox Width="120"
-                                         Height="32"
-                                         VerticalContentAlignment="Center"
-                                         Text="{Binding RefreshIntervalSeconds,
-                                                        UpdateSourceTrigger=PropertyChanged}"/>
-
-                                <TextBlock Margin="10,0,0,0"
-                                           VerticalAlignment="Center"
-                                           Foreground="{DynamicResource Brush.TextSecondary}"
-                                           Text="seconds (5–3,600)"/>
-                            </StackPanel>
-
-                            <Border Margin="0,24,0,0"
-                                    Padding="14"
-                                    Background="{DynamicResource Brush.SurfaceMuted}"
-                                    CornerRadius="8">
-                                <TextBlock Foreground="{DynamicResource Brush.TextSecondary}"
-                                           TextWrapping="Wrap"
-                                           Text="The startup preference is saved here. Windows startup registration will be connected when the tray startup feature is implemented."/>
-                            </Border>
-                        </StackPanel>
-                    </ScrollViewer>
-                </TabItem>
-
-                <TabItem Header="Router Settings">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel Margin="22"
-                                    MaxWidth="650"
-                                    HorizontalAlignment="Left">
-                            <TextBlock FontSize="18"
-                                       FontWeight="SemiBold"
-                                       Text="Router connection"/>
-
-                            <TextBlock Margin="0,6,0,20"
-                                       Foreground="{DynamicResource Brush.TextSecondary}"
-                                       Text="SSH credentials used to connect to the GL.iNet router."/>
-
-                            <TextBlock FontWeight="SemiBold"
-                                       Text="Router IP address or hostname"/>
-
-                            <TextBox Height="34"
-                                     Margin="0,8,0,18"
-                                     VerticalContentAlignment="Center"
-                                     Text="{Binding RouterIp,
-                                                    UpdateSourceTrigger=PropertyChanged}"/>
-
-                            <TextBlock FontWeight="SemiBold"
-                                       Text="SSH username"/>
-
-                            <TextBox Height="34"
-                                     Margin="0,8,0,18"
-                                     VerticalContentAlignment="Center"
-                                     Text="{Binding Username,
-                                                    UpdateSourceTrigger=PropertyChanged}"/>
-
-                            <TextBlock FontWeight="SemiBold"
-                                       Text="SSH password"/>
-
-                            <Grid Margin="0,8,0,10">
-                                <PasswordBox x:Name="PasswordInput"
-                                             Height="36"
-                                             VerticalContentAlignment="Center"
-                                             PasswordChanged="PasswordInput_PasswordChanged"/>
-                                <TextBox x:Name="PasswordTextInput"
-                                         Height="36"
-                                         Visibility="Collapsed"
-                                         VerticalContentAlignment="Center"
-                                         Text="{Binding Password, UpdateSourceTrigger=PropertyChanged}"/>
-                            </Grid>
-
-                            <CheckBox x:Name="ShowPasswordCheckBox"
-                                      Margin="0,0,0,10"
-                                      Content="Show password"
-                                      Checked="ShowPasswordCheckBox_Changed"
-                                      Unchecked="ShowPasswordCheckBox_Changed"/>
-
-                            <CheckBox Content="Remember password securely for this Windows user"
-                                      IsChecked="{Binding RememberPassword}"/>
-
-                            <Border Margin="0,24,0,0"
-                                    Padding="14"
-                                    Background="{DynamicResource Brush.SurfaceMuted}"
-                                    CornerRadius="8">
-                                <TextBlock Foreground="{DynamicResource Brush.TextSecondary}"
-                                           TextWrapping="Wrap"
-                                           Text="Saved passwords are protected with Windows Data Protection and can only be decrypted by the current Windows user."/>
-                            </Border>
-                        </StackPanel>
-                    </ScrollViewer>
-                </TabItem>
-
-                <TabItem Header="AdGuard Settings">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel Margin="22"
-                                    MaxWidth="650"
-                                    HorizontalAlignment="Left">
-                            <TextBlock FontSize="18"
-                                       FontWeight="SemiBold"
-                                       Text="AdGuard Home"/>
-
-                            <TextBlock Margin="0,6,0,20"
-                                       Foreground="{DynamicResource Brush.TextSecondary}"
-                                       TextWrapping="Wrap"
-                                       Text="AdGuardTray currently reaches AdGuard Home through the configured router connection."/>
-
-                            <TextBlock FontWeight="SemiBold"
-                                       Text="Default protection pause"/>
-
-                            <StackPanel Margin="0,8,0,0"
-                                        Orientation="Horizontal">
-                                <TextBox Width="120"
-                                         Height="32"
-                                         VerticalContentAlignment="Center"
-                                         Text="{Binding DefaultPauseMinutes,
-                                                        UpdateSourceTrigger=PropertyChanged}"/>
-
-                                <TextBlock Margin="10,0,0,0"
-                                           VerticalAlignment="Center"
-                                           Foreground="{DynamicResource Brush.TextSecondary}"
-                                           Text="minutes (1–1,440)"/>
-                            </StackPanel>
-
-                            <Border Margin="0,24,0,0"
-                                    Padding="14"
-                                    Background="{DynamicResource Brush.SurfaceMuted}"
-                                    CornerRadius="8">
-                                <StackPanel>
-                                    <TextBlock FontWeight="SemiBold"
-                                               Text="Coming next"/>
-
-                                    <TextBlock Margin="0,6,0,0"
-                                               Foreground="{DynamicResource Brush.TextSecondary}"
-                                               TextWrapping="Wrap"
-                                               Text="Protection controls, blocked services, DNS rules, live logs and dashboard refresh all use the settings stored here."/>
-                                </StackPanel>
-                            </Border>
-                        </StackPanel>
-                    </ScrollViewer>
-                </TabItem>
-            </TabControl>
-        </Border>
-
-        <Grid Grid.Row="4">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-
-            <TextBlock Grid.Column="0"
-                       VerticalAlignment="Center"
-                       Foreground="{DynamicResource Brush.TextSecondary}"
-                       Text="{Binding StatusMessage}"/>
-
-            <StackPanel Grid.Column="1"
-                        Orientation="Horizontal">
-                <Button Width="100"
-                        Height="34"
-                        Margin="0,0,10,0"
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="8"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock VerticalAlignment="Center"
+                           Style="{DynamicResource Text.Secondary}"
+                           Text="{Binding StatusMessage}"/>
+                <Button Grid.Column="1"
+                        MinWidth="104"
+                        Height="38"
+                        Style="{DynamicResource Button.Secondary}"
                         Command="{Binding ReloadCommand}"
                         Content="Reload"/>
-
-                <Button Width="120"
-                        Height="34"
+                <Button Grid.Column="3"
+                        MinWidth="112"
+                        Height="38"
+                        Style="{DynamicResource Button.Primary}"
                         Command="{Binding SaveCommand}"
-                        Content="Save Settings"/>
-            </StackPanel>
-        </Grid>
+                        Content="Save settings"/>
+            </Grid>
+        </Border>
     </Grid>
 </UserControl>
