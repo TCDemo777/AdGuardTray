@@ -135,7 +135,9 @@ namespace AdGuardTray.Services
             // used as the primary station source because MediaTek firmware does
             // not consistently expose associations through iw/iwinfo.
             string networkCommand = """
+                configured_count=0
                 for s in $(uci show wireless 2>/dev/null | sed -n 's/^wireless\.\([^.=]*\)=wifi-iface$/\1/p'); do
+                    configured_count=$((configured_count + 1))
                     mode=$(uci -q get wireless.$s.mode)
                     [ -z "$mode" -o "$mode" = "ap" ] || continue
                     dev=$(uci -q get wireless.$s.device)
@@ -169,10 +171,14 @@ namespace AdGuardTray.Services
                     [ -n "$display_iface" ] || display_iface="$dev"
                     printf 'N|%s|%s|%s|%s|%s|%s|%s|%s\n' "$s" "$dev" "$display_iface" "$ssid" "$band" "$channel" "$encryption" "$state"
                 done
+                runtime_count=$(iw dev 2>/dev/null | awk '$1 == "Interface" { count++ } END { print count + 0 }')
+                physical_count=$(uci show wireless 2>/dev/null | sed -n 's/^wireless\.\([^.=]*\)=wifi-device$/\1/p' | wc -l)
+                printf 'D|configured|%s|runtime|%s|physical|%s|virtual|%s\n' "$configured_count" "$runtime_count" "$physical_count" "$configured_count"
                 """;
 
             string networkOutput = await _ssh.RunCommandAsync(networkCommand);
             var networks = new List<WifiRadioInfo>();
+            LogWifiDiscoveryResult("configured-networks", networkOutput);
 
             foreach (string line in networkOutput.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
             {
@@ -203,13 +209,37 @@ namespace AdGuardTray.Services
                 });
             }
 
+            Debug.WriteLine(
+                $"[WiFiDiscovery] stage=configured-networks parsed={networks.Count} " +
+                $"interfaces={ReadDiscoveryCount(networkOutput, "runtime")} " +
+                $"physical={ReadDiscoveryCount(networkOutput, "physical")} " +
+                $"virtual={ReadDiscoveryCount(networkOutput, "virtual")} " +
+                $"configured={ReadDiscoveryCount(networkOutput, "configured")}");
+
             if (networks.Count == 0)
             {
-                networks = await DiscoverWifiRadiosFromHostapdAsync();
+                string reason = ReadDiscoveryCount(networkOutput, "configured") == 0
+                    ? "no-configured-interfaces"
+                    : "parsing-failure";
+                Debug.WriteLine(
+                    $"[WiFiDiscovery] stage=configured-networks reason={reason}");
             }
 
             if (networks.Count == 0)
             {
+                (List<WifiRadioInfo> fallbackNetworks, string fallbackOutput) =
+                    await DiscoverWifiRadiosFromHostapdAsync();
+                networks = fallbackNetworks;
+                Debug.WriteLine(
+                    $"[WiFiDiscovery] stage=hostapd-fallback parsed={networks.Count} " +
+                    $"uci={ReadDiscoveryCount(fallbackOutput, "uci")} " +
+                    $"hostapd={ReadDiscoveryCount(fallbackOutput, "hostapd")}");
+            }
+
+            if (networks.Count == 0)
+            {
+                Debug.WriteLine(
+                    "[WiFiDiscovery] stage=complete reason=no-interfaces-returned");
                 return networks;
             }
 
@@ -279,16 +309,22 @@ namespace AdGuardTray.Services
             await EnrichWifiClientsFromHostapdAsync(networks);
             await EnrichWifiClientsFromStationDumpAsync(networks);
 
+            Debug.WriteLine(
+                $"[WiFiDiscovery] stage=complete records={networks.Count} " +
+                $"clients={networks.Sum(network => network.ClientCount)}");
+
             return networks;
         }
 
-        private async Task<List<WifiRadioInfo>> DiscoverWifiRadiosFromHostapdAsync()
+        private async Task<(List<WifiRadioInfo> Networks, string Output)>
+            DiscoverWifiRadiosFromHostapdAsync()
         {
             // Retain the discovery path used before per-SSID client mapping was
             // introduced. Some GL.iNet/MediaTek builds do not produce records
             // accepted by the newer iw-based command, but do expose their APs
             // through the hostapd ubus objects.
             string command = """
+                found=0
                 for s in $(uci show wireless 2>/dev/null | sed -n 's/^wireless\.\([^.=]*\)=wifi-iface$/\1/p'); do
                     mode=$(uci -q get wireless.$s.mode)
                     [ -z "$mode" -o "$mode" = "ap" ] || continue
@@ -337,11 +373,39 @@ namespace AdGuardTray.Services
                     live_ifaces=$(printf '%s' "$live_ifaces" | sed 's/^ *//')
                     [ -n "$live_ifaces" ] || live_ifaces="$dev"
                     printf 'L|%s|%s|%s|%s|%s|%s\n' "$dev" "$live_ifaces" "$ssid" "$band" "$channel" "$state"
+                    found=$((found + 1))
                 done
+
+                hostapd_count=0
+                if [ "$found" -eq 0 ]; then
+                    for object in $(ubus list 'hostapd.*' 2>/dev/null); do
+                        hostapd_count=$((hostapd_count + 1))
+                        iface=${object#hostapd.}
+                        status=$(ubus call "$object" get_status 2>/dev/null)
+                        ssid=$(printf '%s' "$status" | jsonfilter -e '@.ssid' 2>/dev/null)
+                        [ -n "$ssid" ] || ssid=$(iw dev "$iface" info 2>/dev/null | sed -n 's/^[[:space:]]*ssid //p' | head -n1)
+                        [ -n "$ssid" ] || ssid='Hidden network'
+                        freq=$(printf '%s' "$status" | jsonfilter -e '@.freq' 2>/dev/null)
+                        channel=$(printf '%s' "$status" | jsonfilter -e '@.channel' 2>/dev/null)
+                        [ -n "$channel" ] || channel='auto'
+                        if [ -n "$freq" ] && [ "$freq" -lt 3000 ] 2>/dev/null; then
+                            band='2g'
+                        elif [ -n "$freq" ]; then
+                            band='5g'
+                        elif [ "$channel" != 'auto' ] && [ "$channel" -le 14 ] 2>/dev/null; then
+                            band='2g'
+                        else
+                            band='5g'
+                        fi
+                        printf 'L|%s|%s|%s|%s|%s|Online\n' "$iface" "$iface" "$ssid" "$band" "$channel"
+                    done
+                fi
+                printf 'D|uci|%s|hostapd|%s\n' "$found" "$hostapd_count"
                 """;
 
             string output = await _ssh.RunCommandAsync(command);
             var networks = new List<WifiRadioInfo>();
+            LogWifiDiscoveryResult("hostapd-fallback", output);
 
             foreach (string line in output.Split(
                 new[] { '\r', '\n' },
@@ -373,7 +437,45 @@ namespace AdGuardTray.Services
                 });
             }
 
-            return networks;
+            return (networks, output);
+        }
+
+        private static void LogWifiDiscoveryResult(string stage, string output)
+        {
+            string category = output switch
+            {
+                string value when value.Contains("SSH_AUTH_FAILED", StringComparison.Ordinal) => "authentication-failure",
+                string value when value.Contains("SSH_CONNECTION_FAILED", StringComparison.Ordinal) ||
+                                  value.Contains("SSH_NETWORK_FAILED", StringComparison.Ordinal) => "connection-failure",
+                string value when value.Contains("SSH_ERROR:", StringComparison.Ordinal) => "command-failure",
+                string value when value.Contains("not found", StringComparison.OrdinalIgnoreCase) ||
+                                  value.Contains("unknown command", StringComparison.OrdinalIgnoreCase) => "command-unsupported",
+                string value when string.IsNullOrWhiteSpace(value) => "no-output",
+                _ => "success"
+            };
+
+            Debug.WriteLine($"[WiFiDiscovery] stage={stage} result={category}");
+        }
+
+        private static int ReadDiscoveryCount(string output, string name)
+        {
+            foreach (string line in output.Split(
+                new[] { '\r', '\n' },
+                StringSplitOptions.RemoveEmptyEntries))
+            {
+                string[] parts = line.Split('|');
+                for (int index = 1; index + 1 < parts.Length; index += 2)
+                {
+                    if (parts[0] == "D" &&
+                        parts[index].Equals(name, StringComparison.OrdinalIgnoreCase) &&
+                        int.TryParse(parts[index + 1], out int count))
+                    {
+                        return count;
+                    }
+                }
+            }
+
+            return 0;
         }
 
 

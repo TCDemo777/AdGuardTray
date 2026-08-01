@@ -433,13 +433,15 @@ namespace AdGuardTray.Services
 
         public async Task<(List<BlockedServiceItem> Services, AdGuardBlockedServicesConfig Config)> GetBlockedServicesAsync()
         {
-            JsonElement all =
-                await GetControlJsonAsync(
-                    "blocked_services/all");
+            List<BlockedServiceItem> result = await GetBlockedServiceCatalogueAsync();
+            AdGuardBlockedServicesConfig config = await GetBlockedServicesConfigAsync();
+            foreach (BlockedServiceItem service in result) service.IsBlocked = config.EnabledIds.Contains(service.Id);
+            return (result, config);
+        }
 
-            JsonElement configJson =
-                await GetControlJsonAsync(
-                    "blocked_services/get");
+        public async Task<AdGuardBlockedServicesConfig> GetBlockedServicesConfigAsync()
+        {
+            JsonElement configJson = await GetControlJsonAsync("blocked_services/get");
 
             var config =
                 new AdGuardBlockedServicesConfig();
@@ -460,8 +462,13 @@ namespace AdGuardTray.Services
                 config.EnabledIds.Add(id);
             }
 
-            var result =
-                new List<BlockedServiceItem>();
+            return config;
+        }
+
+        public async Task<List<BlockedServiceItem>> GetBlockedServiceCatalogueAsync()
+        {
+            JsonElement all = await GetControlJsonAsync("blocked_services/all");
+            var result = new List<BlockedServiceItem>();
 
             JsonElement array =
                 default;
@@ -560,13 +567,14 @@ namespace AdGuardTray.Services
                             Id = id,
                             Name = name,
                             Category = CategorizeBlockedService(id, name),
-                            IsBlocked =
-                                config.EnabledIds.Contains(id)
+                            IconSvg = item.ValueKind == JsonValueKind.Object ? GetString(item, "icon_svg") : string.Empty,
+                            GroupId = item.ValueKind == JsonValueKind.Object ? GetString(item, "group_id") : string.Empty,
+                            IsBlocked = false
                         });
                 }
             }
 
-            return (result, config);
+            return result;
         }
 
         public Task UpdateBlockedServicesAsync(IEnumerable<string> ids, string scheduleJson)

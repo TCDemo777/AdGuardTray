@@ -43,6 +43,8 @@ namespace AdGuardTray.Models
         public string Id { get; init; } = "";
         public string Name { get; init; } = "";
         public string Category { get; init; } = "Other";
+        public string IconSvg { get; init; } = "";
+        public string GroupId { get; init; } = "";
         public bool IsBlocked
         {
             get => _isBlocked;

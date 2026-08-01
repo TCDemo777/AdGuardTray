@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -219,6 +221,8 @@ namespace AdGuardTray.Views
                 _viewModel.UpdateStorageUsage(
                     info.StorageUsage);
 
+                await RefreshWifiNetworksAsync(router, cancellationToken);
+
                 AdGuardStatus adGuard =
                     await router.GetAdGuardStatusAsync();
 
@@ -365,27 +369,6 @@ namespace AdGuardTray.Views
                 _viewModel.Latency =
                     network.Latency;
 
-                try
-                {
-                    List<WifiRadioInfo> wifiRadios =
-                        await router.GetWifiRadiosAsync();
-
-                    cancellationToken.ThrowIfCancellationRequested();
-                    _viewModel.UpdateWifiRadios(wifiRadios);
-                }
-                catch (OperationCanceledException)
-                    when (cancellationToken.IsCancellationRequested)
-                {
-                    throw;
-                }
-                catch
-                {
-                    // Wi-Fi discovery differs between GL.iNet/OpenWrt firmware
-                    // builds. A discovery failure must not invalidate the main
-                    // authenticated router session or the rest of the dashboard.
-                    _viewModel.UpdateWifiRadios(Array.Empty<WifiRadioInfo>());
-                }
-
                 _viewModel.StatusMessage =
                     statistics.TotalQueries < 0
                         ? "Connected - AdGuard statistics unavailable"
@@ -428,6 +411,61 @@ namespace AdGuardTray.Views
                 }
 
                 _refreshInProgress = false;
+            }
+        }
+
+        private async Task RefreshWifiNetworksAsync(
+            RouterManager router,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                Debug.WriteLine(
+                    $"[WiFiRefresh] started manager={router.GetHashCode():X8} " +
+                    $"provider={_routerManagerProvider.GetType().Name}");
+
+                List<WifiRadioInfo> wifiRadios =
+                    await router.GetWifiRadiosAsync();
+
+                cancellationToken.ThrowIfCancellationRequested();
+                if (wifiRadios.Count == 0)
+                {
+                    // An empty discovery result is not an authoritative empty
+                    // configuration.  Keep the last successful snapshot.
+                    _viewModel.WifiRefreshError =
+                        "Wi-Fi discovery returned no interfaces; showing the last successful network data.";
+                    Debug.WriteLine(
+                        "[WiFiRefresh] failed category=no-interfaces");
+                    return;
+                }
+
+                Debug.Assert(wifiRadios.Count > 0);
+                _viewModel.UpdateWifiRadios(wifiRadios);
+                _viewModel.WifiRefreshError = string.Empty;
+                Debug.WriteLine(
+                    $"[WiFiRefresh] completed records={wifiRadios.Count} " +
+                    $"clients={wifiRadios.Sum(network => network.ClientCount)}");
+            }
+            catch (OperationCanceledException)
+                when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                // Preserve the last successful snapshot during transient
+                // firmware, interface or SSH failures.
+                string category = ex switch
+                {
+                    SshAuthenticationException => "authentication",
+                    SshConnectionException => "connectivity",
+                    FormatException => "parsing",
+                    _ => "discovery"
+                };
+                _viewModel.WifiRefreshError =
+                    $"Wi-Fi refresh failed ({category}); showing the last successful network data.";
+                Debug.WriteLine(
+                    $"[WiFiRefresh] failed category={category}");
             }
         }
 

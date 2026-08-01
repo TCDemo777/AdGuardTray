@@ -441,6 +441,9 @@ namespace AdGuardTray.ViewModels
 
         public ObservableCollection<WifiRadioInfo> WifiNetworks { get; } = new();
 
+        [ObservableProperty]
+        private string wifiRefreshError = string.Empty;
+
         public void UpdateWifiRadios(IEnumerable<WifiRadioInfo> radios)
         {
             List<WifiRadioInfo> networkList = radios?.ToList() ?? new List<WifiRadioInfo>();

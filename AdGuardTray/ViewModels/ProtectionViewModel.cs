@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows.Data;
@@ -21,6 +22,7 @@ namespace AdGuardTray.ViewModels
         private readonly AdGuardProtectionNotificationTracker _protectionNotificationTracker;
         private readonly BlockedServiceMutationService _blockedServiceMutations;
         private readonly AdGuardServiceScheduleService _scheduleService;
+        private readonly IAdGuardServiceCatalogueProvider _serviceCatalogue;
         private readonly DispatcherTimer _timer;
         private readonly SemaphoreSlim _protectionStateGate = new(1, 1);
         private readonly CancellationTokenSource _disposalCancellation = new();
@@ -64,12 +66,14 @@ namespace AdGuardTray.ViewModels
             AdGuardProtectionNotificationTracker protectionNotificationTracker,
             BlockedServiceMutationService blockedServiceMutations,
             AdGuardServiceScheduleService scheduleService,
+            IAdGuardServiceCatalogueProvider serviceCatalogue,
             AdGuardServiceScheduleViewModel schedules)
         {
             _routerManagerProvider = routerManagerProvider;
             _protectionNotificationTracker = protectionNotificationTracker;
             _blockedServiceMutations = blockedServiceMutations;
             _scheduleService = scheduleService;
+            _serviceCatalogue = serviceCatalogue;
             Schedules = schedules;
             _scheduleService.BlockedServicesChanged += ScheduleService_BlockedServicesChanged;
             _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
@@ -234,7 +238,8 @@ namespace AdGuardTray.ViewModels
                 AdGuardProtectionStatus status = await router.GetAdGuardProtectionStatusAsync();
                 AdGuardStatistics statistics = await router.GetAdGuardStatisticsAsync();
                 _options = await router.GetProtectionOptionsAsync();
-                (var services, _blockedConfig) = await router.GetBlockedServicesAsync();
+                bool catalogueRefreshed = await _serviceCatalogue.RefreshAsync(router, _disposalCancellation.Token);
+                _blockedConfig = await router.GetBlockedServicesConfigAsync();
                 var rules = await router.GetCustomFilteringRulesAsync();
                 var rewrites = await router.GetDnsRewritesAsync();
                 var queryLog = await router.GetQueryLogAsync();
@@ -250,7 +255,10 @@ namespace AdGuardTray.ViewModels
                 _isInitialising = false;
                 DetermineProfile();
 
-                ApplyBlockedServices(services, _blockedConfig);
+                ApplyBlockedServices(_serviceCatalogue.Services, _blockedConfig);
+                Debug.Assert(BlockedServices.Count == _serviceCatalogue.Services.Count);
+                Debug.Assert(Schedules.AvailableServices.Count == _serviceCatalogue.Services.Count);
+                Debug.WriteLine($"[AdGuardCatalogue] provider={_serviceCatalogue.Services.Count} manual={BlockedServices.Count} scheduleEditors={Schedules.AvailableServices.Count}");
 
                 BlockedServiceCategories.Clear();
                 BlockedServiceCategories.Add("All categories");
@@ -268,8 +276,10 @@ namespace AdGuardTray.ViewModels
 
                 BlockedServicesView.Refresh();
                 OnPropertyChanged(nameof(BlockedServicesSelectionSummary));
-                BlockedServicesStatus = BlockedServices.Count == 0
-                    ? "No blocked-service catalogue was returned by this AdGuard Home build."
+                BlockedServicesStatus = !catalogueRefreshed
+                    ? BlockedServices.Count == 0
+                        ? _serviceCatalogue.LastError ?? "No blocked-service catalogue was returned by this AdGuard Home build."
+                        : (_serviceCatalogue.LastError ?? "The service catalogue could not be refreshed.") + " Showing the last successful list."
                     : $"{BlockedServices.Count} services available. Select services and save your changes.";
                 FilteringRules.Clear();
                 foreach (var rule in rules) FilteringRules.Add(rule);
@@ -569,14 +579,36 @@ namespace AdGuardTray.ViewModels
         private void ApplyBlockedServices(IEnumerable<BlockedServiceItem> services, AdGuardBlockedServicesConfig config)
         {
             _blockedConfig = config;
-            foreach (BlockedServiceItem oldService in BlockedServices) oldService.PropertyChanged -= BlockedService_PropertyChanged;
-            BlockedServices.Clear();
-            foreach (BlockedServiceItem service in services.OrderBy(s => s.Name))
+            List<BlockedServiceItem> catalogue = services.ToList();
+            if (catalogue.Count > 0)
             {
-                service.PropertyChanged += BlockedService_PropertyChanged;
-                BlockedServices.Add(service);
+                foreach (BlockedServiceItem oldService in BlockedServices) oldService.PropertyChanged -= BlockedService_PropertyChanged;
+                BlockedServices.Clear();
+                foreach (BlockedServiceItem definition in catalogue.OrderBy(s => s.Name))
+                {
+                    var service = new BlockedServiceItem
+                    {
+                        Id = definition.Id,
+                        Name = definition.Name,
+                        Category = definition.Category,
+                        IconSvg = definition.IconSvg,
+                        GroupId = definition.GroupId,
+                        IsBlocked = config.EnabledIds.Contains(definition.Id)
+                    };
+                    service.PropertyChanged += BlockedService_PropertyChanged;
+                    BlockedServices.Add(service);
+                }
             }
-            Schedules.SetAvailableServices(BlockedServices);
+            else
+            {
+                // The catalogue and the blocked ID set are independent.  Keep
+                // the last complete catalogue if AdGuard temporarily returns
+                // no service metadata, and only refresh its selected state.
+                foreach (BlockedServiceItem service in BlockedServices)
+                    service.IsBlocked = config.EnabledIds.Contains(service.Id);
+                if (BlockedServices.Count > 0)
+                    BlockedServicesStatus = "The service catalogue could not be refreshed. Showing the last successful list.";
+            }
             BlockedServicesView.Refresh();
             OnPropertyChanged(nameof(BlockedServicesSelectionSummary));
         }

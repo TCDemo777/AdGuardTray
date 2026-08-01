@@ -46,7 +46,9 @@
         </Style>
     </UserControl.Resources>
 
-    <Grid Margin="24" Background="{DynamicResource Brush.WindowBackground}">
+    <Grid Margin="24"
+          ClipToBounds="True"
+          Background="{DynamicResource Brush.WindowBackground}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="14"/>
@@ -62,6 +64,7 @@
         </StackPanel>
 
         <TabControl Grid.Row="2"
+                    VerticalContentAlignment="Stretch"
                     Background="{DynamicResource Brush.WindowBackground}"
                     Foreground="{DynamicResource Brush.TextPrimary}"
                     BorderBrush="{DynamicResource Brush.Border}"
@@ -523,7 +526,7 @@
 
                                 <TextBox x:Name="DiagnosticsTextBox"
                                          Grid.Row="4"
-                                         MinHeight="380"
+                                         MinHeight="240"
                                          Style="{StaticResource About.OutputBox}"
                                          TextWrapping="NoWrap"
                                          VerticalScrollBarVisibility="Auto"
@@ -566,7 +569,6 @@
                                     Content="Refresh"/>
                         </Grid>
                         <TextBox x:Name="SystemTextBox" Grid.Row="2"
-                                 MinHeight="430"
                                  Style="{StaticResource About.OutputBox}"
                                  TextWrapping="Wrap"
                                  VerticalScrollBarVisibility="Auto"
@@ -618,7 +620,6 @@
                             </Grid>
                         </Grid>
                         <TextBox x:Name="SupportLogTextBox" Grid.Row="2"
-                                 MinHeight="430"
                                  Style="{StaticResource About.OutputBox}"
                                  VerticalScrollBarVisibility="Auto"
                                  HorizontalScrollBarVisibility="Auto"/>
@@ -645,7 +646,6 @@
                                     Click="ReloadChangelog_Click" Content="Reload"/>
                         </DockPanel>
                         <TextBox x:Name="ChangelogTextBox" Grid.Row="2"
-                                 MinHeight="430"
                                  Style="{StaticResource About.OutputBox}"
                                  TextWrapping="Wrap"
                                  VerticalScrollBarVisibility="Auto"/>

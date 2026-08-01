@@ -35,6 +35,9 @@ namespace AdGuardTray
             serviceCollection.AddSingleton<UpdateService>();
             serviceCollection.AddSingleton<IClock, SystemClock>();
             serviceCollection.AddSingleton<BlockedServiceMutationService>();
+            serviceCollection.AddSingleton<IAdGuardServiceCatalogueProvider>(sp =>
+                new AdGuardServiceCatalogueProvider(
+                    sp.GetRequiredService<IRouterManagerProvider>(), Dispatcher));
             serviceCollection.AddSingleton(sp => new AdGuardServiceScheduleService(
                 Dispatcher,
                 sp.GetRequiredService<BlockedServiceMutationService>(),
