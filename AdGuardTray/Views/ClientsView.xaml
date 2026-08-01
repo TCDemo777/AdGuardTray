@@ -2,21 +2,21 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-        <Grid Margin="0,0,12,0">
+        <Grid Style="{StaticResource Page.Content}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="14"/>
+            <RowDefinition Height="24"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="12"/>
+            <RowDefinition Height="24"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="12"/>
+            <RowDefinition Height="24"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <StackPanel>
             <TextBlock Style="{DynamicResource Text.PageTitle}" Text="Clients"/>
-            <TextBlock Margin="0,5,0,0" Style="{DynamicResource Text.Secondary}"
+            <TextBlock Margin="0,8,0,0" Style="{DynamicResource Text.Secondary}"
                        Text="Connected devices, identity and DNS activity"/>
         </StackPanel>
 

@@ -3,23 +3,22 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              Background="{DynamicResource Brush.WindowBackground}"
     Foreground="{DynamicResource Brush.TextPrimary}">
-    <Grid Background="{DynamicResource Brush.WindowBackground}">
+    <Grid Style="{StaticResource Page.Content}"
+          Background="{DynamicResource Brush.WindowBackground}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="14"/>
+            <RowDefinition Height="24"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="12"/>
+            <RowDefinition Height="32"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <StackPanel>
-            <TextBlock FontSize="24"
-                       FontWeight="Bold"
+            <TextBlock Style="{StaticResource Text.PageTitle}"
                        Text="Global Search"/>
-            <TextBlock Margin="0,5,0,0"
-                       FontSize="14"
-                       Foreground="{DynamicResource Brush.TextSecondary}"
+            <TextBlock Margin="0,8,0,0"
+                       Style="{StaticResource Text.Secondary}"
                        Text="Search clients and recent DNS activity from one place"/>
         </StackPanel>
 

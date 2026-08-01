@@ -21,6 +21,10 @@
     <Thickness x:Key="Spacing.24">24</Thickness>
     <Thickness x:Key="Spacing.32">32</Thickness>
 
+    <Style x:Key="Page.Content" TargetType="FrameworkElement">
+        <Setter Property="Margin" Value="{StaticResource Spacing.24}" />
+    </Style>
+
     <CornerRadius x:Key="Radius.Small">6</CornerRadius>
     <CornerRadius x:Key="Radius.Medium">10</CornerRadius>
     <CornerRadius x:Key="Radius.Large">14</CornerRadius>

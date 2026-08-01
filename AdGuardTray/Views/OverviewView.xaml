@@ -26,13 +26,9 @@
             <Setter Property="Margin" Value="0,7,0,0" />
         </Style>
 
-        <Style x:Key="Overview.StatusBadge" TargetType="Border">
+        <Style x:Key="Overview.StatusBadge" TargetType="Border" BasedOn="{StaticResource Badge}">
             <Setter Property="Padding" Value="10,5" />
-            <Setter Property="Background" Value="{StaticResource Brush.SurfaceMuted}" />
-            <Setter Property="BorderBrush" Value="{StaticResource Brush.Border}" />
-            <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="12" />
-            <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
 
         <Style x:Key="Overview.CardHeading" TargetType="TextBlock" BasedOn="{StaticResource Text.SectionTitle}">
@@ -41,10 +37,10 @@
     </UserControl.Resources>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="0,0,6,24">
+        <StackPanel Style="{StaticResource Page.Content}">
 
             <!-- Page heading -->
-            <Grid Margin="0,0,0,18">
+            <Grid Margin="0,0,0,24">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
@@ -55,7 +51,7 @@
                         Style="{StaticResource Text.PageTitle}"
                         Text="Overview" />
                     <TextBlock
-                        Margin="0,5,0,0"
+                        Margin="0,8,0,0"
                         Style="{StaticResource Text.Secondary}"
                         Text="Router, AdGuard Home and internet health at a glance" />
                 </StackPanel>
@@ -79,20 +75,20 @@
 
             <!-- Health summary -->
             <TextBlock
-                Margin="0,0,0,12"
+                Margin="0,0,0,16"
                 Style="{StaticResource Text.SectionTitle}"
                 Text="System health" />
 
-            <Grid Margin="0,0,0,14">
+            <Grid Margin="0,0,0,32">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="8" />
+                    <ColumnDefinition Width="12" />
                     <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="8" />
+                    <ColumnDefinition Width="12" />
                     <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="8" />
+                    <ColumnDefinition Width="12" />
                     <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="8" />
+                    <ColumnDefinition Width="12" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
@@ -154,7 +150,7 @@
 
             <!-- Main details -->
             <TextBlock
-                Margin="0,4,0,12"
+                Margin="0,0,0,16"
                 Style="{StaticResource Text.SectionTitle}"
                 Text="System details" />
 
@@ -166,14 +162,13 @@
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
-                    <RowDefinition Height="16" />
+                    <RowDefinition Height="24" />
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
                 <Border
                     Grid.Row="0"
                     Grid.Column="0"
                     MinHeight="350"
-                    Margin="0,0,8,16"
                     Style="{StaticResource Card}">
                     <Grid>
                         <Grid.RowDefinitions>
@@ -329,7 +324,6 @@
                     Grid.Row="0"
                     Grid.Column="2"
                     MinHeight="350"
-                    Margin="8,0,0,16"
                     Style="{StaticResource Card}">
                     <Grid>
                         <Grid.RowDefinitions>
