@@ -514,9 +514,13 @@ namespace AdGuardTray.ViewModels
                     (TrafficHistoryCapacity - sampleIndex) *
                     TrafficSampleIntervalSeconds));
 
-            return secondsAgo == 0
-                ? "Now"
-                : $"-{secondsAgo}s";
+            return secondsAgo switch
+            {
+                120 => "2m ago",
+                60 => "1m ago",
+                0 => "Now",
+                _ => $"{secondsAgo}s ago"
+            };
         }
 
         private static string FormatTrafficRate(double megabitsPerSecond)
