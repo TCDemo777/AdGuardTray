@@ -14,7 +14,6 @@ namespace AdGuardTray.Views
     {
         private readonly ClientsViewModel _viewModel;
         private readonly DispatcherTimer _refreshTimer;
-        private readonly RefreshCoordinator _refreshCoordinator;
 
         public ClientsView()
         {
@@ -24,7 +23,6 @@ namespace AdGuardTray.Views
             _viewModel = new ClientsViewModel(
                 app.Services.GetRequiredService<NewDeviceNotificationTracker>());
             DataContext = _viewModel;
-            _refreshCoordinator = new RefreshCoordinator();
 
             _refreshTimer =
                 new DispatcherTimer
@@ -93,8 +91,7 @@ namespace AdGuardTray.Views
         {
             try
             {
-                await _refreshCoordinator.RunOnceAsync(
-                    _ => _viewModel.LoadClientsAsync());
+                await _viewModel.LoadClientsAsync();
             }
             catch (Exception ex)
             {
