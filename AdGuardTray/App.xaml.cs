@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Windows;
 using AdGuardTray.Models;
 using AdGuardTray.Services;
@@ -159,13 +160,43 @@ namespace AdGuardTray
             }
 
             _dashboardWindow = null;
+
+            if (_services is not null)
+            {
+                try
+                {
+                    await _services
+                        .GetRequiredService<NotificationService>()
+                        .DisposeAsync();
+                }
+                catch (OperationCanceledException)
+                {
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(
+                        $"Unable to flush notification history during shutdown: {ex}");
+                }
+
+                try
+                {
+                    await _services.DisposeAsync();
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(
+                        $"Unable to dispose application services cleanly: {ex}");
+                }
+
+                _services = null;
+            }
+
             Shutdown();
         }
 
         protected override void OnExit(ExitEventArgs e)
         {
             _trayManager?.Dispose();
-            _services?.Dispose();
             base.OnExit(e);
         }
 

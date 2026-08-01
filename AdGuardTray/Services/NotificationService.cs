@@ -15,7 +15,7 @@ using AdGuardTray.Models;
 
 namespace AdGuardTray.Services;
 
-public sealed class NotificationService : INotifyPropertyChanged
+public sealed class NotificationService : INotifyPropertyChanged, IAsyncDisposable
 {
     private const int MaximumNotifications = 500;
     private const string WelcomeDeduplicationKey = "routerpilot-welcome";
@@ -29,10 +29,16 @@ public sealed class NotificationService : INotifyPropertyChanged
     private readonly Dispatcher _dispatcher;
     private readonly string _storeFile;
     private readonly SemaphoreSlim _saveGate = new(1, 1);
+    private readonly SemaphoreSlim _flushGate = new(1, 1);
+    private readonly object _lifecycleLock = new();
     private readonly object _deduplicationLock = new();
     private readonly Dictionary<string, DateTimeOffset> _deduplicationTimes =
         new(StringComparer.Ordinal);
     private long _saveVersion;
+    private CancellationTokenSource? _debounceCancellation;
+    private Task _pendingSaveTask = Task.CompletedTask;
+    private Task? _disposeTask;
+    private bool _disposalStarted;
 
     public NotificationService(
         Dispatcher dispatcher,
@@ -193,20 +199,38 @@ public sealed class NotificationService : INotifyPropertyChanged
 
     private void QueueSave()
     {
-        long version = Interlocked.Increment(ref _saveVersion);
-        _ = SaveLatestAsync(version);
+        lock (_lifecycleLock)
+        {
+            if (_disposalStarted)
+                return;
+
+            long version = Interlocked.Increment(ref _saveVersion);
+            _debounceCancellation?.Cancel();
+
+            var cancellation = new CancellationTokenSource();
+            _debounceCancellation = cancellation;
+            _pendingSaveTask = SaveLatestAsync(
+                _pendingSaveTask,
+                version,
+                cancellation);
+        }
     }
 
-    private async Task SaveLatestAsync(long version)
+    private async Task SaveLatestAsync(
+        Task previousSave,
+        long version,
+        CancellationTokenSource cancellation)
     {
         try
         {
-            await Task.Delay(75).ConfigureAwait(false);
+            await Task.Delay(75, cancellation.Token).ConfigureAwait(false);
+            await ObserveBackgroundSaveAsync(previousSave).ConfigureAwait(false);
+
             if (version != Interlocked.Read(ref _saveVersion))
                 return;
 
-            List<AppNotification> snapshot = await _dispatcher.InvokeAsync(
-                () => Notifications.ToList());
+            List<AppNotification> snapshot =
+                await CreateSnapshotAsync().ConfigureAwait(false);
 
             await _saveGate.WaitAsync().ConfigureAwait(false);
             try
@@ -221,15 +245,93 @@ public sealed class NotificationService : INotifyPropertyChanged
                 _saveGate.Release();
             }
         }
+        catch (OperationCanceledException)
+            when (cancellation.IsCancellationRequested)
+        {
+            await ObserveBackgroundSaveAsync(previousSave).ConfigureAwait(false);
+        }
         catch (Exception ex) when (ex is IOException
                                        or UnauthorizedAccessException
                                        or JsonException)
         {
             Debug.WriteLine($"Unable to save notification history: {ex}");
         }
+        finally
+        {
+            cancellation.Dispose();
+        }
     }
 
-    private async Task WriteAtomicallyAsync(List<AppNotification> snapshot)
+    public Task FlushAsync(CancellationToken cancellationToken = default)
+    {
+        lock (_lifecycleLock)
+        {
+            if (_disposeTask is not null)
+                return _disposeTask.WaitAsync(cancellationToken);
+        }
+
+        return FlushCoreAsync(cancellationToken);
+    }
+
+    private async Task FlushCoreAsync(CancellationToken cancellationToken)
+    {
+        await _flushGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+
+        try
+        {
+            Task pendingSave;
+
+            lock (_lifecycleLock)
+            {
+                _debounceCancellation?.Cancel();
+                pendingSave = _pendingSaveTask;
+            }
+
+            await pendingSave.WaitAsync(cancellationToken).ConfigureAwait(false);
+            List<AppNotification> snapshot =
+                await CreateSnapshotAsync().ConfigureAwait(false);
+
+            await _saveGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                await WriteAtomicallyAsync(snapshot, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            finally
+            {
+                _saveGate.Release();
+            }
+        }
+        finally
+        {
+            _flushGate.Release();
+        }
+    }
+
+    private async Task<List<AppNotification>> CreateSnapshotAsync()
+    {
+        if (_dispatcher.CheckAccess())
+            return Notifications.ToList();
+
+        return await _dispatcher.InvokeAsync(
+            () => Notifications.ToList());
+    }
+
+    private static async Task ObserveBackgroundSaveAsync(Task saveTask)
+    {
+        try
+        {
+            await saveTask.ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Unable to save notification history: {ex}");
+        }
+    }
+
+    private async Task WriteAtomicallyAsync(
+        List<AppNotification> snapshot,
+        CancellationToken cancellationToken = default)
     {
         string folder = Path.GetDirectoryName(_storeFile)!;
         Directory.CreateDirectory(folder);
@@ -244,15 +346,45 @@ public sealed class NotificationService : INotifyPropertyChanged
                          4096,
                          useAsync: true))
         {
-            await JsonSerializer.SerializeAsync(stream, snapshot, JsonOptions)
+            await JsonSerializer.SerializeAsync(
+                    stream,
+                    snapshot,
+                    JsonOptions,
+                    cancellationToken)
                 .ConfigureAwait(false);
-            await stream.FlushAsync().ConfigureAwait(false);
+            await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
 
         if (File.Exists(_storeFile))
             File.Replace(temporaryFile, _storeFile, backupFile, true);
         else
             File.Move(temporaryFile, _storeFile);
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        lock (_lifecycleLock)
+        {
+            if (_disposeTask is not null)
+                return new ValueTask(_disposeTask);
+
+            _disposalStarted = true;
+            _disposeTask = DisposeCoreAsync();
+            return new ValueTask(_disposeTask);
+        }
+    }
+
+    private async Task DisposeCoreAsync()
+    {
+        await FlushCoreAsync(CancellationToken.None).ConfigureAwait(false);
+
+        lock (_lifecycleLock)
+        {
+            _debounceCancellation = null;
+        }
+
+        _saveGate.Dispose();
+        _flushGate.Dispose();
     }
 
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null) =>
