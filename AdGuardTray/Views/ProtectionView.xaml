@@ -510,6 +510,98 @@
                     </StackPanel>
                 </Border>
 
+                <!-- AdGuard service schedules -->
+                <Border Margin="0,0,0,16" Style="{DynamicResource Card}" DataContext="{Binding Schedules}">
+                    <StackPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Style="{DynamicResource Text.SectionTitle}" Text="Schedules"/>
+                                <TextBlock Margin="0,5,0,0" Style="{DynamicResource Text.Secondary}"
+                                           Text="Allow or block AdGuard services automatically at selected local times."/>
+                                <TextBlock Margin="0,4,0,0" Style="{DynamicResource Text.Secondary}"
+                                           Text="RouterPilot must be running in the notification area for schedules to run."/>
+                            </StackPanel>
+                            <Button Grid.Column="1" Height="36" Style="{DynamicResource Button.Secondary}"
+                                    Content="Add schedule" Command="{Binding NewScheduleCommand}"/>
+                        </Grid>
+
+                        <ItemsControl Margin="0,16,0,0" ItemsSource="{Binding Schedules}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Margin="0,0,0,8" Padding="12" Background="{DynamicResource Brush.SurfaceMuted}"
+                                            BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="8">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                            <StackPanel>
+                                                <TextBlock FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" Text="{Binding Name}"/>
+                                                <TextBlock Margin="0,3,0,0" Style="{DynamicResource Text.Secondary}">
+                                                    <Run Text="{Binding Action}"/><Run Text=" · "/><Run Text="{Binding ServiceDisplay}"/>
+                                                    <Run Text=" · "/><Run Text="{Binding RecurrenceDisplay}"/><Run Text=" · "/><Run Text="{Binding NextExecutionDisplay}"/>
+                                                </TextBlock>
+                                                <TextBlock Margin="0,3,0,0" Style="{DynamicResource Text.Secondary}" Text="{Binding LastResultDisplay}"/>
+                                            </StackPanel>
+                                            <WrapPanel Grid.Column="1" Margin="12,0,0,0">
+                                                <Button Style="{StaticResource Protection.ActionButton}" Content="Edit"
+                                                        Command="{Binding DataContext.EditCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}"/>
+                                                <Button Style="{StaticResource Protection.ActionButton}" Content="Duplicate"
+                                                        Command="{Binding DataContext.DuplicateCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}"/>
+                                                <Button Style="{StaticResource Protection.ActionButton}" Content="Enable / disable"
+                                                        Command="{Binding DataContext.ToggleCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}"/>
+                                                <Button Style="{StaticResource Protection.ActionButton}" Content="Run now" Click="RunScheduleNow_Click"/>
+                                                <Button Style="{StaticResource Protection.ActionButton}" Content="Delete" Click="DeleteSchedule_Click"/>
+                                            </WrapPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <Border Margin="0,12,0,0" Padding="14" Background="{DynamicResource Brush.SurfaceMuted}" CornerRadius="10">
+                            <StackPanel>
+                                <TextBlock FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" Text="Schedule editor"/>
+                                <Grid Margin="0,12,0,0">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="2*"/><ColumnDefinition Width="12"/><ColumnDefinition Width="120"/><ColumnDefinition Width="12"/><ColumnDefinition Width="150"/><ColumnDefinition Width="12"/><ColumnDefinition Width="160"/></Grid.ColumnDefinitions>
+                                    <TextBox Style="{StaticResource Protection.Input}" Text="{Binding EditorName, UpdateSourceTrigger=PropertyChanged}" ToolTip="Schedule name"/>
+                                    <TextBox Grid.Column="2" Style="{StaticResource Protection.Input}" Text="{Binding EditorTime}" ToolTip="Local time (HH:mm)"/>
+                                    <ComboBox Grid.Column="4" Style="{StaticResource Protection.ComboBox}" ItemsSource="{Binding Actions}" SelectedItem="{Binding EditorAction}"/>
+                                    <ComboBox Grid.Column="6" Style="{StaticResource Protection.ComboBox}" ItemsSource="{Binding Recurrences}" SelectedItem="{Binding EditorRecurrence}"/>
+                                </Grid>
+                                <TextBlock Margin="0,12,0,5" Style="{DynamicResource Text.Secondary}" Text="Services"/>
+                                <ItemsControl ItemsSource="{Binding AvailableServices}" MaxHeight="150">
+                                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate><DataTemplate><CheckBox Margin="0,0,16,8" Style="{StaticResource Protection.Option}" Content="{Binding Name}" IsChecked="{Binding IsSelected}"/></DataTemplate></ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <TextBlock Margin="0,6,0,5" Style="{DynamicResource Text.Secondary}" Text="Selected days (used by Selected Days recurrence)"/>
+                                <WrapPanel>
+                                    <CheckBox Style="{StaticResource Protection.Option}" Margin="0,0,12,8" Content="Mon" IsChecked="{Binding Monday}"/>
+                                    <CheckBox Style="{StaticResource Protection.Option}" Margin="0,0,12,8" Content="Tue" IsChecked="{Binding Tuesday}"/>
+                                    <CheckBox Style="{StaticResource Protection.Option}" Margin="0,0,12,8" Content="Wed" IsChecked="{Binding Wednesday}"/>
+                                    <CheckBox Style="{StaticResource Protection.Option}" Margin="0,0,12,8" Content="Thu" IsChecked="{Binding Thursday}"/>
+                                    <CheckBox Style="{StaticResource Protection.Option}" Margin="0,0,12,8" Content="Fri" IsChecked="{Binding Friday}"/>
+                                    <CheckBox Style="{StaticResource Protection.Option}" Margin="0,0,12,8" Content="Sat" IsChecked="{Binding Saturday}"/>
+                                    <CheckBox Style="{StaticResource Protection.Option}" Margin="0,0,12,8" Content="Sun" IsChecked="{Binding Sunday}"/>
+                                    <DatePicker Margin="12,0,0,8" SelectedDate="{Binding EditorOneTimeDate}" ToolTip="Date for a one-time schedule"/>
+                                </WrapPanel>
+                                <Button Width="120" HorizontalAlignment="Left" Style="{DynamicResource Button.Primary}" Content="Save schedule" Command="{Binding SaveCommand}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Expander Margin="0,14,0,0" Header="Create allowed-time window">
+                            <StackPanel Margin="0,10,0,0">
+                                <TextBlock Style="{DynamicResource Text.Secondary}" Text="Create linked Allow and Block schedules. Times after midnight are assigned to the following day."/>
+                                <WrapPanel Margin="0,10,0,0">
+                                    <ComboBox Width="220" Margin="0,0,10,8" Style="{StaticResource Protection.ComboBox}" ItemsSource="{Binding AvailableServices}" DisplayMemberPath="Name" SelectedItem="{Binding WindowService}"/>
+                                    <TextBox Width="110" Margin="0,0,10,8" Style="{StaticResource Protection.Input}" Text="{Binding WindowAllowTime}" ToolTip="Allow at (HH:mm)"/>
+                                    <TextBox Width="110" Margin="0,0,10,8" Style="{StaticResource Protection.Input}" Text="{Binding WindowBlockTime}" ToolTip="Block again at (HH:mm)"/>
+                                    <Button Style="{DynamicResource Button.Secondary}" Content="Create window" Command="{Binding CreateWindowCommand}"/>
+                                </WrapPanel>
+                            </StackPanel>
+                        </Expander>
+                        <TextBlock Margin="0,8,0,0" Style="{DynamicResource Text.Secondary}" Text="{Binding Status}"/>
+                    </StackPanel>
+                </Border>
+
                 <!-- Recent DNS activity -->
                 <Border Margin="0,0,0,16" Style="{DynamicResource Card}">
                     <Grid>

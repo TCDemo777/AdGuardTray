@@ -32,6 +32,14 @@ namespace AdGuardTray
                 RouterManagerProvider>();
             serviceCollection.AddSingleton(
                 _ => new NotificationService(Dispatcher));
+            serviceCollection.AddSingleton<IClock, SystemClock>();
+            serviceCollection.AddSingleton<BlockedServiceMutationService>();
+            serviceCollection.AddSingleton(sp => new AdGuardServiceScheduleService(
+                Dispatcher,
+                sp.GetRequiredService<BlockedServiceMutationService>(),
+                sp.GetRequiredService<NotificationService>(),
+                sp.GetRequiredService<IClock>()));
+            serviceCollection.AddSingleton<AdGuardServiceScheduleViewModel>();
             serviceCollection.AddSingleton<AdGuardProtectionNotificationTracker>();
             serviceCollection.AddSingleton<NewDeviceNotificationTracker>();
             serviceCollection.AddSingleton<NotificationCentreViewModel>();
@@ -43,6 +51,8 @@ namespace AdGuardTray
             _services = serviceCollection.BuildServiceProvider();
 
             await Services.GetRequiredService<NotificationService>()
+                .InitializeAsync();
+            await Services.GetRequiredService<AdGuardServiceScheduleService>()
                 .InitializeAsync();
 
             AppSettings savedSettings = new SettingsService().Load();
@@ -153,6 +163,16 @@ namespace AdGuardTray
 
             if (_services is not null)
             {
+                try
+                {
+                    await _services.GetRequiredService<AdGuardServiceScheduleService>().DisposeAsync();
+                }
+                catch (OperationCanceledException) { }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Unable to flush AdGuard service schedules during shutdown: {ex}");
+                }
+
                 try
                 {
                     await _services

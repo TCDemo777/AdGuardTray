@@ -18,6 +18,7 @@ namespace AdGuardTray.Views
     {
         private const string DashboardRefreshTask = "DashboardRefresh";
         private const string TrafficRefreshTask = "TrafficRefresh";
+        private const string AdGuardScheduleTask = "AdGuardServiceSchedules";
 
         private readonly DashboardViewModel _viewModel;
         private readonly SettingsService _settingsService;
@@ -25,6 +26,7 @@ namespace AdGuardTray.Views
         private readonly NotificationCentreViewModel _notificationCentreViewModel;
         private readonly AdGuardProtectionNotificationTracker _protectionNotificationTracker;
         private readonly RefreshCoordinator _refreshCoordinator;
+        private readonly AdGuardServiceScheduleService _scheduleService;
         private readonly SemaphoreSlim _routerManagerUsageGate = new(1, 1);
         private bool _refreshInProgress;
         private bool _trafficRefreshInProgress;
@@ -71,6 +73,8 @@ namespace AdGuardTray.Views
                 .Services.GetRequiredService<AdGuardProtectionNotificationTracker>();
             _routerManagerProvider = ((App)Application.Current).Services
                 .GetRequiredService<IRouterManagerProvider>();
+            _scheduleService = ((App)Application.Current).Services
+                .GetRequiredService<AdGuardServiceScheduleService>();
             NotificationButton.DataContext = _notificationService;
 
             _settingsService =
@@ -98,6 +102,11 @@ namespace AdGuardTray.Views
                 cancellationToken => RunOnUiThreadAsync(
                     () => RefreshNetworkTrafficAsync(cancellationToken)),
                 enabled: false);
+            _refreshCoordinator.Register(
+                AdGuardScheduleTask,
+                TimeSpan.FromMinutes(1),
+                cancellationToken => _scheduleService.EvaluateDueAsync(cancellationToken),
+                enabled: false);
 
             ProtectionStateNotifier.StateChanged +=
                 ProtectionStateNotifier_StateChanged;
@@ -113,6 +122,9 @@ namespace AdGuardTray.Views
             await _refreshCoordinator.SetEnabledAsync(
                 DashboardRefreshTask,
                 true);
+
+            await _refreshCoordinator.RunNowAsync(AdGuardScheduleTask);
+            await _refreshCoordinator.SetEnabledAsync(AdGuardScheduleTask, true);
 
             if (IsVisible)
             {
