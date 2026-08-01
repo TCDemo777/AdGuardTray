@@ -19,7 +19,12 @@ public sealed class RefreshCoordinator : IAsyncDisposable
 
         public bool Enabled { get; set; }
 
+        public long LifecycleVersion { get; set; }
+
         public SemaphoreSlim Gate { get; } = new(1, 1);
+
+        // Serializes ownership changes for the loop task and its token source.
+        public SemaphoreSlim LifecycleGate { get; } = new(1, 1);
 
         public CancellationTokenSource? LoopCancellation { get; set; }
 
@@ -30,6 +35,7 @@ public sealed class RefreshCoordinator : IAsyncDisposable
     private readonly Dictionary<string, RefreshTaskRegistration> _tasks =
         new(StringComparer.OrdinalIgnoreCase);
     private bool _disposed;
+    private Task? _disposeTask;
 
     public void Register(
         string name,
@@ -67,34 +73,35 @@ public sealed class RefreshCoordinator : IAsyncDisposable
 
             if (enabled)
             {
-                StartLoop(registration);
+                StartLoopLocked(registration);
             }
         }
     }
 
-    public void SetEnabled(string name, bool enabled)
+    public async Task SetEnabledAsync(string name, bool enabled)
     {
+        RefreshTaskRegistration registration;
+        long lifecycleVersion;
+
         lock (_syncRoot)
         {
             ThrowIfDisposed();
-            RefreshTaskRegistration registration = GetTask(name);
+            registration = GetTask(name);
 
-            if (registration.Enabled == enabled)
+            if (registration.Enabled != enabled)
             {
-                return;
+                registration.Enabled = enabled;
+                registration.LifecycleVersion++;
             }
 
-            registration.Enabled = enabled;
-
-            if (enabled)
-            {
-                StartLoop(registration);
-            }
-            else
-            {
-                StopLoop(registration);
-            }
+            lifecycleVersion = registration.LifecycleVersion;
         }
+
+        await ReconcileLoopAsync(
+                registration,
+                lifecycleVersion,
+                forceRestart: false)
+            .ConfigureAwait(false);
     }
 
     public void UpdateInterval(string name, TimeSpan interval)
@@ -104,10 +111,13 @@ public sealed class RefreshCoordinator : IAsyncDisposable
             throw new ArgumentOutOfRangeException(nameof(interval));
         }
 
+        RefreshTaskRegistration registration;
+        long lifecycleVersion;
+
         lock (_syncRoot)
         {
             ThrowIfDisposed();
-            RefreshTaskRegistration registration = GetTask(name);
+            registration = GetTask(name);
 
             if (registration.Interval == interval)
             {
@@ -115,40 +125,46 @@ public sealed class RefreshCoordinator : IAsyncDisposable
             }
 
             registration.Interval = interval;
-
-            if (registration.Enabled)
-            {
-                StopLoop(registration);
-                StartLoop(registration);
-            }
+            lifecycleVersion = ++registration.LifecycleVersion;
         }
+
+        // A task may update its own interval from inside its callback. Queueing
+        // avoids making that callback await the loop that currently owns it.
+        _ = ObserveLifecycleTransitionAsync(
+            ReconcileLoopAsync(
+                registration,
+                lifecycleVersion,
+                forceRestart: true),
+            registration.Name);
     }
 
     public Task<bool> RunNowAsync(
         string name,
         CancellationToken cancellationToken = default)
     {
-        RefreshTaskRegistration registration;
+        lock (_syncRoot)
+        {
+            ThrowIfDisposed();
+            return ExecuteAsync(GetTask(name), cancellationToken);
+        }
+    }
+
+    public async Task StopAllAsync()
+    {
+        (RefreshTaskRegistration Registration, long Version)[] tasks;
 
         lock (_syncRoot)
         {
             ThrowIfDisposed();
-            registration = GetTask(name);
+            tasks = DisableAllLocked();
         }
 
-        return ExecuteAsync(registration, cancellationToken);
-    }
-
-    public void StopAll()
-    {
-        lock (_syncRoot)
-        {
-            foreach (RefreshTaskRegistration registration in _tasks.Values)
-            {
-                registration.Enabled = false;
-                StopLoop(registration);
-            }
-        }
+        await Task.WhenAll(
+                tasks.Select(task => ReconcileLoopAsync(
+                    task.Registration,
+                    task.Version,
+                    forceRestart: false)))
+            .ConfigureAwait(false);
     }
 
     private RefreshTaskRegistration GetTask(string name)
@@ -162,18 +178,123 @@ public sealed class RefreshCoordinator : IAsyncDisposable
         return task;
     }
 
-    private void StartLoop(RefreshTaskRegistration registration)
+    private (RefreshTaskRegistration Registration, long Version)[]
+        DisableAllLocked()
+    {
+        return _tasks.Values
+            .Select(registration =>
+            {
+                registration.Enabled = false;
+                long version = ++registration.LifecycleVersion;
+                return (registration, version);
+            })
+            .ToArray();
+    }
+
+    private async Task ReconcileLoopAsync(
+        RefreshTaskRegistration registration,
+        long lifecycleVersion,
+        bool forceRestart)
+    {
+        await registration.LifecycleGate.WaitAsync()
+            .ConfigureAwait(false);
+
+        try
+        {
+            CancellationTokenSource? oldCancellation;
+            Task? oldLoop;
+
+            lock (_syncRoot)
+            {
+                if (lifecycleVersion != registration.LifecycleVersion)
+                {
+                    return;
+                }
+
+                bool loopMatchesDesiredState = registration.Enabled
+                    ? registration.LoopTask is not null
+                    : registration.LoopTask is null;
+
+                if (!forceRestart && loopMatchesDesiredState)
+                {
+                    return;
+                }
+
+                oldCancellation = registration.LoopCancellation;
+                oldLoop = registration.LoopTask;
+                registration.LoopCancellation = null;
+                registration.LoopTask = null;
+            }
+
+            oldCancellation?.Cancel();
+
+            if (oldLoop is not null)
+            {
+                await AwaitLoopCompletionAsync(
+                        oldLoop,
+                        registration.Name)
+                    .ConfigureAwait(false);
+            }
+
+            oldCancellation?.Dispose();
+
+            lock (_syncRoot)
+            {
+                if (!_disposed &&
+                    lifecycleVersion == registration.LifecycleVersion &&
+                    registration.Enabled)
+                {
+                    StartLoopLocked(registration);
+                }
+            }
+        }
+        finally
+        {
+            registration.LifecycleGate.Release();
+        }
+    }
+
+    private static async Task ObserveLifecycleTransitionAsync(
+        Task transition,
+        string taskName)
+    {
+        try
+        {
+            await transition.ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(
+                $"Refresh task '{taskName}' lifecycle transition failed: {ex}");
+        }
+    }
+
+    private static async Task AwaitLoopCompletionAsync(
+        Task loopTask,
+        string taskName)
+    {
+        try
+        {
+            await loopTask.ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(
+                $"Refresh task '{taskName}' loop stopped with an error: {ex}");
+        }
+    }
+
+    private static void StartLoopLocked(
+        RefreshTaskRegistration registration)
     {
         var cancellation = new CancellationTokenSource();
         registration.LoopCancellation = cancellation;
         registration.LoopTask = RunLoopAsync(
             registration,
             cancellation.Token);
-    }
-
-    private static void StopLoop(RefreshTaskRegistration registration)
-    {
-        registration.LoopCancellation?.Cancel();
     }
 
     private static async Task RunLoopAsync(
@@ -238,47 +359,43 @@ public sealed class RefreshCoordinator : IAsyncDisposable
         ObjectDisposedException.ThrowIf(_disposed, this);
     }
 
-    public async ValueTask DisposeAsync()
+    public ValueTask DisposeAsync()
     {
-        Task[] runningTasks;
-
         lock (_syncRoot)
         {
-            if (_disposed)
+            if (_disposeTask is not null)
             {
-                return;
+                return new ValueTask(_disposeTask);
             }
 
             _disposed = true;
-
-            foreach (RefreshTaskRegistration registration in _tasks.Values)
-            {
-                registration.Enabled = false;
-                StopLoop(registration);
-            }
-
-            runningTasks = _tasks.Values
-                .Select(registration => registration.LoopTask)
-                .OfType<Task>()
-                .ToArray();
+            (RefreshTaskRegistration Registration, long Version)[] tasks =
+                DisableAllLocked();
+            _disposeTask = DisposeCoreAsync(tasks);
+            return new ValueTask(_disposeTask);
         }
+    }
 
-        try
+    private async Task DisposeCoreAsync(
+        (RefreshTaskRegistration Registration, long Version)[] tasks)
+    {
+        await Task.WhenAll(
+                tasks.Select(task => ReconcileLoopAsync(
+                    task.Registration,
+                    task.Version,
+                    forceRestart: false)))
+            .ConfigureAwait(false);
+
+        foreach ((RefreshTaskRegistration registration, _) in tasks)
         {
-            await Task.WhenAll(runningTasks).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException)
-        {
+            await registration.Gate.WaitAsync().ConfigureAwait(false);
+            registration.Gate.Release();
+            registration.Gate.Dispose();
+            registration.LifecycleGate.Dispose();
         }
 
         lock (_syncRoot)
         {
-            foreach (RefreshTaskRegistration registration in _tasks.Values)
-            {
-                registration.LoopCancellation?.Dispose();
-                registration.Gate.Dispose();
-            }
-
             _tasks.Clear();
         }
     }
