@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Navigation;
+using AdGuardTray.Models;
 using AdGuardTray.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Win32;
@@ -19,6 +20,7 @@ namespace AdGuardTray.Views
     {
         private readonly IRouterManagerProvider _routerManagerProvider;
         private readonly SettingsService _settingsService;
+        private readonly UpdateService _updateService;
 
         private readonly StringBuilder _supportLog =
             new StringBuilder();
@@ -30,11 +32,56 @@ namespace AdGuardTray.Views
                 .GetRequiredService<IRouterManagerProvider>();
             _settingsService = ((App)Application.Current).Services
                 .GetRequiredService<SettingsService>();
+            _updateService = ((App)Application.Current).Services
+                .GetRequiredService<UpdateService>();
             VersionTextBlock.Text = "Version " + GetApplicationVersion();
             BuildDateTextBlock.Text = "Build date: " + GetBuildDate();
             LoadChangelog();
             LoadSystemInformation();
             AppendLog("Support page opened.");
+            UpdateReleaseDisplay();
+        }
+
+        private async void CheckForUpdates_Click(object sender, RoutedEventArgs e)
+        {
+            CheckForUpdatesButton.IsEnabled = false;
+            LatestVersionTextBlock.Text = "Checking GitHub Releases...";
+            try
+            {
+                UpdateCheckResult result = await _updateService.CheckForUpdatesAsync(manual: true);
+                LatestVersionTextBlock.Text = result.LatestRelease is null
+                    ? result.Message
+                    : "Latest available version: " + result.LatestRelease.Version;
+                LastUpdateCheckTextBlock.Text = result.CheckedAt is { } checkedAt
+                    ? "Last checked: " + checkedAt.ToLocalTime().ToString("dd MMM yyyy HH:mm")
+                    : "Last checked: Never";
+                OpenReleaseNotesButton.IsEnabled = result.LatestRelease?.ReleaseNotesUrl is not null;
+            }
+            catch (OperationCanceledException)
+            {
+                LatestVersionTextBlock.Text = "Update check cancelled.";
+            }
+            finally { CheckForUpdatesButton.IsEnabled = true; }
+        }
+
+        private void OpenReleaseNotes_Click(object sender, RoutedEventArgs e)
+        {
+            string target = _updateService.LatestRelease?.ReleaseNotesUrl?.AbsoluteUri
+                ?? UpdateService.ReleasesPageUrl;
+            Process.Start(new ProcessStartInfo(target) { UseShellExecute = true });
+        }
+
+        private void UpdateReleaseDisplay()
+        {
+            AppSettings settings = _settingsService.Load();
+            CurrentUpdateVersionTextBlock.Text = "Current version: " + GetApplicationVersion();
+            LatestVersionTextBlock.Text = string.IsNullOrWhiteSpace(settings.LatestVersionSeen)
+                ? "Latest available version: Not checked yet"
+                : "Latest available version: " + settings.LatestVersionSeen;
+            LastUpdateCheckTextBlock.Text = settings.LastSuccessfulUpdateCheckUtc is { } last
+                ? "Last checked: " + last.ToLocalTime().ToString("dd MMM yyyy HH:mm")
+                : "Last checked: Never";
+            OpenReleaseNotesButton.IsEnabled = !string.IsNullOrWhiteSpace(settings.LatestVersionSeen);
         }
 
         private Task<RouterManager> GetRouterManagerAsync()

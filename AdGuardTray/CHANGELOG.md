@@ -1,5 +1,34 @@
 # RouterPilot Changelog
 
+## [1.5.1] - 2026-08-01
+
+### Added
+- Rebranded the user-facing application as RouterPilot while retaining the internal AdGuardTray project, executable, settings folder and repository names.
+- Added the persistent Notification Centre with unread filtering and local JSON storage.
+- Added state-change notifications for router connectivity and AdGuard Home protection.
+- Added session-aware new-device detection without reconnect notification spam.
+- Added explicit WAN throughput axes, legends and tooltips, plus timestamp-aware DNS query-history presentation.
+
+### Changed
+- Stabilised the live WAN chart with persistent series and observable history collections.
+- Updated DNS history incrementally instead of rebuilding chart collections on every refresh.
+- Centralised recurring refresh scheduling through RefreshCoordinator with cancellation-safe task restarts.
+- Centralised RouterManager session ownership and replacement through the application service provider.
+- Standardised RouterPilot card spacing, typography, badges, buttons, empty states and light/dark theme presentation.
+
+### Fixed
+- Prevented stale traffic baselines and negative throughput values after restoring the dashboard from the notification area.
+- Prevented overlapping refresh loops during enable, disable, interval-change and shutdown operations.
+- Fixed router and AdGuard state-change notifications after manual or external changes.
+- Fixed static client-refresh event subscriptions and notification persistence races.
+- Ensured pending notification history and application-scoped services flush during awaited shutdown.
+
+### Internal
+- Preserved stable ObservableCollection instances and UI-thread-safe chart mutations.
+- Improved asynchronous disposal, cancellation propagation and refresh re-entry protection.
+- Encapsulated notification collections behind read-only observable views.
+- Kept release, assembly, file, informational and installer versions synchronized at 1.5.1.
+
 ## [1.5.0] - 2026-08-01
 
 Version 1.5.0 introduces the RouterPilot product identity.

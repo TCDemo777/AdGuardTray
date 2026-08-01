@@ -32,6 +32,7 @@ namespace AdGuardTray
                 RouterManagerProvider>();
             serviceCollection.AddSingleton(
                 _ => new NotificationService(Dispatcher));
+            serviceCollection.AddSingleton<UpdateService>();
             serviceCollection.AddSingleton<IClock, SystemClock>();
             serviceCollection.AddSingleton<BlockedServiceMutationService>();
             serviceCollection.AddSingleton(sp => new AdGuardServiceScheduleService(
