@@ -11,17 +11,22 @@ namespace AdGuardTray.ViewModels;
 public partial class NotificationCentreViewModel : ObservableObject
 {
     private readonly NotificationService _notificationService;
+    private readonly CollectionViewSource _notificationViewSource;
 
     public NotificationCentreViewModel(NotificationService notificationService)
     {
         _notificationService = notificationService;
         Notifications = notificationService.Notifications;
-        NotificationsView = CollectionViewSource.GetDefaultView(Notifications);
+        _notificationViewSource = new CollectionViewSource
+        {
+            Source = Notifications
+        };
+        NotificationsView = _notificationViewSource.View;
         NotificationsView.Filter = MatchesFilter;
         _notificationService.PropertyChanged += NotificationService_PropertyChanged;
     }
 
-    public ObservableCollection<AppNotification> Notifications { get; }
+    public ReadOnlyObservableCollection<AppNotification> Notifications { get; }
 
     public ICollectionView NotificationsView { get; }
 

@@ -28,6 +28,7 @@ public sealed class NotificationService : INotifyPropertyChanged, IAsyncDisposab
 
     private readonly Dispatcher _dispatcher;
     private readonly string _storeFile;
+    private readonly ObservableCollection<AppNotification> _notifications = new();
     private readonly SemaphoreSlim _saveGate = new(1, 1);
     private readonly SemaphoreSlim _flushGate = new(1, 1);
     private readonly object _lifecycleLock = new();
@@ -51,13 +52,15 @@ public sealed class NotificationService : INotifyPropertyChanged, IAsyncDisposab
             "AdGuardTray");
         _storeFile = Path.Combine(folder, "notifications.json");
         DeduplicationQuietPeriod = deduplicationQuietPeriod ?? TimeSpan.FromMinutes(5);
+        Notifications = new ReadOnlyObservableCollection<AppNotification>(
+            _notifications);
     }
 
-    public ObservableCollection<AppNotification> Notifications { get; } = new();
+    public ReadOnlyObservableCollection<AppNotification> Notifications { get; }
 
     public TimeSpan DeduplicationQuietPeriod { get; set; }
 
-    public int UnreadCount => Notifications.Count(notification => !notification.IsRead);
+    public int UnreadCount => _notifications.Count(notification => !notification.IsRead);
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -67,12 +70,12 @@ public sealed class NotificationService : INotifyPropertyChanged, IAsyncDisposab
 
         await _dispatcher.InvokeAsync(() =>
         {
-            Notifications.Clear();
+            _notifications.Clear();
             foreach (AppNotification notification in loaded
                          .OrderByDescending(item => item.Timestamp)
                          .Take(MaximumNotifications))
             {
-                Notifications.Add(notification);
+                _notifications.Add(notification);
                 RememberDeduplication(notification);
             }
 
@@ -101,9 +104,9 @@ public sealed class NotificationService : INotifyPropertyChanged, IAsyncDisposab
 
         await _dispatcher.InvokeAsync(() =>
         {
-            Notifications.Insert(0, notification);
-            while (Notifications.Count > MaximumNotifications)
-                Notifications.RemoveAt(Notifications.Count - 1);
+            _notifications.Insert(0, notification);
+            while (_notifications.Count > MaximumNotifications)
+                _notifications.RemoveAt(_notifications.Count - 1);
 
             RememberDeduplication(notification);
             OnPropertyChanged(nameof(UnreadCount));
@@ -116,13 +119,13 @@ public sealed class NotificationService : INotifyPropertyChanged, IAsyncDisposab
     public Task MarkReadAsync(AppNotification? notification) =>
         MutateAsync(() =>
         {
-            if (notification is not null && Notifications.Contains(notification))
+            if (notification is not null && _notifications.Contains(notification))
                 notification.IsRead = true;
         });
 
     public Task MarkAllReadAsync() => MutateAsync(() =>
     {
-        foreach (AppNotification notification in Notifications)
+        foreach (AppNotification notification in _notifications)
             notification.IsRead = true;
     });
 
@@ -130,10 +133,10 @@ public sealed class NotificationService : INotifyPropertyChanged, IAsyncDisposab
         MutateAsync(() =>
         {
             if (notification is not null)
-                Notifications.Remove(notification);
+                _notifications.Remove(notification);
         });
 
-    public Task ClearAllAsync() => MutateAsync(Notifications.Clear);
+    public Task ClearAllAsync() => MutateAsync(_notifications.Clear);
 
     private async Task MutateAsync(Action mutation)
     {
@@ -311,10 +314,10 @@ public sealed class NotificationService : INotifyPropertyChanged, IAsyncDisposab
     private async Task<List<AppNotification>> CreateSnapshotAsync()
     {
         if (_dispatcher.CheckAccess())
-            return Notifications.ToList();
+            return _notifications.ToList();
 
         return await _dispatcher.InvokeAsync(
-            () => Notifications.ToList());
+            () => _notifications.ToList());
     }
 
     private static async Task ObserveBackgroundSaveAsync(Task saveTask)
