@@ -37,7 +37,7 @@ public sealed class NotificationService : INotifyPropertyChanged, IAsyncDisposab
         new(StringComparer.Ordinal);
     private long _saveVersion;
     private CancellationTokenSource? _debounceCancellation;
-    private Task _pendingSaveTask = Task.CompletedTask;
+    private Task? _pendingSaveTask;
     private Task? _disposeTask;
     private bool _disposalStarted;
 
@@ -202,32 +202,36 @@ public sealed class NotificationService : INotifyPropertyChanged, IAsyncDisposab
 
     private void QueueSave()
     {
+        CancellationTokenSource? oldCancellation;
+        Task? oldSaveTask;
+
         lock (_lifecycleLock)
         {
             if (_disposalStarted)
                 return;
 
+            (oldCancellation, oldSaveTask) = DetachPendingSaveLocked();
             long version = Interlocked.Increment(ref _saveVersion);
-            _debounceCancellation?.Cancel();
-
             var cancellation = new CancellationTokenSource();
             _debounceCancellation = cancellation;
             _pendingSaveTask = SaveLatestAsync(
-                _pendingSaveTask,
                 version,
-                cancellation);
+                cancellation.Token);
         }
+
+        CancelSafely(oldCancellation);
+        _ = DisposeAfterCompletionAsync(
+            oldCancellation,
+            oldSaveTask);
     }
 
     private async Task SaveLatestAsync(
-        Task previousSave,
         long version,
-        CancellationTokenSource cancellation)
+        CancellationToken cancellationToken)
     {
         try
         {
-            await Task.Delay(75, cancellation.Token).ConfigureAwait(false);
-            await ObserveBackgroundSaveAsync(previousSave).ConfigureAwait(false);
+            await Task.Delay(75, cancellationToken).ConfigureAwait(false);
 
             if (version != Interlocked.Read(ref _saveVersion))
                 return;
@@ -249,19 +253,14 @@ public sealed class NotificationService : INotifyPropertyChanged, IAsyncDisposab
             }
         }
         catch (OperationCanceledException)
-            when (cancellation.IsCancellationRequested)
+            when (cancellationToken.IsCancellationRequested)
         {
-            await ObserveBackgroundSaveAsync(previousSave).ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is IOException
                                        or UnauthorizedAccessException
                                        or JsonException)
         {
             Debug.WriteLine($"Unable to save notification history: {ex}");
-        }
-        finally
-        {
-            cancellation.Dispose();
         }
     }
 
@@ -282,15 +281,29 @@ public sealed class NotificationService : INotifyPropertyChanged, IAsyncDisposab
 
         try
         {
-            Task pendingSave;
+            CancellationTokenSource? pendingCancellation;
+            Task? pendingSave;
 
             lock (_lifecycleLock)
             {
-                _debounceCancellation?.Cancel();
-                pendingSave = _pendingSaveTask;
+                (pendingCancellation, pendingSave) =
+                    DetachPendingSaveLocked();
             }
 
-            await pendingSave.WaitAsync(cancellationToken).ConfigureAwait(false);
+            CancelSafely(pendingCancellation);
+
+            try
+            {
+                if (pendingSave is not null)
+                {
+                    await pendingSave.ConfigureAwait(false);
+                }
+            }
+            finally
+            {
+                pendingCancellation?.Dispose();
+            }
+
             List<AppNotification> snapshot =
                 await CreateSnapshotAsync().ConfigureAwait(false);
 
@@ -311,6 +324,53 @@ public sealed class NotificationService : INotifyPropertyChanged, IAsyncDisposab
         }
     }
 
+    private (CancellationTokenSource? Cancellation, Task? SaveTask)
+        DetachPendingSaveLocked()
+    {
+        CancellationTokenSource? cancellation = _debounceCancellation;
+        Task? saveTask = _pendingSaveTask;
+        _debounceCancellation = null;
+        _pendingSaveTask = null;
+        return (cancellation, saveTask);
+    }
+
+    private static void CancelSafely(
+        CancellationTokenSource? cancellation)
+    {
+        if (cancellation is null)
+            return;
+
+        try
+        {
+            cancellation.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
+            // A detached owner may have completed cleanup concurrently.
+        }
+    }
+
+    private static async Task DisposeAfterCompletionAsync(
+        CancellationTokenSource? cancellation,
+        Task? saveTask)
+    {
+        try
+        {
+            if (saveTask is not null)
+            {
+                await saveTask.ConfigureAwait(false);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Unable to save notification history: {ex}");
+        }
+        finally
+        {
+            cancellation?.Dispose();
+        }
+    }
+
     private async Task<List<AppNotification>> CreateSnapshotAsync()
     {
         if (_dispatcher.CheckAccess())
@@ -318,18 +378,6 @@ public sealed class NotificationService : INotifyPropertyChanged, IAsyncDisposab
 
         return await _dispatcher.InvokeAsync(
             () => _notifications.ToList());
-    }
-
-    private static async Task ObserveBackgroundSaveAsync(Task saveTask)
-    {
-        try
-        {
-            await saveTask.ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Unable to save notification history: {ex}");
-        }
     }
 
     private async Task WriteAtomicallyAsync(
@@ -380,11 +428,6 @@ public sealed class NotificationService : INotifyPropertyChanged, IAsyncDisposab
     private async Task DisposeCoreAsync()
     {
         await FlushCoreAsync(CancellationToken.None).ConfigureAwait(false);
-
-        lock (_lifecycleLock)
-        {
-            _debounceCancellation = null;
-        }
 
         _saveGate.Dispose();
         _flushGate.Dispose();
