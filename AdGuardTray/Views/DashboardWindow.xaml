@@ -175,6 +175,12 @@
                         </Grid>
                     </Button>
 
+                    <Button x:Name="TimelineButton"
+                            Style="{StaticResource SidebarNavigationButton}"
+                            Background="Transparent"
+                            Content="Timeline"
+                            Click="Timeline_Click"/>
+
 
                     <Button x:Name="SearchButton"
                             Style="{StaticResource SidebarNavigationButton}"

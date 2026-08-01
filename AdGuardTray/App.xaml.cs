@@ -4,6 +4,7 @@ using System.Windows;
 using AdGuardTray.Models;
 using AdGuardTray.Services;
 using AdGuardTray.Services.Insights;
+using AdGuardTray.Services.Intelligence;
 using AdGuardTray.Tray;
 using AdGuardTray.Views;
 using AdGuardTray.ViewModels;
@@ -51,6 +52,11 @@ namespace AdGuardTray
             serviceCollection.AddSingleton(
                 _ => new NotificationService(Dispatcher));
             serviceCollection.AddSingleton<UpdateService>();
+            serviceCollection.AddSingleton<TimelineService>();
+            serviceCollection.AddSingleton<BehaviourRule, DeviceBehaviourRule>();
+            serviceCollection.AddSingleton<BehaviourRule, RouterBehaviourRule>();
+            serviceCollection.AddSingleton<BehaviourRule, RouterTrendRule>();
+            serviceCollection.AddSingleton<IntelligenceService>();
             serviceCollection.AddSingleton<AdGuardProtectionNotificationTracker>();
             serviceCollection.AddSingleton<DeviceHistoryService>();
             serviceCollection.AddSingleton(provider =>
@@ -74,6 +80,7 @@ namespace AdGuardTray
             serviceCollection.AddSingleton<ProtectionViewModel>();
             serviceCollection.AddTransient<GlobalSearchViewModel>();
             serviceCollection.AddTransient<SettingsViewModel>();
+            serviceCollection.AddTransient<TimelineViewModel>();
             _services = serviceCollection.BuildServiceProvider();
 
             await Services.GetRequiredService<IDataStore>()

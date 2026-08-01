@@ -18,6 +18,7 @@ namespace AdGuardTray.ViewModels
         private readonly DeviceHistoryService _deviceHistoryService;
         private readonly HistoryRepository _historyRepository;
         private readonly ClientProfileService _clientProfileService;
+        private readonly IntelligenceService _intelligenceService;
         private readonly Dictionary<string, ClientProfile> _clientProfiles;
         private readonly DispatcherTimer _refreshTimer;
         private readonly ClientInfo _client;
@@ -65,6 +66,12 @@ namespace AdGuardTray.ViewModels
         public bool HasTopDomains => TopDomains.Count > 0;
         public bool HasTopBlockedDomains => TopBlockedDomains.Count > 0;
         public bool HasRecentActivity => RecentActivity.Count > 0;
+        public string TypicalOnlineTime { get; private set; } = "Not enough history";
+        public string TypicalNetwork { get; private set; } = "Not enough history";
+        public string AverageSessionLength { get; private set; } = "Not enough history";
+        public int? DaysSinceLastSeen { get; private set; }
+        public string DaysSinceLastSeenDisplay => DaysSinceLastSeen is { } days
+            ? $"{days} day{(days == 1 ? "" : "s")}" : "Not enough history";
 
         [ObservableProperty]
         private string statusMessage =
@@ -92,12 +99,14 @@ namespace AdGuardTray.ViewModels
             ClientInfo client,
             IRouterManagerProvider routerManagerProvider,
             DeviceHistoryService deviceHistoryService,
-            HistoryRepository historyRepository)
+            HistoryRepository historyRepository,
+            IntelligenceService intelligenceService)
         {
             _client = client;
             _routerManagerProvider = routerManagerProvider;
             _deviceHistoryService = deviceHistoryService;
             _historyRepository = historyRepository;
+            _intelligenceService = intelligenceService;
             _clientProfileService = new ClientProfileService();
             _clientProfiles = _clientProfileService.Load();
 
@@ -115,6 +124,7 @@ namespace AdGuardTray.ViewModels
 
         public async Task StartAsync()
         {
+            await LoadBehaviourProfileAsync();
             await LoadRecentActivityAsync();
             await RefreshAsync();
 
@@ -247,6 +257,22 @@ namespace AdGuardTray.ViewModels
             ProfileNickname = profile.Nickname;
             ProfileCategory = profile.Category;
             ProfileNotes = profile.Notes;
+        }
+
+        private async Task LoadBehaviourProfileAsync()
+        {
+            DeviceBehaviourProfile? profile = await _intelligenceService
+                .GetDeviceProfileAsync(_client.MacAddress);
+            if (profile is null) return;
+            TypicalOnlineTime = profile.TypicalOnlineTimeDisplay;
+            TypicalNetwork = profile.PreferredNetworkDisplay;
+            AverageSessionLength = profile.AverageSessionDisplay;
+            DaysSinceLastSeen = profile.DaysSinceLastSeen;
+            OnPropertyChanged(nameof(TypicalOnlineTime));
+            OnPropertyChanged(nameof(TypicalNetwork));
+            OnPropertyChanged(nameof(AverageSessionLength));
+            OnPropertyChanged(nameof(DaysSinceLastSeen));
+            OnPropertyChanged(nameof(DaysSinceLastSeenDisplay));
         }
 
         private async Task LoadRecentActivityAsync()

@@ -272,6 +272,82 @@
                 </Grid>
             </Border>
 
+            <!-- Deterministic historical intelligence -->
+            <Border Margin="0,0,0,18" Style="{StaticResource Card}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="14" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <StackPanel Orientation="Horizontal">
+                        <Border Width="38" Height="38" Margin="0,0,12,0"
+                                Background="{DynamicResource Brush.PrimarySubtle}" CornerRadius="10">
+                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                       FontSize="18" Foreground="{DynamicResource Brush.Primary}"
+                                       Text="&#xE9D9;" />
+                        </Border>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Style="{StaticResource Overview.CardHeading}"
+                                       Text="Network Intelligence" />
+                            <TextBlock Style="{StaticResource Text.Secondary}"
+                                       Text="Deterministic observations from locally stored history" />
+                        </StackPanel>
+                    </StackPanel>
+                    <TextBlock Grid.Row="2"
+                               Text="RouterPilot is still collecting enough history for behavioural observations.">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource Text.Secondary}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasIntelligenceObservations}" Value="False">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <ItemsControl Grid.Row="2" ItemsSource="{Binding IntelligenceObservations}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="5" />
+                                        <ColumnDefinition Width="12" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border CornerRadius="3">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Background" Value="{DynamicResource Brush.Primary}" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Severity}" Value="Warning">
+                                                        <Setter Property="Background" Value="{DynamicResource Brush.Warning}" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Severity}" Value="Critical">
+                                                        <Setter Property="Background" Value="{DynamicResource Brush.Danger}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                    </Border>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Style="{StaticResource Text.Body}" FontWeight="SemiBold"
+                                                   Text="{Binding Title}" />
+                                        <TextBlock Margin="0,3,0,0" Style="{StaticResource Text.Secondary}"
+                                                   TextWrapping="Wrap" Text="{Binding Description}" />
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="3" Margin="16,0,0,0"
+                                               Style="{StaticResource Text.Muted}" Text="{Binding Category}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
+            </Border>
+
             <!-- Weekly history summary -->
             <Border Margin="0,0,0,18" Style="{StaticResource Card}">
                 <Grid>

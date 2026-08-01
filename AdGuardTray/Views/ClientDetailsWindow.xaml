@@ -352,6 +352,34 @@
                             </ItemsControl>
                         </StackPanel>
                     </Grid>
+
+                    <Grid Margin="0,18,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Style="{DynamicResource Text.CardCaption}" Text="TYPICAL ONLINE TIME"/>
+                            <TextBlock Margin="0,7,0,0" FontWeight="SemiBold" Text="{Binding TypicalOnlineTime}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Style="{DynamicResource Text.CardCaption}" Text="TYPICAL NETWORK"/>
+                            <TextBlock Margin="0,7,0,0" FontWeight="SemiBold" Text="{Binding TypicalNetwork}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="4">
+                            <TextBlock Style="{DynamicResource Text.CardCaption}" Text="AVERAGE SESSION"/>
+                            <TextBlock Margin="0,7,0,0" FontWeight="SemiBold" Text="{Binding AverageSessionLength}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="6">
+                            <TextBlock Style="{DynamicResource Text.CardCaption}" Text="DAYS SINCE LAST SEEN"/>
+                            <TextBlock Margin="0,7,0,0" FontWeight="SemiBold" Text="{Binding DaysSinceLastSeenDisplay}"/>
+                        </StackPanel>
+                    </Grid>
                 </StackPanel>
             </Grid>
         </Border>

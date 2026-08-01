@@ -13,8 +13,10 @@ namespace AdGuardTray.ViewModels
     public partial class GlobalSearchViewModel : ObservableObject
     {
         private readonly IRouterManagerProvider _routerManagerProvider;
+        private readonly TimelineService _timelineService;
         private readonly List<ClientInfo> _clients = new();
         private readonly List<QueryLogEntry> _logs = new();
+        private readonly List<TimelineEvent> _timelineEvents = new();
 
         public ObservableCollection<GlobalSearchResult> Results { get; } = new();
 
@@ -29,9 +31,11 @@ namespace AdGuardTray.ViewModels
         private bool isLoading;
 
         public GlobalSearchViewModel(
-            IRouterManagerProvider routerManagerProvider)
+            IRouterManagerProvider routerManagerProvider,
+            TimelineService timelineService)
         {
             _routerManagerProvider = routerManagerProvider;
+            _timelineService = timelineService;
         }
 
         [RelayCommand]
@@ -55,11 +59,17 @@ namespace AdGuardTray.ViewModels
                 List<QueryLogEntry> logs =
                     await routerManager.GetQueryLogAsync();
 
+                IReadOnlyList<TimelineEvent> timelineEvents =
+                    await _timelineService.GetEventsAsync(0, 200);
+
                 _clients.Clear();
                 _clients.AddRange(clients);
 
                 _logs.Clear();
                 _logs.AddRange(logs);
+
+                _timelineEvents.Clear();
+                _timelineEvents.AddRange(timelineEvents);
 
                 ApplySearch();
 
@@ -167,8 +177,24 @@ namespace AdGuardTray.ViewModels
                     })
                     .Take(50);
 
+            IEnumerable<GlobalSearchResult> timeline = _timelineEvents
+                .Where(item =>
+                    Contains(item.Title, search) ||
+                    Contains(item.Description, search) ||
+                    Contains(item.Category.ToString(), search))
+                .Take(25)
+                .Select(item => new GlobalSearchResult
+                {
+                    Category = "Timeline",
+                    Title = item.Title,
+                    Subtitle = $"{item.Category} · {item.TimeDisplay}",
+                    Detail = item.Description,
+                    BadgeText = "Timeline",
+                    BadgeColour = "#5B5FC7"
+                });
+
             foreach (GlobalSearchResult result in
-                     clients.Concat(domains)
+                     clients.Concat(domains).Concat(timeline)
                             .OrderBy(result => result.Category)
                             .ThenBy(result => result.Title))
             {

@@ -34,6 +34,8 @@ namespace AdGuardTray.Views
         private readonly RouterHealthHistoryCollector _routerHealthHistoryCollector;
         private readonly WeeklySummaryService _weeklySummaryService;
         private readonly UpdateService _updateService;
+        private readonly TimelineService _timelineService;
+        private readonly IntelligenceService _intelligenceService;
         private readonly RefreshCoordinator _refreshCoordinator;
         private readonly SemaphoreSlim _routerManagerUsageGate = new(1, 1);
         private bool _refreshInProgress;
@@ -97,6 +99,10 @@ namespace AdGuardTray.Views
                 .Services.GetRequiredService<WeeklySummaryService>();
             _updateService = ((App)Application.Current).Services
                 .GetRequiredService<UpdateService>();
+            _timelineService = ((App)Application.Current).Services
+                .GetRequiredService<TimelineService>();
+            _intelligenceService = ((App)Application.Current).Services
+                .GetRequiredService<IntelligenceService>();
             _routerManagerProvider = ((App)Application.Current).Services
                 .GetRequiredService<IRouterManagerProvider>();
             NotificationButton.DataContext = _notificationService;
@@ -470,6 +476,13 @@ namespace AdGuardTray.Views
                         cancellationToken);
                 cancellationToken.ThrowIfCancellationRequested();
                 _viewModel.UpdateInsights(insights);
+                _timelineService.RecordInsights(insights);
+
+                IReadOnlyList<BehaviourObservation> observations =
+                    await _intelligenceService.AnalyzeAsync(
+                        cancellationToken: cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+                _viewModel.UpdateIntelligenceObservations(observations);
 
                 try
                 {
@@ -1012,6 +1025,12 @@ namespace AdGuardTray.Views
             NavigateToNotifications();
         }
 
+        private void Timeline_Click(object sender, RoutedEventArgs e)
+        {
+            PageContent.Content = new TimelineView();
+            SelectNavigationButton(TimelineButton);
+        }
+
         private void NavigateToProtection()
         {
             PageContent.Content = new ProtectionView();
@@ -1254,6 +1273,7 @@ namespace AdGuardTray.Views
                 ClientsButton,
                 LogsButton,
                 NotificationButton,
+                TimelineButton,
                 SearchButton,
                 NavigationSettingsButton,
                 AboutButton

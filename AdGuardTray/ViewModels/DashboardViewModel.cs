@@ -25,6 +25,7 @@ namespace AdGuardTray.ViewModels
         private string _routerHealthRange = "24 hours";
 
         public ObservableCollection<Insight> Insights { get; } = new();
+        public ObservableCollection<BehaviourObservation> IntelligenceObservations { get; } = new();
 
         public ObservableCollection<WeeklySummaryHighlight>
             WeeklySummaryHighlights { get; } = new();
@@ -35,6 +36,7 @@ namespace AdGuardTray.ViewModels
         public bool HasWeeklySummaryData => WeeklySummary?.HasEnoughData == true;
 
         public bool HasInsights => Insights.Count > 0;
+        public bool HasIntelligenceObservations => IntelligenceObservations.Count > 0;
 
         public IAsyncRelayCommand<Insight> ExecuteInsightActionCommand { get; }
 
@@ -849,6 +851,20 @@ namespace AdGuardTray.ViewModels
                 Insights.Add(insight);
 
             OnPropertyChanged(nameof(HasInsights));
+        }
+
+        public void UpdateIntelligenceObservations(
+            IEnumerable<BehaviourObservation> observations)
+        {
+            if (Application.Current?.Dispatcher is { } dispatcher && !dispatcher.CheckAccess())
+            {
+                dispatcher.Invoke(() => UpdateIntelligenceObservations(observations));
+                return;
+            }
+            IntelligenceObservations.Clear();
+            foreach (BehaviourObservation observation in observations.Take(5))
+                IntelligenceObservations.Add(observation);
+            OnPropertyChanged(nameof(HasIntelligenceObservations));
         }
 
         public void UpdateWeeklySummary(WeeklySummary summary)

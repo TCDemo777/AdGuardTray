@@ -189,6 +189,27 @@ public sealed class HistoryRepository
         return await ReadEventsAsync(command, cancellationToken);
     }
 
+    public async Task<IReadOnlyList<DeviceConnectionEvent>> GetRecentDeviceEventsAsync(
+        int maximumCount,
+        CancellationToken cancellationToken = default)
+    {
+        if (maximumCount <= 0)
+            return Array.Empty<DeviceConnectionEvent>();
+
+        await using var connection = await _dataStore
+            .OpenReadOnlyConnectionAsync(cancellationToken);
+        await using SqliteCommand command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT Id, MacAddress, TimestampUtc, EventType, IpAddress,
+                   NetworkName, Hostname, FriendlyName
+            FROM DeviceConnections
+            ORDER BY TimestampUtc DESC, Id DESC
+            LIMIT $maximumCount;
+            """;
+        command.Parameters.AddWithValue("$maximumCount", maximumCount);
+        return await ReadEventsAsync(command, cancellationToken);
+    }
+
     public async Task AddOrUpdateWanMinuteAsync(
         WanMinuteSnapshot snapshot,
         CancellationToken cancellationToken = default)
