@@ -20,7 +20,7 @@ namespace AdGuardTray.Views
         {
             AppSettings settings = _settingsService.Load();
             string password = _settingsService.DecryptPassword(settings.EncryptedPassword);
-            return new RouterManager(settings.RouterIp, settings.Username, password);
+            return new RouterManager(settings.RouterHost, settings.Username, password);
         }
 
         private async void RestartWifi_Click(object sender, RoutedEventArgs e)

@@ -28,7 +28,7 @@ namespace AdGuardTray.Views
 
             using GLInetSessionService sessionService =
                 new GLInetSessionService(
-                    settings.RouterIp,
+                    settings.RouterHost,
                     settings.Username,
                     password);
 
@@ -42,7 +42,7 @@ namespace AdGuardTray.Views
             }
 
             return new RouterManager(
-    settings.RouterIp,
+    settings.RouterHost,
     settings.Username,
     password);
         }
@@ -274,7 +274,7 @@ Process
 
                 using GLInetSessionService sessionService =
                     new GLInetSessionService(
-                        settings.RouterIp,
+                        settings.RouterHost,
                         settings.Username,
                         password);
 

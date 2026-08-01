@@ -521,8 +521,8 @@ namespace AdGuardTray.ViewModels
         {
             AppSettings settings = _settingsService.Load();
             string password = _settingsService.DecryptPassword(settings.EncryptedPassword);
-            string signature = settings.RouterIp + "\n" + settings.Username + "\n" + settings.EncryptedPassword;
-            if (_routerManager is null || !string.Equals(_routerSignature, signature, StringComparison.Ordinal)) { _routerManager = new RouterManager(settings.RouterIp, settings.Username, password); _routerSignature = signature; }
+            string signature = settings.RouterHost + "\n" + settings.Username + "\n" + settings.EncryptedPassword;
+            if (_routerManager is null || !string.Equals(_routerSignature, signature, StringComparison.Ordinal)) { _routerManager = new RouterManager(settings.RouterHost, settings.Username, password); _routerSignature = signature; }
             return _routerManager;
         }
 

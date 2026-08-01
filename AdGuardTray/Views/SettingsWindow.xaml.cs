@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Windows;
+using AdGuardTray.Configuration;
 using AdGuardTray.Models;
 using AdGuardTray.Services;
 
@@ -31,7 +32,7 @@ namespace AdGuardTray.Views
 
 
             RouterIpBox.Text =
-                settings.RouterIp;
+                settings.RouterHost;
 
 
             UsernameBox.Text =
@@ -61,11 +62,21 @@ namespace AdGuardTray.Views
         {
             try
             {
+                AppSettings existing = _settingsService.Load();
+
                 var settings =
                     new AppSettings
                     {
-                        RouterIp =
-                            RouterIpBox.Text.Trim(),
+                        RouterHost =
+                            RouterConnectionOptions.NormaliseHost(RouterIpBox.Text),
+
+                        RouterPort = existing.RouterPort,
+                        AdGuardPort = existing.AdGuardPort,
+                        UseRouterHttps = existing.UseRouterHttps,
+                        UseAdGuardHttps = existing.UseAdGuardHttps,
+                        Theme = existing.Theme,
+                        RefreshIntervalSeconds = existing.RefreshIntervalSeconds,
+                        DefaultPauseMinutes = existing.DefaultPauseMinutes,
 
                         Username =
                             UsernameBox.Text.Trim(),

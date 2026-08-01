@@ -24,31 +24,59 @@ namespace AdGuardTray
 
             if (!HasUsableSavedSettings())
             {
-                ShutdownMode = ShutdownMode.OnMainWindowClose;
+                ShutdownMode = ShutdownMode.OnExplicitShutdown;
                 Window settingsWindow = CreateFirstRunSettingsWindow();
                 MainWindow = settingsWindow;
                 settingsWindow.Show();
                 return;
             }
 
-            ShutdownMode = ShutdownMode.OnExplicitShutdown;
-            _dashboardWindow = new DashboardWindow();
-            MainWindow = _dashboardWindow;
+            StartMainApplication();
+        }
 
-            _trayManager = new TrayManager(
+        public void CompleteFirstRun(Window settingsWindow)
+        {
+            if (!HasUsableSavedSettings())
+            {
+                MessageBox.Show(
+                    "The router settings are incomplete or the saved password could not be read.",
+                    "AdGuardTray Setup",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
+            StartMainApplication();
+            settingsWindow.Close();
+        }
+
+        private void StartMainApplication()
+        {
+            ShutdownMode = ShutdownMode.OnExplicitShutdown;
+
+            if (_dashboardWindow is null)
+            {
+                _dashboardWindow = new DashboardWindow();
+                _dashboardWindow.Closed += (_, _) =>
+                {
+                    if (IsExitRequested)
+                        _dashboardWindow = null;
+                };
+            }
+
+            _trayManager ??= new TrayManager(
                 ShowDashboard,
                 RefreshDashboard,
                 ExitApplication);
 
-            _dashboardWindow.Show();
+            MainWindow = _dashboardWindow;
+            ShowDashboard();
         }
 
         public void HideDashboard()
         {
             if (_dashboardWindow is null || IsExitRequested)
-            {
                 return;
-            }
 
             _dashboardWindow.Hide();
 
@@ -62,19 +90,13 @@ namespace AdGuardTray
         public void ShowDashboard()
         {
             if (_dashboardWindow is null)
-            {
                 return;
-            }
 
             if (!_dashboardWindow.IsVisible)
-            {
                 _dashboardWindow.Show();
-            }
 
             if (_dashboardWindow.WindowState == WindowState.Minimized)
-            {
                 _dashboardWindow.WindowState = WindowState.Normal;
-            }
 
             _dashboardWindow.Activate();
             _dashboardWindow.Topmost = true;
@@ -85,11 +107,8 @@ namespace AdGuardTray
         private async void RefreshDashboard()
         {
             ShowDashboard();
-
             if (_dashboardWindow is not null)
-            {
                 await _dashboardWindow.RefreshNowAsync();
-            }
         }
 
         private void ExitApplication()
@@ -98,6 +117,7 @@ namespace AdGuardTray
             _trayManager?.Dispose();
             _trayManager = null;
             _dashboardWindow?.Close();
+            _dashboardWindow = null;
             Shutdown();
         }
 
@@ -114,17 +134,13 @@ namespace AdGuardTray
                 var settingsService = new SettingsService();
                 AppSettings settings = settingsService.Load();
 
-                if (string.IsNullOrWhiteSpace(settings.RouterIp) ||
+                if (string.IsNullOrWhiteSpace(settings.RouterHost) ||
                     string.IsNullOrWhiteSpace(settings.Username))
-                {
                     return false;
-                }
 
                 if (!settings.RememberPassword ||
                     string.IsNullOrWhiteSpace(settings.EncryptedPassword))
-                {
                     return false;
-                }
 
                 string password = settingsService.DecryptPassword(
                     settings.EncryptedPassword);

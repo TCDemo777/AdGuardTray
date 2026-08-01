@@ -114,7 +114,7 @@ namespace AdGuardTray.ViewModels
                 {
                     var settings = _settingsService.Load();
 
-                    if (string.IsNullOrWhiteSpace(settings.RouterIp) ||
+                    if (string.IsNullOrWhiteSpace(settings.RouterHost) ||
                         string.IsNullOrWhiteSpace(settings.Username))
                     {
                         StatusMessage = "Router settings are incomplete.";
@@ -132,7 +132,7 @@ namespace AdGuardTray.ViewModels
                     }
 
                     _routerManager = new RouterManager(
-                        settings.RouterIp,
+                        settings.RouterHost,
                         settings.Username,
                         password);
                 }

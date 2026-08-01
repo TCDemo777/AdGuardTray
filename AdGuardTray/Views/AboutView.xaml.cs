@@ -40,7 +40,7 @@ namespace AdGuardTray.Views
                     settings.EncryptedPassword);
 
             return new RouterManager(
-                settings.RouterIp,
+                settings.RouterHost,
                 settings.Username,
                 password);
         }
@@ -393,7 +393,7 @@ namespace AdGuardTray.Views
             builder.AppendLine("-----------------");
             builder.AppendLine(
                 "Address: " +
-                settings.RouterIp);
+                settings.RouterHost);
             builder.AppendLine(
                 "Username: " +
                 settings.Username);

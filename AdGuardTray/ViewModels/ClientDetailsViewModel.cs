@@ -94,7 +94,7 @@ namespace AdGuardTray.ViewModels
                 var settings =
                     _settingsService.Load();
 
-                if (string.IsNullOrWhiteSpace(settings.RouterIp) ||
+                if (string.IsNullOrWhiteSpace(settings.RouterHost) ||
                     string.IsNullOrWhiteSpace(settings.Username))
                 {
                     StatusMessage =
@@ -115,7 +115,7 @@ namespace AdGuardTray.ViewModels
 
                 _routerManager =
                     new RouterManager(
-                        settings.RouterIp,
+                        settings.RouterHost,
                         settings.Username,
                         password);
             }

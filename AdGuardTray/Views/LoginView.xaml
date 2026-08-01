@@ -23,7 +23,7 @@
 
         <TextBox Grid.Row="1"
                  x:Name="ServerAddressBox"
-                 Text="http://192.168.1.1:3000/"
+                 Text="Router address or hostname"
                  Height="30"
                  Margin="0,0,0,10"/>
 

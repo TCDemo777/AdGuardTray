@@ -78,12 +78,10 @@ namespace AdGuardTray.Views
             // On first-run or standalone settings windows, saving should
             // continue directly to the dashboard.
             if (host is not null &&
-                host is not DashboardWindow)
+                host is not DashboardWindow &&
+                Application.Current is App app)
             {
-                var dashboard = new DashboardWindow();
-                Application.Current.MainWindow = dashboard;
-                dashboard.Show();
-                host.Close();
+                app.CompleteFirstRun(host);
             }
         }
 

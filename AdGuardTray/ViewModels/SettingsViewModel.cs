@@ -1,4 +1,5 @@
 using System;
+using AdGuardTray.Configuration;
 using AdGuardTray.Models;
 using AdGuardTray.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -162,7 +163,7 @@ namespace AdGuardTray.ViewModels
                     _settingsService.Load();
 
                 RouterIp =
-                    settings.RouterIp;
+                    settings.RouterHost;
 
                 Username =
                     settings.Username;
@@ -225,11 +226,17 @@ namespace AdGuardTray.ViewModels
 
             try
             {
+                AppSettings existing = _settingsService.Load();
+
                 var settings =
                     new AppSettings
                     {
-                        RouterIp =
-                            RouterIp.Trim(),
+                        RouterPort = existing.RouterPort,
+                        AdGuardPort = existing.AdGuardPort,
+                        UseRouterHttps = existing.UseRouterHttps,
+                        UseAdGuardHttps = existing.UseAdGuardHttps,
+                        RouterHost =
+                            RouterConnectionOptions.NormaliseHost(RouterIp),
 
                         Username =
                             Username.Trim(),

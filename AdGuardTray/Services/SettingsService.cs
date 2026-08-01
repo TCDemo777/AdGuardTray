@@ -152,14 +152,14 @@ public sealed class SettingsService
     private static void Migrate(AppSettings settings)
     {
         if (string.IsNullOrWhiteSpace(settings.RouterHost) &&
-            !string.IsNullOrWhiteSpace(settings.RouterIp))
+            !string.IsNullOrWhiteSpace(settings.RouterHost))
         {
             settings.RouterHost =
                 RouterConnectionOptions.NormaliseHost(
-                    settings.RouterIp);
+                    settings.RouterHost);
         }
 
-        settings.RouterIp = null;
+        settings.RouterHost = null;
         settings.RouterPort =
             settings.RouterPort is >= 1 and <= 65535
                 ? settings.RouterPort

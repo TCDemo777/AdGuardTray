@@ -116,7 +116,7 @@ namespace AdGuardTray.Views
                         refreshSeconds);
 
                 if (string.IsNullOrWhiteSpace(
-                        settings.RouterIp) ||
+                        settings.RouterHost) ||
                     string.IsNullOrWhiteSpace(
                         settings.Username))
                 {
@@ -132,7 +132,7 @@ namespace AdGuardTray.Views
 
                 var router =
                     new RouterManager(
-                        settings.RouterIp,
+                        settings.RouterHost,
                         settings.Username,
                         password);
 
@@ -336,7 +336,7 @@ namespace AdGuardTray.Views
             {
                 AppSettings settings = _settingsService.Load();
 
-                if (string.IsNullOrWhiteSpace(settings.RouterIp) ||
+                if (string.IsNullOrWhiteSpace(settings.RouterHost) ||
                     string.IsNullOrWhiteSpace(settings.Username))
                 {
                     return;
@@ -347,7 +347,7 @@ namespace AdGuardTray.Views
                         settings.EncryptedPassword);
 
                 var router = new RouterManager(
-                    settings.RouterIp,
+                    settings.RouterHost,
                     settings.Username,
                     password);
 

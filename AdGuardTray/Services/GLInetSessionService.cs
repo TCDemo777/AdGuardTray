@@ -1,4 +1,4 @@
-﻿using CryptSharp;
+using CryptSharp;
 using System;
 using System.Net.Http;
 using System.Security.Cryptography;

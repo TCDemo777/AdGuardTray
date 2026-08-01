@@ -103,7 +103,7 @@ namespace AdGuardTray.ViewModels
                 _settingsService.DecryptPassword(
                     settings.EncryptedPassword);
 
-            if (string.IsNullOrWhiteSpace(settings.RouterIp) ||
+            if (string.IsNullOrWhiteSpace(settings.RouterHost) ||
                 string.IsNullOrWhiteSpace(settings.Username) ||
                 string.IsNullOrWhiteSpace(password))
             {
@@ -113,7 +113,7 @@ namespace AdGuardTray.ViewModels
             }
 
             _routerManager = new RouterManager(
-                settings.RouterIp,
+                settings.RouterHost,
                 settings.Username,
                 password);
 

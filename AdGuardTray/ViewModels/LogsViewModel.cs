@@ -72,7 +72,7 @@ namespace AdGuardTray.ViewModels
                     _settingsService.Load();
 
                 if (string.IsNullOrWhiteSpace(
-                        settings.RouterIp) ||
+                        settings.RouterHost) ||
                     string.IsNullOrWhiteSpace(
                         settings.Username))
                 {
@@ -97,7 +97,7 @@ namespace AdGuardTray.ViewModels
 
                 _routerManager =
                     new RouterManager(
-                        settings.RouterIp,
+                        settings.RouterHost,
                         settings.Username,
                         password);
             }
