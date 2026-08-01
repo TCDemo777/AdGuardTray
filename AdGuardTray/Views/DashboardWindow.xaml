@@ -33,6 +33,17 @@
             <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
         </Style>
 
+        <Style x:Key="SidebarNavigationButton"
+               TargetType="Button"
+               BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="Margin" Value="10,1"/>
+            <Setter Property="Padding" Value="16,0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Foreground" Value="#D7DCE2"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+
         <Style x:Key="StatusPill" TargetType="Border">
             <Setter Property="CornerRadius" Value="10"/>
             <Setter Property="Padding" Value="8,3"/>
@@ -77,6 +88,7 @@
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
@@ -90,96 +102,57 @@
 
                 <StackPanel Grid.Row="1">
                     <Button x:Name="OverviewButton"
-                            Height="48"
-                            Margin="10,2"
-                            Padding="16,0"
-                            HorizontalContentAlignment="Left"
+                            Style="{StaticResource SidebarNavigationButton}"
                             Background="#35404D"
                             Foreground="White"
-                            BorderThickness="0"
                             Content="Overview"
                             Click="Overview_Click"/>
 
                     <Button x:Name="ProtectionButton"
-                            Height="48"
-                            Margin="10,2"
-                            Padding="16,0"
-                            HorizontalContentAlignment="Left"
+                            Style="{StaticResource SidebarNavigationButton}"
                             Background="Transparent"
-                            Foreground="#D7DCE2"
-                            BorderThickness="0"
                             Content="Protection"
                             Click="Protection_Click"/>
 
                     <Button x:Name="AnalyticsButton"
-                            Height="48"
-                            Margin="10,2"
-                            Padding="16,0"
-                            HorizontalContentAlignment="Left"
+                            Style="{StaticResource SidebarNavigationButton}"
                             Background="Transparent"
-                            Foreground="#D7DCE2"
-                            BorderThickness="0"
                             Content="Analytics"
                             Click="Analytics_Click"/>
 
                     <Button x:Name="NetworkButton"
-                            Height="48"
-                            Margin="10,2"
-                            Padding="16,0"
-                            HorizontalContentAlignment="Left"
+                            Style="{StaticResource SidebarNavigationButton}"
                             Background="Transparent"
-                            Foreground="#D7DCE2"
-                            BorderThickness="0"
                             Content="Network"
                             Click="Network_Click"/>
 
                     <Button x:Name="ClientsButton"
-                            Height="48"
-                            Margin="10,2"
-                            Padding="16,0"
-                            HorizontalContentAlignment="Left"
+                            Style="{StaticResource SidebarNavigationButton}"
                             Background="Transparent"
-                            Foreground="#D7DCE2"
-                            BorderThickness="0"
                             Content="Clients"
                             Click="Clients_Click"/>
 
                     <Button x:Name="LogsButton"
-                            Height="48"
-                            Margin="10,2"
-                            Padding="16,0"
-                            HorizontalContentAlignment="Left"
+                            Style="{StaticResource SidebarNavigationButton}"
                             Background="Transparent"
-                            Foreground="#D7DCE2"
-                            BorderThickness="0"
                             Content="Logs"
                             Click="Logs_Click"/>
 
                     <Button x:Name="NotificationButton"
-                            Height="48"
-                            Margin="10,2"
-                            Padding="16,0"
+                            Style="{StaticResource SidebarNavigationButton}"
                             HorizontalContentAlignment="Stretch"
                             Background="Transparent"
-                            Foreground="#D7DCE2"
-                            BorderThickness="0"
                             Click="Notification_Click">
                         <Grid>
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="8"/>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock VerticalAlignment="Center"
-                                       FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
-                                       FontSize="16"
-                                       Text="&#xE7ED;"/>
-                            <TextBlock Grid.Column="2"
+                            <TextBlock Grid.Column="0"
                                        VerticalAlignment="Center"
                                        Text="Notifications"/>
-                            <Border Grid.Column="3"
-                                    MinWidth="22"
+                            <Border Grid.Column="1"
+                                    MinWidth="28"
                                     Padding="6,2"
                                     Background="{DynamicResource Brush.Danger}"
                                     CornerRadius="10">
@@ -204,39 +177,26 @@
 
 
                     <Button x:Name="SearchButton"
-                            Height="48"
-                            Margin="10,2"
-                            Padding="16,0"
-                            HorizontalContentAlignment="Left"
+                            Style="{StaticResource SidebarNavigationButton}"
                             Background="Transparent"
-                            Foreground="#D7DCE2"
-                            BorderThickness="0"
                             Content="Search"
                             Click="Search_Click"/>
 
                     <Button x:Name="NavigationSettingsButton"
-                            Height="48"
-                            Margin="10,2"
-                            Padding="16,0"
-                            HorizontalContentAlignment="Left"
+                            Style="{StaticResource SidebarNavigationButton}"
                             Background="Transparent"
-                            Foreground="#D7DCE2"
-                            BorderThickness="0"
                             Content="Settings"
                             Click="NavigationSettings_Click"/>
 
                     <Button x:Name="AboutButton"
-                            Height="48"
-                            Margin="10,2"
-                            Padding="16,0"
-                            HorizontalContentAlignment="Left"
+                            Style="{StaticResource SidebarNavigationButton}"
                             Background="Transparent"
-                            Foreground="#D7DCE2"
-                            BorderThickness="0"
                             Content="About"
                             Click="About_Click"/>
+
                 </StackPanel>
-                <Border Grid.Row="2" Margin="10,8,10,12" Padding="10" Background="#192027" CornerRadius="8">
+
+                <Border Grid.Row="3" Margin="10,8,10,12" Padding="10" Background="#192027" CornerRadius="8">
                     <StackPanel>
                         <TextBlock Foreground="#D7DCE2"
                                    FontSize="12"
