@@ -1,15 +1,20 @@
 using System.Windows;
 using System.Windows.Controls;
 using AdGuardTray.ViewModels;
+using AdGuardTray.Services;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AdGuardTray.Views
 {
     public partial class ProtectionView : UserControl
     {
-        private readonly ProtectionViewModel _viewModel = new();
+        private readonly ProtectionViewModel _viewModel;
         public ProtectionView()
         {
             InitializeComponent();
+            _viewModel = new ProtectionViewModel(
+                ((App)Application.Current).Services
+                    .GetRequiredService<AdGuardProtectionNotificationTracker>());
             DataContext = _viewModel;
             Loaded += ProtectionView_Loaded;
             Unloaded += ProtectionView_Unloaded;

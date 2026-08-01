@@ -17,6 +17,7 @@ namespace AdGuardTray.ViewModels
     public sealed class ProtectionViewModel : ObservableObject, IDisposable
     {
         private readonly SettingsService _settingsService = new();
+        private readonly AdGuardProtectionNotificationTracker _protectionNotificationTracker;
         private readonly DispatcherTimer _timer;
         private RouterManager? _routerManager;
         private string _routerSignature = "";
@@ -52,13 +53,15 @@ namespace AdGuardTray.ViewModels
         private bool _showBlockedQueriesOnly;
         private string _queryLogStatus = "Loading recent DNS activity...";
 
-        public ProtectionViewModel()
+        public ProtectionViewModel(
+            AdGuardProtectionNotificationTracker protectionNotificationTracker)
         {
+            _protectionNotificationTracker = protectionNotificationTracker;
             _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
             _timer.Tick += async (_, _) => await RefreshTimedDataAsync();
 
             RefreshAllCommand = new AsyncRelayCommand(RefreshAllAsync, () => !IsBusy);
-            EnableProtectionCommand = new AsyncRelayCommand(() => RunStatusActionAsync("Enabling protection...", "Protection enabled.", r => r.EnableProtectionAsync()), () => !IsBusy);
+            EnableProtectionCommand = new AsyncRelayCommand(() => RunStatusActionAsync("Enabling protection...", "Protection enabled.", r => r.EnableProtectionAsync(), processNotification: true), () => !IsBusy);
             DisableProtectionCommand = new AsyncRelayCommand(DisableProtectionAsync, () => !IsBusy);
             ResumeProtectionCommand = new AsyncRelayCommand(() => RunStatusActionAsync("Resuming protection...", "Protection resumed.", r => r.ResumeProtectionAsync()), () => !IsBusy);
             Pause30Command = new AsyncRelayCommand(() => PauseAsync(TimeSpan.FromMinutes(30)), () => !IsBusy);
@@ -322,7 +325,7 @@ namespace AdGuardTray.ViewModels
         private async Task DisableProtectionAsync()
         {
             if (MessageBox.Show("Disable protection until it is manually enabled again?", "Disable Protection", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
-            await RunStatusActionAsync("Disabling protection...", "Protection disabled.", r => r.DisableProtectionAsync());
+            await RunStatusActionAsync("Disabling protection...", "Protection disabled.", r => r.DisableProtectionAsync(), processNotification: true);
         }
 
         private Task PauseAsync(TimeSpan duration) => RunStatusActionAsync($"Pausing protection for {FormatDuration(duration)}...", $"Protection paused for {FormatDuration(duration)}.", r => r.PauseProtectionAsync(duration));
@@ -333,7 +336,11 @@ namespace AdGuardTray.ViewModels
             return RunStatusActionAsync("Pausing protection until tomorrow...", "Protection paused until tomorrow.", r => r.PauseProtectionAsync(duration));
         }
 
-        private async Task RunStatusActionAsync(string busy, string success, Func<RouterManager, Task<AdGuardProtectionStatus>> action)
+        private async Task RunStatusActionAsync(
+            string busy,
+            string success,
+            Func<RouterManager, Task<AdGuardProtectionStatus>> action,
+            bool processNotification = false)
         {
             if (IsBusy) return;
 
@@ -346,6 +353,14 @@ namespace AdGuardTray.ViewModels
                     await action(GetRouterManager());
 
                 ApplyStatus(status);
+
+                if (processNotification)
+                {
+                    await _protectionNotificationTracker
+                        .ProcessProtectionStateAsync(
+                            status.IsEnabled,
+                            ProtectionStateSource.ManualAction);
+                }
 
                 // Notify the already-open Overview immediately rather than
                 // waiting for its scheduled refresh.

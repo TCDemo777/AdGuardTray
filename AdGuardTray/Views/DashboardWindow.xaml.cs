@@ -22,6 +22,7 @@ namespace AdGuardTray.Views
         private readonly SettingsService _settingsService;
         private readonly NotificationService _notificationService;
         private readonly NotificationCentreViewModel _notificationCentreViewModel;
+        private readonly AdGuardProtectionNotificationTracker _protectionNotificationTracker;
         private readonly RefreshCoordinator _refreshCoordinator;
         private bool _refreshInProgress;
         private bool _trafficRefreshInProgress;
@@ -65,6 +66,8 @@ namespace AdGuardTray.Views
                 .Services.GetRequiredService<NotificationService>();
             _notificationCentreViewModel = ((App)Application.Current)
                 .Services.GetRequiredService<NotificationCentreViewModel>();
+            _protectionNotificationTracker = ((App)Application.Current)
+                .Services.GetRequiredService<AdGuardProtectionNotificationTracker>();
             NotificationButton.DataContext = _notificationService;
 
             _settingsService =
@@ -232,34 +235,16 @@ namespace AdGuardTray.Views
                 Task<AdGuardProtectionStatus> protectionTask =
                     router.GetAdGuardProtectionStatusAsync();
 
-                await Task.WhenAll(
-                    statisticsTask,
-                    rankingTask,
-                    protectionTask);
-
-                AdGuardStatistics statistics =
-                    await statisticsTask;
-
-                List<QueryLogEntry> rankingEntries =
-                    await rankingTask;
-
                 AdGuardProtectionStatus protectionStatus =
                     await protectionTask;
 
-                _viewModel.UpdateAdGuardStatistics(
-                    statistics);
-
-                // Several AdGuard Home builds omit ranking arrays from
-                // /control/stats. Build those Analytics lists from the
-                // current query-log window whenever the stats lists are empty.
-                _viewModel.UpdateRankingsFromQueryLog(
-                    rankingEntries,
-                    onlyWhenEmpty: false);
+                await _protectionNotificationTracker.ProcessProtectionStateAsync(
+                    protectionStatus.IsEnabled,
+                    ProtectionStateSource.Refresh);
 
                 // Protection state is authoritative from /control/status.
-                // Statistics responses are not reliable for this value on
-                // every GL.iNet AdGuard Home build.
-
+                // Process this independently so unrelated statistics or
+                // query-log failures cannot hide a confirmed state change.
                 _viewModel.AdGuardProtectionEnabled =
                     protectionStatus.IsEnabled;
 
@@ -274,6 +259,26 @@ namespace AdGuardTray.Views
                         ? FormatProtectionRemaining(
                             protectionStatus.RemainingPause)
                         : "";
+
+                await Task.WhenAll(
+                    statisticsTask,
+                    rankingTask);
+
+                AdGuardStatistics statistics =
+                    await statisticsTask;
+
+                List<QueryLogEntry> rankingEntries =
+                    await rankingTask;
+
+                _viewModel.UpdateAdGuardStatistics(
+                    statistics);
+
+                // Several AdGuard Home builds omit ranking arrays from
+                // /control/stats. Build those Analytics lists from the
+                // current query-log window whenever the stats lists are empty.
+                _viewModel.UpdateRankingsFromQueryLog(
+                    rankingEntries,
+                    onlyWhenEmpty: false);
 
                 if (statistics.TotalQueries < 0 ||
                     statistics.BlockedQueries < 0)
