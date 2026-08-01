@@ -1,5 +1,28 @@
 # AdGuardTray Changelog
 
+## [2.0.0] - 2026-08-01
+
+### Added
+- Central router and AdGuard endpoint configuration with support for custom ports and HTTP/HTTPS.
+- Automatic migration from the legacy `RouterIp` setting to `RouterHost`.
+- Reusable, reconnecting SSH sessions for dashboard and traffic refreshes.
+- Reproducible Windows build workflow for pull requests and pushes.
+
+### Changed
+- Split `RouterManager` into focused partial files for core networking, AdGuard operations, and router operations.
+- Reused pooled AdGuard HTTP connections instead of creating a client for every request.
+- Reused one dashboard `RouterManager` instance while settings remain unchanged.
+- Parallelised independent AdGuard dashboard requests.
+- Prevented overlapping full dashboard refreshes.
+- Updated package, assembly, and file versions to 2.0.0.
+
+### Fixed
+- Removed hard-coded private router addresses.
+- Fixed router host persistence and legacy settings migration.
+- Restored first-run startup through the tray-managed application lifecycle.
+- Restored close-to-tray and minimise-to-tray behaviour.
+- Fixed misleading incomplete-settings errors after saving a valid router host and password.
+
 ## [1.4.0] - 2026-07-30
 
 ### Added
