@@ -1,47 +1,27 @@
 # AdGuardTray Changelog
 
-## [2.0.0] - 2026-08-01
-
-### Added
-- Central router and AdGuard endpoint configuration with support for custom ports and HTTP/HTTPS.
-- Automatic migration from the legacy `RouterIp` setting to `RouterHost`.
-- Reusable, reconnecting SSH sessions for dashboard and traffic refreshes.
-- Reproducible Windows build workflow for pull requests and pushes.
-
-### Changed
-- Split `RouterManager` into focused partial files for core networking, AdGuard operations, and router operations.
-- Reused pooled AdGuard HTTP connections instead of creating a client for every request.
-- Reused one dashboard `RouterManager` instance while settings remain unchanged.
-- Parallelised independent AdGuard dashboard requests.
-- Prevented overlapping full dashboard refreshes.
-- Updated package, assembly, and file versions to 2.0.0.
-
-### Fixed
-- Removed hard-coded private router addresses.
-- Fixed router host persistence and legacy settings migration.
-- Restored first-run startup through the tray-managed application lifecycle.
-- Restored close-to-tray and minimise-to-tray behaviour.
-- Fixed misleading incomplete-settings errors after saving a valid router host and password.
-
 ## [1.4.0] - 2026-08-01
+
+Version 1.4.0 is a reliability, performance and multi-network compatibility release built on the 1.3 series.
 
 ### Added
 - Central router and AdGuard Home endpoint configuration with configurable schemes and ports.
-- Settings migration from the legacy router-address property.
-- GL.iNet IoT and Guest Wi-Fi client mapping, including role-aware handling of labels such as `2.4G_Iot`.
-- Additional wireless client discovery using GL.iNet inventory, OpenWrt hostapd data, live station tables and DHCP leases.
-- GitHub Actions workflow for Windows restore, build and publish validation.
+- Automatic migration from the legacy `RouterIp` setting to `RouterHost`.
+- GL.iNet IoT and Guest Wi-Fi client mapping, including role-aware labels such as `2.4G_Iot`.
+- Additional wireless-client discovery using GL.iNet inventory, OpenWrt hostapd data, station tables and DHCP leases.
+- Reproducible Windows build metadata.
 - Dynamic About-page and diagnostics version reporting from assembly metadata.
 
 ### Changed
-- Reused pooled HTTP connections for AdGuard Home control, clients, statistics and query-log requests.
+- Reused pooled HTTP connections for AdGuard Home control, client, statistics and query-log requests.
 - Reused a reconnecting SSH session instead of opening a new connection for every command.
 - Split `RouterManager` into router/network, AdGuard Home and operations partial implementation files while retaining its public API.
 - Reused one dashboard `RouterManager` instance and replaced it automatically when connection settings change.
 - Parallelised independent AdGuard Home dashboard requests.
-- Prevented overlapping full dashboard and live-traffic refreshes.
+- Prevented overlapping full-dashboard and live-traffic refreshes.
 - Improved multi-SSID client matching by preserving network role and runtime-interface information.
-- Updated project documentation and release metadata for version 1.4.0.
+- Updated package, assembly, file and informational versions to 1.4.0.
+- Updated the About page and project documentation for the 1.4 release.
 
 ### Fixed
 - Router address not being retained after saving settings.
@@ -49,13 +29,14 @@
 - Startup validation reading a different router property from the settings UI.
 - Connection failures caused by inconsistent settings and endpoint models.
 - Hard-coded router and AdGuard Home addresses throughout the application.
-- Dashboard X and minimise actions exiting or bypassing notification-area lifecycle management.
+- Dashboard close and minimise actions bypassing notification-area lifecycle management.
 - First-run setup creating an unmanaged dashboard without the tray manager.
-- Repeated HTTP client creation and unnecessary TCP connection setup.
+- Repeated HTTP-client creation and unnecessary TCP setup.
 - Repeated SSH connection setup during dashboard and traffic refreshes.
-- Wi-Fi clients being assigned to the first SSID on a band when firmware omitted an SSID.
+- Wi-Fi clients being assigned to the first SSID on a band when firmware omitted the SSID.
 - GL-MT6000 2.4 GHz IoT clients being attached to the main 2.4 GHz network instead of the IoT SSID.
-- C# shell-command escaping errors in wireless station diagnostics.
+- Shell-command escaping errors in wireless station diagnostics.
+- Malformed release project metadata and unresolved changelog merge markers.
 
 ### Existing 1.4 interface improvements
 - Analytics v2 dashboard with responsive leaderboard-style rankings.

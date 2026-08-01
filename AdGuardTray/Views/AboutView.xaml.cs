@@ -26,6 +26,7 @@ namespace AdGuardTray.Views
         {
             InitializeComponent();
             VersionTextBlock.Text = "Version " + GetApplicationVersion();
+            BuildDateTextBlock.Text = "Build date: " + GetBuildDate();
             LoadChangelog();
             LoadSystemInformation();
             AppendLog("Support page opened.");
@@ -424,6 +425,29 @@ namespace AdGuardTray.Views
                 AppContext.BaseDirectory +
                 "\nGenerated: " +
                 DateTimeOffset.Now.ToString("O");
+        }
+
+
+        private static string GetBuildDate()
+        {
+            try
+            {
+                string location = Assembly.GetExecutingAssembly().Location;
+
+                if (!string.IsNullOrWhiteSpace(location) &&
+                    File.Exists(location))
+                {
+                    return File.GetLastWriteTime(location)
+                        .ToString("dd MMM yyyy");
+                }
+            }
+            catch
+            {
+                // A build date is helpful metadata, but failure to read it
+                // must never prevent the About page from loading.
+            }
+
+            return "unknown";
         }
 
 

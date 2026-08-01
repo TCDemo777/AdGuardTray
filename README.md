@@ -1,5 +1,9 @@
 # AdGuardTray
 
+[![Release](https://img.shields.io/github/v/release/TCDemo777/AdGuardTray)](https://github.com/TCDemo777/AdGuardTray/releases)
+[![Build](https://github.com/TCDemo777/AdGuardTray/actions/workflows/build.yml/badge.svg)](https://github.com/TCDemo777/AdGuardTray/actions)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 A Windows tray companion for monitoring and managing supported GL.iNet routers running AdGuard Home.
 
 ## Features
