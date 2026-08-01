@@ -12,7 +12,7 @@ namespace AdGuardTray.ViewModels
 {
     public partial class GlobalSearchViewModel : ObservableObject
     {
-        private readonly RouterManager _routerManager;
+        private readonly IRouterManagerProvider _routerManagerProvider;
         private readonly List<ClientInfo> _clients = new();
         private readonly List<QueryLogEntry> _logs = new();
 
@@ -28,9 +28,10 @@ namespace AdGuardTray.ViewModels
         [ObservableProperty]
         private bool isLoading;
 
-        public GlobalSearchViewModel(RouterManager routerManager)
+        public GlobalSearchViewModel(
+            IRouterManagerProvider routerManagerProvider)
         {
-            _routerManager = routerManager;
+            _routerManagerProvider = routerManagerProvider;
         }
 
         [RelayCommand]
@@ -46,11 +47,13 @@ namespace AdGuardTray.ViewModels
 
             try
             {
+                RouterManager routerManager =
+                    await _routerManagerProvider.GetRouterManagerAsync();
                 List<ClientInfo> clients =
-                    await _routerManager.GetAdGuardClientsAsync();
+                    await routerManager.GetAdGuardClientsAsync();
 
                 List<QueryLogEntry> logs =
-                    await _routerManager.GetQueryLogAsync();
+                    await routerManager.GetQueryLogAsync();
 
                 _clients.Clear();
                 _clients.AddRange(clients);

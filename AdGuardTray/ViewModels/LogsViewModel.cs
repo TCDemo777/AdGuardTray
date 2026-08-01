@@ -16,7 +16,7 @@ namespace AdGuardTray.ViewModels
         // Keeping the on-screen collection bounded prevents the WPF DataGrid
         // from creating thousands of row containers during initial navigation.
         private const int MaxVisibleEntries = 1500;
-        private readonly RouterManager _routerManager;
+        private readonly IRouterManagerProvider _routerManagerProvider;
         private readonly DispatcherTimer _refreshTimer;
 
         private readonly List<QueryLogEntry> _allEntries =
@@ -46,9 +46,9 @@ namespace AdGuardTray.ViewModels
                 ? "Resume"
                 : "Pause";
 
-        public LogsViewModel(RouterManager routerManager)
+        public LogsViewModel(IRouterManagerProvider routerManagerProvider)
         {
-            _routerManager = routerManager;
+            _routerManagerProvider = routerManagerProvider;
 
             _refreshTimer =
                 new DispatcherTimer
@@ -93,8 +93,10 @@ namespace AdGuardTray.ViewModels
 
             try
             {
+                RouterManager routerManager =
+                    await _routerManagerProvider.GetRouterManagerAsync();
                 List<QueryLogEntry> entries =
-                    await _routerManager
+                    await routerManager
                         .GetQueryLogAsync();
 
                 ApplyEntries(

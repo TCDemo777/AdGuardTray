@@ -12,7 +12,7 @@ namespace AdGuardTray.ViewModels
 {
     public partial class ClientsViewModel : ObservableObject
     {
-        private readonly RouterManager _routerManager;
+        private readonly IRouterManagerProvider _routerManagerProvider;
         private readonly ClientProfileService _clientProfileService;
         private readonly NewDeviceNotificationTracker _newDeviceNotificationTracker;
         private readonly Dictionary<string, ClientProfile> _clientProfiles;
@@ -90,10 +90,10 @@ namespace AdGuardTray.ViewModels
             SortDescending ? "Descending" : "Ascending";
 
         public ClientsViewModel(
-            RouterManager routerManager,
+            IRouterManagerProvider routerManagerProvider,
             NewDeviceNotificationTracker newDeviceNotificationTracker)
         {
-            _routerManager = routerManager;
+            _routerManagerProvider = routerManagerProvider;
             _newDeviceNotificationTracker = newDeviceNotificationTracker;
             _clientProfileService = new ClientProfileService();
             _clientProfiles = _clientProfileService.Load();
@@ -113,17 +113,20 @@ namespace AdGuardTray.ViewModels
 
             try
             {
+                RouterManager routerManager =
+                    await _routerManagerProvider.GetRouterManagerAsync();
+
                 string? selectedKey = SelectedClient is null
                     ? null
                     : ClientKey(SelectedClient);
 
                 List<ClientInfo> clients =
-                    await _routerManager.GetAdGuardClientsAsync();
+                    await routerManager.GetAdGuardClientsAsync();
 
                 // Use the same per-SSID mapping as the Network tab so selected
                 // clients receive the resolved Wi-Fi name, interface and signal.
                 List<WifiRadioInfo> wifiNetworks =
-                    await _routerManager.GetWifiRadiosAsync();
+                    await routerManager.GetWifiRadiosAsync();
 
                 // Flatten the per-network client lists while explicitly carrying
                 // the parent SSID/band/interface onto each client.  The Network
@@ -149,7 +152,7 @@ namespace AdGuardTray.ViewModels
                 // Retain Ethernet and any firmware-only clients that are not
                 // represented in the Wi-Fi network collection.
                 List<WifiClientInfo> inventoryClients =
-                    await _routerManager.GetGlClientInventoryAsync();
+                    await routerManager.GetGlClientInventoryAsync();
 
                 foreach (WifiClientInfo inventoryClient in inventoryClients)
                 {
@@ -295,12 +298,6 @@ namespace AdGuardTray.ViewModels
                 return;
             }
 
-            if (_routerManager is null)
-            {
-                PingResult = "Load the client list before running a ping.";
-                return;
-            }
-
             if (IsPinging)
             {
                 return;
@@ -311,7 +308,9 @@ namespace AdGuardTray.ViewModels
 
             try
             {
-                PingResult = await _routerManager.PingClientAsync(
+                RouterManager routerManager =
+                    await _routerManagerProvider.GetRouterManagerAsync();
+                PingResult = await routerManager.PingClientAsync(
                     SelectedClient.IpAddress);
                 AddActivityEvent(
                     SelectedClient,
@@ -339,12 +338,6 @@ namespace AdGuardTray.ViewModels
                 return;
             }
 
-            if (_routerManager is null)
-            {
-                PingResult = "Load the client list before sending Wake-on-LAN.";
-                return;
-            }
-
             if (IsWaking)
             {
                 return;
@@ -355,7 +348,9 @@ namespace AdGuardTray.ViewModels
 
             try
             {
-                PingResult = await _routerManager.WakeClientAsync(
+                RouterManager routerManager =
+                    await _routerManagerProvider.GetRouterManagerAsync();
+                PingResult = await routerManager.WakeClientAsync(
                     SelectedClient.MacAddress);
                 AddActivityEvent(
                     SelectedClient,
@@ -394,7 +389,7 @@ namespace AdGuardTray.ViewModels
 
         private async Task RefreshSelectedClientWifiDetailsAsync(ClientInfo? client)
         {
-            if (client is null || _routerManager is null)
+            if (client is null)
             {
                 return;
             }
@@ -405,7 +400,9 @@ namespace AdGuardTray.ViewModels
 
             try
             {
-                WifiClientInfo? live = await _routerManager.GetWifiClientDetailsAsync(
+                RouterManager routerManager =
+                    await _routerManagerProvider.GetRouterManagerAsync();
+                WifiClientInfo? live = await routerManager.GetWifiClientDetailsAsync(
                     client.MacAddress,
                     client.IpAddress);
 

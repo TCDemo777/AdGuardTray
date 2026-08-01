@@ -28,7 +28,7 @@ namespace AdGuardTray.Views
         private readonly SemaphoreSlim _routerManagerUsageGate = new(1, 1);
         private bool _refreshInProgress;
         private bool _trafficRefreshInProgress;
-        private readonly RouterManager _routerManager;
+        private readonly IRouterManagerProvider _routerManagerProvider;
         private bool _routerOnline = true;
 
         private NetworkTrafficSnapshot? _previousTrafficSnapshot;
@@ -69,8 +69,8 @@ namespace AdGuardTray.Views
                 .Services.GetRequiredService<NotificationCentreViewModel>();
             _protectionNotificationTracker = ((App)Application.Current)
                 .Services.GetRequiredService<AdGuardProtectionNotificationTracker>();
-            _routerManager = ((App)Application.Current).Services
-                .GetRequiredService<RouterManager>();
+            _routerManagerProvider = ((App)Application.Current).Services
+                .GetRequiredService<IRouterManagerProvider>();
             NotificationButton.DataContext = _notificationService;
 
             _settingsService =
@@ -167,7 +167,9 @@ namespace AdGuardTray.Views
                     return;
                 }
 
-                RouterManager router = _routerManager;
+                RouterManager router =
+                    await _routerManagerProvider.GetRouterManagerAsync(
+                        cancellationToken);
 
                 RouterInfo info =
                     await router.GetRouterInfoAsync();
@@ -444,7 +446,9 @@ namespace AdGuardTray.Views
                     return;
                 }
 
-                RouterManager router = _routerManager;
+                RouterManager router =
+                    await _routerManagerProvider.GetRouterManagerAsync(
+                        cancellationToken);
 
                 NetworkTrafficSnapshot snapshot =
                     await router.GetNetworkTrafficSnapshotAsync();

@@ -11,6 +11,7 @@ namespace AdGuardTray.ViewModels
     {
         public event EventHandler? SettingsSaved;
         private readonly SettingsService _settingsService;
+        private readonly IRouterManagerProvider _routerManagerProvider;
 
         private string _routerIp = "";
         private string _username = "";
@@ -140,9 +141,12 @@ namespace AdGuardTray.ViewModels
 
         public IRelayCommand ReloadCommand { get; }
 
-        public SettingsViewModel()
+        public SettingsViewModel(
+            SettingsService settingsService,
+            IRouterManagerProvider routerManagerProvider)
         {
-            _settingsService = new SettingsService();
+            _settingsService = settingsService;
+            _routerManagerProvider = routerManagerProvider;
 
             SaveCommand =
                 new RelayCommand(Save);
@@ -265,6 +269,7 @@ namespace AdGuardTray.ViewModels
 
                 _settingsService.Save(
                     settings);
+                _routerManagerProvider.Invalidate();
 
                 HasUnsavedChanges =
                     false;

@@ -3,12 +3,14 @@ using System.Windows;
 using AdGuardTray.Configuration;
 using AdGuardTray.Models;
 using AdGuardTray.Services;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AdGuardTray.Views
 {
     public partial class SettingsWindow : Window
     {
         private readonly SettingsService _settingsService;
+        private readonly IRouterManagerProvider _routerManagerProvider;
 
 
         public SettingsWindow()
@@ -16,7 +18,10 @@ namespace AdGuardTray.Views
             InitializeComponent();
 
             _settingsService =
-                new SettingsService();
+                ((App)Application.Current).Services
+                    .GetRequiredService<SettingsService>();
+            _routerManagerProvider = ((App)Application.Current).Services
+                .GetRequiredService<IRouterManagerProvider>();
 
             LoadSettings();
 
@@ -104,6 +109,7 @@ namespace AdGuardTray.Views
 
 
                 _settingsService.Save(settings);
+                _routerManagerProvider.Invalidate();
 
 
 

@@ -28,19 +28,8 @@ namespace AdGuardTray
 
             var serviceCollection = new ServiceCollection();
             serviceCollection.AddSingleton<SettingsService>();
-            serviceCollection.AddSingleton(serviceProvider =>
-            {
-                SettingsService settingsService =
-                    serviceProvider.GetRequiredService<SettingsService>();
-                AppSettings settings = settingsService.Load();
-                string password = settingsService.DecryptPassword(
-                    settings.EncryptedPassword);
-
-                return new RouterManager(
-                    settings.RouterHost,
-                    settings.Username,
-                    password);
-            });
+            serviceCollection.AddSingleton<IRouterManagerProvider,
+                RouterManagerProvider>();
             serviceCollection.AddSingleton(
                 _ => new NotificationService(Dispatcher));
             serviceCollection.AddSingleton<AdGuardProtectionNotificationTracker>();
@@ -50,6 +39,7 @@ namespace AdGuardTray
             serviceCollection.AddTransient<LogsViewModel>();
             serviceCollection.AddSingleton<ProtectionViewModel>();
             serviceCollection.AddTransient<GlobalSearchViewModel>();
+            serviceCollection.AddTransient<SettingsViewModel>();
             _services = serviceCollection.BuildServiceProvider();
 
             await Services.GetRequiredService<NotificationService>()

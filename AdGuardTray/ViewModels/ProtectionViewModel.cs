@@ -16,7 +16,7 @@ namespace AdGuardTray.ViewModels
 {
     public sealed class ProtectionViewModel : ObservableObject, IDisposable
     {
-        private readonly RouterManager _routerManager;
+        private readonly IRouterManagerProvider _routerManagerProvider;
         private readonly AdGuardProtectionNotificationTracker _protectionNotificationTracker;
         private readonly DispatcherTimer _timer;
         private bool _isBusy;
@@ -52,10 +52,10 @@ namespace AdGuardTray.ViewModels
         private string _queryLogStatus = "Loading recent DNS activity...";
 
         public ProtectionViewModel(
-            RouterManager routerManager,
+            IRouterManagerProvider routerManagerProvider,
             AdGuardProtectionNotificationTracker protectionNotificationTracker)
         {
-            _routerManager = routerManager;
+            _routerManagerProvider = routerManagerProvider;
             _protectionNotificationTracker = protectionNotificationTracker;
             _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
             _timer.Tick += async (_, _) => await RefreshTimedDataAsync();
@@ -176,7 +176,8 @@ namespace AdGuardTray.ViewModels
             Message = "Refreshing all protection settings...";
             try
             {
-                RouterManager router = GetRouterManager();
+                RouterManager router =
+                    await _routerManagerProvider.GetRouterManagerAsync();
                 AdGuardProtectionStatus status = await router.GetAdGuardProtectionStatusAsync();
                 AdGuardStatistics statistics = await router.GetAdGuardStatisticsAsync();
                 _options = await router.GetProtectionOptionsAsync();
@@ -255,7 +256,9 @@ namespace AdGuardTray.ViewModels
 
             try
             {
-                ApplyStatistics(await GetRouterManager().GetAdGuardStatisticsAsync());
+                RouterManager router =
+                    await _routerManagerProvider.GetRouterManagerAsync();
+                ApplyStatistics(await router.GetAdGuardStatisticsAsync());
                 await RefreshQueryLogAsync(false);
             }
             catch
@@ -279,7 +282,9 @@ namespace AdGuardTray.ViewModels
         {
             try
             {
-                ApplyQueryLog(await GetRouterManager().GetQueryLogAsync());
+                RouterManager router =
+                    await _routerManagerProvider.GetRouterManagerAsync();
+                ApplyQueryLog(await router.GetQueryLogAsync());
                 if (showMessage) Message = "Recent DNS activity refreshed.";
             }
             catch (Exception ex)
@@ -318,7 +323,7 @@ namespace AdGuardTray.ViewModels
         private async Task RefreshProtectionStatusAsync(bool showMessage)
         {
             if (IsBusy) return;
-            try { ApplyStatus(await GetRouterManager().GetAdGuardProtectionStatusAsync()); if (showMessage) Message = "Protection status refreshed."; }
+            try { RouterManager router = await _routerManagerProvider.GetRouterManagerAsync(); ApplyStatus(await router.GetAdGuardProtectionStatusAsync()); if (showMessage) Message = "Protection status refreshed."; }
             catch (Exception ex) { StatusDetail = "Protection status unavailable."; if (showMessage) Message = ex.Message; }
         }
 
@@ -349,8 +354,10 @@ namespace AdGuardTray.ViewModels
 
             try
             {
+                RouterManager router =
+                    await _routerManagerProvider.GetRouterManagerAsync();
                 AdGuardProtectionStatus status =
-                    await action(GetRouterManager());
+                    await action(router);
 
                 ApplyStatus(status);
 
@@ -384,7 +391,7 @@ namespace AdGuardTray.ViewModels
         {
             if (IsBusy) return;
             IsBusy = true; Message = $"Updating {label}...";
-            try { await action(GetRouterManager()); Message = $"{label} updated."; _options = await GetRouterManager().GetProtectionOptionsAsync(); DetermineProfile(); }
+            try { RouterManager router = await _routerManagerProvider.GetRouterManagerAsync(); await action(router); Message = $"{label} updated."; _options = await router.GetProtectionOptionsAsync(); DetermineProfile(); }
             catch (Exception ex) { Message = $"Unable to update {label}: {ex.Message}"; await RefreshOptionsOnlyAsync(); }
             finally { IsBusy = false; }
         }
@@ -393,7 +400,9 @@ namespace AdGuardTray.ViewModels
         {
             try
             {
-                _options = await GetRouterManager().GetProtectionOptionsAsync();
+                RouterManager router =
+                    await _routerManagerProvider.GetRouterManagerAsync();
+                _options = await router.GetProtectionOptionsAsync();
                 _isInitialising = true;
                 FilteringEnabled = _options.FilteringEnabled; SafeBrowsingEnabled = _options.SafeBrowsingEnabled; SafeSearchEnabled = _options.SafeSearchEnabled; ParentalEnabled = _options.ParentalEnabled; QueryLogEnabled = _options.QueryLogEnabled;
                 DetermineProfile();
@@ -407,7 +416,8 @@ namespace AdGuardTray.ViewModels
             IsBusy = true; Message = $"Applying {name} profile...";
             try
             {
-                RouterManager r = GetRouterManager();
+                RouterManager r =
+                    await _routerManagerProvider.GetRouterManagerAsync();
                 await r.SetFilteringEnabledAsync(filtering);
                 await r.SetSafeBrowsingEnabledAsync(safeBrowsing);
                 await r.SetParentalEnabledAsync(parental);
@@ -462,7 +472,7 @@ namespace AdGuardTray.ViewModels
         {
             if (IsBusy) return;
             IsBusy = true; Message = "Saving blocked services...";
-            try { await GetRouterManager().UpdateBlockedServicesAsync(BlockedServices.Where(s => s.IsBlocked).Select(s => s.Id), _blockedConfig.ScheduleJson); Message = "Blocked services updated."; }
+            try { RouterManager router = await _routerManagerProvider.GetRouterManagerAsync(); await router.UpdateBlockedServicesAsync(BlockedServices.Where(s => s.IsBlocked).Select(s => s.Id), _blockedConfig.ScheduleJson); Message = "Blocked services updated."; }
             catch (Exception ex) { Message = "Unable to update blocked services: " + ex.Message; }
             finally { IsBusy = false; }
         }
@@ -489,8 +499,10 @@ namespace AdGuardTray.ViewModels
             IsBusy = true; Message = "Saving custom filtering rules...";
             try
             {
-                await GetRouterManager().SetCustomFilteringRulesAsync(rules);
-                FilteringRules.Clear(); foreach (var rule in await GetRouterManager().GetCustomFilteringRulesAsync()) FilteringRules.Add(rule);
+                RouterManager router =
+                    await _routerManagerProvider.GetRouterManagerAsync();
+                await router.SetCustomFilteringRulesAsync(rules);
+                FilteringRules.Clear(); foreach (var rule in await router.GetCustomFilteringRulesAsync()) FilteringRules.Add(rule);
                 Message = success;
             }
             catch (Exception ex) { Message = "Unable to save filtering rules: " + ex.Message; }
@@ -503,7 +515,7 @@ namespace AdGuardTray.ViewModels
             if (domain.Length == 0 || answer.Length == 0) { Message = "Enter both a domain and an answer."; return; }
             if (IsBusy) return;
             IsBusy = true; Message = "Adding DNS rewrite...";
-            try { await GetRouterManager().AddDnsRewriteAsync(domain, answer); await ReloadRewritesAsync(); NewRewriteDomain = ""; NewRewriteAnswer = ""; Message = "DNS rewrite added."; }
+            try { RouterManager router = await _routerManagerProvider.GetRouterManagerAsync(); await router.AddDnsRewriteAsync(domain, answer); await ReloadRewritesAsync(router); NewRewriteDomain = ""; NewRewriteAnswer = ""; Message = "DNS rewrite added."; }
             catch (Exception ex) { Message = "Unable to add DNS rewrite: " + ex.Message; }
             finally { IsBusy = false; }
         }
@@ -512,11 +524,11 @@ namespace AdGuardTray.ViewModels
         {
             if (SelectedRewrite is null || IsBusy) return;
             IsBusy = true; Message = "Deleting DNS rewrite...";
-            try { await GetRouterManager().DeleteDnsRewriteAsync(SelectedRewrite.Domain, SelectedRewrite.Answer); await ReloadRewritesAsync(); Message = "DNS rewrite deleted."; }
+            try { RouterManager router = await _routerManagerProvider.GetRouterManagerAsync(); await router.DeleteDnsRewriteAsync(SelectedRewrite.Domain, SelectedRewrite.Answer); await ReloadRewritesAsync(router); Message = "DNS rewrite deleted."; }
             catch (Exception ex) { Message = "Unable to delete DNS rewrite: " + ex.Message; }
             finally { IsBusy = false; }
         }
-        private async Task ReloadRewritesAsync() { DnsRewrites.Clear(); foreach (var x in await GetRouterManager().GetDnsRewritesAsync()) DnsRewrites.Add(x); }
+        private async Task ReloadRewritesAsync(RouterManager? router = null) { router ??= await _routerManagerProvider.GetRouterManagerAsync(); DnsRewrites.Clear(); foreach (var x in await router.GetDnsRewritesAsync()) DnsRewrites.Add(x); }
 
         private void ApplyStatus(AdGuardProtectionStatus status)
         {
@@ -530,11 +542,6 @@ namespace AdGuardTray.ViewModels
             ProfileName = FilteringEnabled && SafeBrowsingEnabled && ParentalEnabled && SafeSearchEnabled && QueryLogEnabled ? "Family" :
                           FilteringEnabled && SafeBrowsingEnabled && !ParentalEnabled && SafeSearchEnabled && !QueryLogEnabled ? "Privacy" :
                           FilteringEnabled && SafeBrowsingEnabled && !ParentalEnabled && !SafeSearchEnabled && QueryLogEnabled ? "Standard" : "Custom";
-        }
-
-        private RouterManager GetRouterManager()
-        {
-            return _routerManager;
         }
 
         private void NotifyCommands()

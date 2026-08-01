@@ -17,7 +17,7 @@ namespace AdGuardTray.Views
 {
     public partial class AboutView : UserControl
     {
-        private readonly RouterManager _routerManager;
+        private readonly IRouterManagerProvider _routerManagerProvider;
         private readonly SettingsService _settingsService;
 
         private readonly StringBuilder _supportLog =
@@ -26,8 +26,8 @@ namespace AdGuardTray.Views
         public AboutView()
         {
             InitializeComponent();
-            _routerManager = ((App)Application.Current).Services
-                .GetRequiredService<RouterManager>();
+            _routerManagerProvider = ((App)Application.Current).Services
+                .GetRequiredService<IRouterManagerProvider>();
             _settingsService = ((App)Application.Current).Services
                 .GetRequiredService<SettingsService>();
             VersionTextBlock.Text = "Version " + GetApplicationVersion();
@@ -37,9 +37,9 @@ namespace AdGuardTray.Views
             AppendLog("Support page opened.");
         }
 
-        private RouterManager CreateRouterManager()
+        private Task<RouterManager> GetRouterManagerAsync()
         {
-            return _routerManager;
+            return _routerManagerProvider.GetRouterManagerAsync();
         }
 
         private async Task RunRouterToolAsync(
@@ -59,7 +59,7 @@ namespace AdGuardTray.Views
             {
                 string result =
                     await operation(
-                        CreateRouterManager(),
+                        await GetRouterManagerAsync(),
                         target);
 
                 DiagnosticsTextBox.Text =
@@ -122,7 +122,7 @@ namespace AdGuardTray.Views
             try
             {
                 string report =
-                    await CreateRouterManager()
+                    await (await GetRouterManagerAsync())
                         .GetClientDiagnosticsAsync();
 
                 DiagnosticsTextBox.Text =
@@ -163,7 +163,7 @@ namespace AdGuardTray.Views
             try
             {
                 RouterManager routerManager =
-                    CreateRouterManager();
+                    await GetRouterManagerAsync();
 
                 var current =
                     await routerManager

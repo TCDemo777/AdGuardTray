@@ -14,7 +14,7 @@ namespace AdGuardTray.ViewModels
 {
     public partial class ClientDetailsViewModel : ObservableObject
     {
-        private readonly RouterManager _routerManager;
+        private readonly IRouterManagerProvider _routerManagerProvider;
         private readonly ClientProfileService _clientProfileService;
         private readonly Dictionary<string, ClientProfile> _clientProfiles;
         private readonly DispatcherTimer _refreshTimer;
@@ -68,10 +68,10 @@ namespace AdGuardTray.ViewModels
 
         public ClientDetailsViewModel(
             ClientInfo client,
-            RouterManager routerManager)
+            IRouterManagerProvider routerManagerProvider)
         {
             _client = client;
-            _routerManager = routerManager;
+            _routerManagerProvider = routerManagerProvider;
             _clientProfileService = new ClientProfileService();
             _clientProfiles = _clientProfileService.Load();
 
@@ -116,8 +116,10 @@ namespace AdGuardTray.ViewModels
 
             try
             {
+                RouterManager routerManager =
+                    await _routerManagerProvider.GetRouterManagerAsync();
                 List<QueryLogEntry> entries =
-                    await _routerManager.GetQueryLogAsync();
+                    await routerManager.GetQueryLogAsync();
 
                 ApplyEntries(
                     entries

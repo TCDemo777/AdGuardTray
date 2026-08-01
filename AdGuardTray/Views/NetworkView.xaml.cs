@@ -9,14 +9,14 @@ namespace AdGuardTray.Views
 {
     public partial class NetworkView : UserControl
     {
-        private readonly RouterManager _routerManager;
+        private readonly IRouterManagerProvider _routerManagerProvider;
         private bool _maintenanceInProgress;
 
         public NetworkView()
         {
             InitializeComponent();
-            _routerManager = ((App)Application.Current).Services
-                .GetRequiredService<RouterManager>();
+            _routerManagerProvider = ((App)Application.Current).Services
+                .GetRequiredService<IRouterManagerProvider>();
         }
 
         private async void RestartWifi_Click(object sender, RoutedEventArgs e)
@@ -58,7 +58,9 @@ namespace AdGuardTray.Views
 
             try
             {
-                MaintenanceStatusText.Text = await operation(_routerManager);
+                RouterManager routerManager =
+                    await _routerManagerProvider.GetRouterManagerAsync();
+                MaintenanceStatusText.Text = await operation(routerManager);
             }
             catch (Exception ex)
             {
