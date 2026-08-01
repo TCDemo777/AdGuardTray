@@ -20,5 +20,43 @@ namespace AdGuardTray.Views
         }
         private async void ProtectionView_Loaded(object sender, RoutedEventArgs e) => await _viewModel.StartAsync();
         private void ProtectionView_Unloaded(object sender, RoutedEventArgs e) => _viewModel.Stop();
+
+        private void AddSchedule_Click(object sender, RoutedEventArgs e)
+        {
+            AllowedWindowEditor.IsExpanded = false;
+            ScheduleEditor.IsExpanded = true;
+            ScheduleEditor.Focus();
+        }
+
+        private void OpenAllowedWindow_Click(object sender, RoutedEventArgs e)
+        {
+            ScheduleEditor.IsExpanded = false;
+            AllowedWindowEditor.IsExpanded = true;
+            AllowedWindowEditor.Focus();
+        }
+
+        private void EditSchedule_Click(object sender, RoutedEventArgs e)
+        {
+            AllowedWindowEditor.IsExpanded = false;
+            ScheduleEditor.IsExpanded = true;
+            ScheduleEditor.Focus();
+        }
+
+        private void CancelSchedule_Click(object sender, RoutedEventArgs e) =>
+            ScheduleEditor.IsExpanded = false;
+
+        private void RunScheduleNow_Click(object sender, RoutedEventArgs e)
+        {
+            if ((sender as FrameworkElement)?.DataContext is not Models.AdGuardServiceSchedule schedule) return;
+            if (MessageBox.Show($"Run '{schedule.Name}' now?", "RouterPilot", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+                _viewModel.Schedules.RunNowCommand.Execute(schedule);
+        }
+
+        private void DeleteSchedule_Click(object sender, RoutedEventArgs e)
+        {
+            if ((sender as FrameworkElement)?.DataContext is not Models.AdGuardServiceSchedule schedule) return;
+            if (MessageBox.Show($"Delete '{schedule.Name}'?", "RouterPilot", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+                _viewModel.Schedules.DeleteCommand.Execute(schedule);
+        }
     }
 }

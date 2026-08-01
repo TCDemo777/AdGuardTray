@@ -20,6 +20,9 @@ public sealed class AppSettings
     public string Theme { get; set; } = "System";
     public int RefreshIntervalSeconds { get; set; } = 30;
     public int DefaultPauseMinutes { get; set; } = 30;
+    public DateTimeOffset? LastSuccessfulUpdateCheckUtc { get; set; }
+    public string LatestVersionSeen { get; set; } = string.Empty;
+    public string LastNotifiedUpdateVersion { get; set; } = string.Empty;
 
     public bool IsConfigured =>
         !string.IsNullOrWhiteSpace(RouterHost);

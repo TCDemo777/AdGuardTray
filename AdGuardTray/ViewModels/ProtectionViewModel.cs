@@ -19,6 +19,8 @@ namespace AdGuardTray.ViewModels
     {
         private readonly IRouterManagerProvider _routerManagerProvider;
         private readonly AdGuardProtectionNotificationTracker _protectionNotificationTracker;
+        private readonly BlockedServiceMutationService _blockedServiceMutations;
+        private readonly AdGuardServiceScheduleService _scheduleService;
         private readonly DispatcherTimer _timer;
         private readonly SemaphoreSlim _protectionStateGate = new(1, 1);
         private readonly CancellationTokenSource _disposalCancellation = new();
@@ -59,10 +61,17 @@ namespace AdGuardTray.ViewModels
 
         public ProtectionViewModel(
             IRouterManagerProvider routerManagerProvider,
-            AdGuardProtectionNotificationTracker protectionNotificationTracker)
+            AdGuardProtectionNotificationTracker protectionNotificationTracker,
+            BlockedServiceMutationService blockedServiceMutations,
+            AdGuardServiceScheduleService scheduleService,
+            AdGuardServiceScheduleViewModel schedules)
         {
             _routerManagerProvider = routerManagerProvider;
             _protectionNotificationTracker = protectionNotificationTracker;
+            _blockedServiceMutations = blockedServiceMutations;
+            _scheduleService = scheduleService;
+            Schedules = schedules;
+            _scheduleService.BlockedServicesChanged += ScheduleService_BlockedServicesChanged;
             _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
             _timer.Tick += async (_, _) => await RefreshTimedDataAsync();
 
@@ -98,6 +107,7 @@ namespace AdGuardTray.ViewModels
         }
 
         public ObservableCollection<BlockedServiceItem> BlockedServices { get; } = new();
+        public AdGuardServiceScheduleViewModel Schedules { get; }
         public ObservableCollection<string> BlockedServiceCategories { get; } = new();
         public ICollectionView BlockedServicesView { get; }
         public ObservableCollection<CustomFilteringRule> FilteringRules { get; } = new();
@@ -208,6 +218,7 @@ namespace AdGuardTray.ViewModels
 
             _disposed = true;
             _timer.Stop();
+            _scheduleService.BlockedServicesChanged -= ScheduleService_BlockedServicesChanged;
             _disposalCancellation.Cancel();
         }
 
@@ -239,13 +250,7 @@ namespace AdGuardTray.ViewModels
                 _isInitialising = false;
                 DetermineProfile();
 
-                foreach (var oldService in BlockedServices) oldService.PropertyChanged -= BlockedService_PropertyChanged;
-                BlockedServices.Clear();
-                foreach (var service in services.OrderBy(s => s.Name))
-                {
-                    service.PropertyChanged += BlockedService_PropertyChanged;
-                    BlockedServices.Add(service);
-                }
+                ApplyBlockedServices(services, _blockedConfig);
 
                 BlockedServiceCategories.Clear();
                 BlockedServiceCategories.Add("All categories");
@@ -543,9 +548,37 @@ namespace AdGuardTray.ViewModels
         {
             if (IsBusy) return;
             IsBusy = true; Message = "Saving blocked services...";
-            try { RouterManager router = await _routerManagerProvider.GetRouterManagerAsync(); await router.UpdateBlockedServicesAsync(BlockedServices.Where(s => s.IsBlocked).Select(s => s.Id), _blockedConfig.ScheduleJson); Message = "Blocked services updated."; }
+            try
+            {
+                BlockedServiceMutationResult? result = await _blockedServiceMutations.TryApplyManualChangesAsync(
+                    _blockedConfig.EnabledIds,
+                    BlockedServices.Where(s => s.IsBlocked).Select(s => s.Id));
+                if (result is null) { Message = "Another blocked-service change is already running. Try again shortly."; return; }
+                ApplyBlockedServices(result.Services, result.Config);
+                Message = "Blocked services updated.";
+            }
             catch (Exception ex) { Message = "Unable to update blocked services: " + ex.Message; }
             finally { IsBusy = false; }
+        }
+
+        private void ScheduleService_BlockedServicesChanged(object? sender, BlockedServiceMutationResult result)
+        {
+            Application.Current.Dispatcher.InvokeAsync(() => ApplyBlockedServices(result.Services, result.Config));
+        }
+
+        private void ApplyBlockedServices(IEnumerable<BlockedServiceItem> services, AdGuardBlockedServicesConfig config)
+        {
+            _blockedConfig = config;
+            foreach (BlockedServiceItem oldService in BlockedServices) oldService.PropertyChanged -= BlockedService_PropertyChanged;
+            BlockedServices.Clear();
+            foreach (BlockedServiceItem service in services.OrderBy(s => s.Name))
+            {
+                service.PropertyChanged += BlockedService_PropertyChanged;
+                BlockedServices.Add(service);
+            }
+            Schedules.SetAvailableServices(BlockedServices);
+            BlockedServicesView.Refresh();
+            OnPropertyChanged(nameof(BlockedServicesSelectionSummary));
         }
 
         private async Task AddRuleAsync(bool allow)

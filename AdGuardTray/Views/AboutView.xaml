@@ -160,6 +160,35 @@
                                                 Click="OpenLicense_Click"
                                                 Content="Licence"/>
                                     </WrapPanel>
+
+                                    <Border Margin="0,12,0,0" Padding="14"
+                                            Background="{DynamicResource Brush.SurfaceMuted}"
+                                            BorderBrush="{DynamicResource Brush.Border}"
+                                            BorderThickness="1" CornerRadius="8">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel>
+                                                <TextBlock FontWeight="SemiBold" Text="Updates"/>
+                                                <TextBlock x:Name="CurrentUpdateVersionTextBlock" Margin="0,4,0,0"
+                                                           Style="{DynamicResource Text.Secondary}"/>
+                                                <TextBlock x:Name="LatestVersionTextBlock" Margin="0,3,0,0"
+                                                           Style="{DynamicResource Text.Secondary}"/>
+                                                <TextBlock x:Name="LastUpdateCheckTextBlock" Margin="0,3,0,0"
+                                                           Style="{DynamicResource Text.Muted}"/>
+                                            </StackPanel>
+                                            <WrapPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center">
+                                                <Button x:Name="OpenReleaseNotesButton" MinWidth="142" Margin="0,0,8,0"
+                                                        Style="{DynamicResource Button.Secondary}"
+                                                        Click="OpenReleaseNotes_Click" Content="Open Release Notes" IsEnabled="False"/>
+                                                <Button x:Name="CheckForUpdatesButton" MinWidth="142"
+                                                        Style="{DynamicResource Button.Primary}"
+                                                        Click="CheckForUpdates_Click" Content="Check for Updates"/>
+                                            </WrapPanel>
+                                        </Grid>
+                                    </Border>
                                 </StackPanel>
                             </Grid>
                         </Border>
@@ -427,8 +456,7 @@
                                     </Grid.ColumnDefinitions>
 
                                     <StackPanel VerticalAlignment="Center">
-                                        <TextBlock FontSize="20"
-                                                   FontWeight="Bold"
+                                        <TextBlock Style="{DynamicResource Text.SectionTitle}"
                                                    Text="Support Diagnostics"/>
                                         <TextBlock Margin="0,5,0,0"
                                                    Foreground="{DynamicResource Brush.TextSecondary}"

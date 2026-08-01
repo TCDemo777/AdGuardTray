@@ -205,6 +205,11 @@ namespace AdGuardTray.Services
 
             if (networks.Count == 0)
             {
+                networks = await DiscoverWifiRadiosFromHostapdAsync();
+            }
+
+            if (networks.Count == 0)
+            {
                 return networks;
             }
 
@@ -273,6 +278,100 @@ namespace AdGuardTray.Services
             // a second source for drivers that do expose a station table.
             await EnrichWifiClientsFromHostapdAsync(networks);
             await EnrichWifiClientsFromStationDumpAsync(networks);
+
+            return networks;
+        }
+
+        private async Task<List<WifiRadioInfo>> DiscoverWifiRadiosFromHostapdAsync()
+        {
+            // Retain the discovery path used before per-SSID client mapping was
+            // introduced. Some GL.iNet/MediaTek builds do not produce records
+            // accepted by the newer iw-based command, but do expose their APs
+            // through the hostapd ubus objects.
+            string command = """
+                for s in $(uci show wireless 2>/dev/null | sed -n 's/^wireless\.\([^.=]*\)=wifi-iface$/\1/p'); do
+                    mode=$(uci -q get wireless.$s.mode)
+                    [ -z "$mode" -o "$mode" = "ap" ] || continue
+                    dev=$(uci -q get wireless.$s.device)
+                    [ -n "$dev" ] || continue
+                    ssid=$(uci -q get wireless.$s.ssid)
+                    [ -n "$ssid" ] || ssid='Hidden network'
+                    band=$(uci -q get wireless.$dev.band)
+                    [ -n "$band" ] || band=$(uci -q get wireless.$dev.hwmode)
+                    channel=$(uci -q get wireless.$dev.channel)
+                    [ -n "$channel" ] || channel='auto'
+                    disabled=$(uci -q get wireless.$s.disabled)
+                    rdisabled=$(uci -q get wireless.$dev.disabled)
+                    live_ifaces=''
+
+                    case "$band" in
+                        *2g*|*11g*|*11b*) wanted_band='2g' ;;
+                        *5g*|*11a*|*11ac*|*11ax*) wanted_band='5g' ;;
+                        *)
+                            if [ "$channel" != 'auto' ] && [ "$channel" -le 14 ] 2>/dev/null; then wanted_band='2g'; else wanted_band='5g'; fi
+                            ;;
+                    esac
+
+                    for h in $(ubus list 'hostapd.*' 2>/dev/null); do
+                        status=$(ubus call "$h" get_status 2>/dev/null)
+                        hssid=$(printf '%s' "$status" | jsonfilter -e '@.ssid' 2>/dev/null)
+                        hfreq=$(printf '%s' "$status" | jsonfilter -e '@.freq' 2>/dev/null)
+                        hchan=$(printf '%s' "$status" | jsonfilter -e '@.channel' 2>/dev/null)
+                        hband=''
+                        if [ -n "$hfreq" ]; then
+                            [ "$hfreq" -lt 3000 ] 2>/dev/null && hband='2g' || hband='5g'
+                        elif [ -n "$hchan" ]; then
+                            [ "$hchan" -le 14 ] 2>/dev/null && hband='2g' || hband='5g'
+                        fi
+
+                        if [ "$hssid" = "$ssid" ] || { [ -n "$hband" ] && [ "$hband" = "$wanted_band" ]; }; then
+                            iface=${h#hostapd.}
+                            case " $live_ifaces " in *" $iface "*) continue ;; esac
+                            live_ifaces="$live_ifaces $iface"
+                            [ "$hssid" = "$ssid" ] && break
+                        fi
+                    done
+
+                    state='Online'
+                    [ "$disabled" = "1" -o "$rdisabled" = "1" ] && state='Disabled'
+                    live_ifaces=$(printf '%s' "$live_ifaces" | sed 's/^ *//')
+                    [ -n "$live_ifaces" ] || live_ifaces="$dev"
+                    printf 'L|%s|%s|%s|%s|%s|%s\n' "$dev" "$live_ifaces" "$ssid" "$band" "$channel" "$state"
+                done
+                """;
+
+            string output = await _ssh.RunCommandAsync(command);
+            var networks = new List<WifiRadioInfo>();
+
+            foreach (string line in output.Split(
+                new[] { '\r', '\n' },
+                StringSplitOptions.RemoveEmptyEntries))
+            {
+                string[] parts = line.Split('|');
+                if (parts.Length < 7 || parts[0] != "L")
+                {
+                    continue;
+                }
+
+                string rawBand = parts[4].Trim().ToLowerInvariant();
+                string band = rawBand.Contains("2g") || rawBand.Contains("11g") || rawBand.Contains("11b")
+                    ? "2.4 GHz"
+                    : rawBand.Contains("5g") || rawBand.Contains("11a") || rawBand.Contains("11ac") || rawBand.Contains("11ax")
+                        ? "5 GHz"
+                        : rawBand.Contains("6g")
+                            ? "6 GHz"
+                            : InferBandFromChannel(parts[5]);
+
+                networks.Add(new WifiRadioInfo
+                {
+                    Radio = string.IsNullOrWhiteSpace(parts[1]) ? "-" : parts[1].Trim(),
+                    Interface = string.IsNullOrWhiteSpace(parts[2]) ? "-" : parts[2].Trim(),
+                    Ssid = string.IsNullOrWhiteSpace(parts[3]) ? "Hidden network" : parts[3].Trim(),
+                    Band = band,
+                    Channel = string.IsNullOrWhiteSpace(parts[5]) ? "auto" : parts[5].Trim(),
+                    Status = string.IsNullOrWhiteSpace(parts[6]) ? "Configured" : parts[6].Trim()
+                });
+            }
 
             return networks;
         }

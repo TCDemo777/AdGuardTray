@@ -3,7 +3,18 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              Background="{DynamicResource Brush.WindowBackground}"
              Foreground="{DynamicResource Brush.TextPrimary}">
-    <Grid Margin="4">
+    <UserControl.Resources>
+        <Style x:Key="Notification.Card" TargetType="Border" BasedOn="{StaticResource Card.Compact}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsRead}" Value="False">
+                    <Setter Property="Background" Value="{DynamicResource Brush.PrimarySubtle}"/>
+                    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Primary}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="24">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="20"/>
@@ -56,7 +67,7 @@
                 </ListBox.ItemContainerStyle>
                 <ListBox.ItemTemplate>
                     <DataTemplate>
-                        <Border Style="{DynamicResource Card.Compact}">
+                        <Border Style="{StaticResource Notification.Card}">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="5"/>
@@ -89,16 +100,13 @@
                                         <TextBlock FontSize="15"
                                                    FontWeight="SemiBold"
                                                    Text="{Binding Title}"/>
-                                        <Border Margin="8,0,0,0"
-                                                Padding="7,2"
-                                                Background="{DynamicResource Brush.PrimarySubtle}"
-                                                CornerRadius="8">
+                                        <Border Margin="8,0,0,0">
                                             <TextBlock FontSize="10"
                                                        FontWeight="SemiBold"
                                                        Foreground="{DynamicResource Brush.Primary}"
                                                        Text="UNREAD"/>
                                             <Border.Style>
-                                                <Style TargetType="Border">
+                                                <Style TargetType="Border" BasedOn="{StaticResource Badge.Information}">
                                                     <Setter Property="Visibility" Value="Visible"/>
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding IsRead}" Value="True">

@@ -70,6 +70,24 @@
             <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
             <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
         </Style>
+
+        <Style x:Key="Schedule.CompactButton"
+               TargetType="Button"
+               BasedOn="{StaticResource Button.Secondary}">
+            <Setter Property="MinWidth" Value="0"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Margin" Value="6,0,0,0"/>
+            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+
+        <Style x:Key="Schedule.FieldLabel"
+               TargetType="TextBlock"
+               BasedOn="{StaticResource Text.CardCaption}">
+            <Setter Property="Margin" Value="0,0,0,6"/>
+        </Style>
+
+        <Style x:Key="Schedule.Badge" TargetType="Border" BasedOn="{StaticResource Badge}"/>
     </UserControl.Resources>
 
     <Grid Margin="24">
@@ -507,6 +525,183 @@
                                 </ListBox>
                             </ScrollViewer>
                         </Border>
+                    </StackPanel>
+                </Border>
+
+                <!-- AdGuard service schedules -->
+                <Border Margin="0,0,0,16" Style="{DynamicResource Card}" DataContext="{Binding Schedules}">
+                    <StackPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Style="{DynamicResource Text.SectionTitle}" Text="Schedules"/>
+                                <TextBlock Margin="0,5,0,0" Style="{DynamicResource Text.Secondary}"
+                                           Text="Allow or block AdGuard services automatically at selected local times."/>
+                            </StackPanel>
+                            <Button Grid.Column="1" MinWidth="132" Height="36" Margin="12,0,0,0"
+                                    Style="{DynamicResource Button.Primary}" Content="Add schedule"
+                                    Command="{Binding NewScheduleCommand}" Click="AddSchedule_Click"/>
+                            <Button Grid.Column="2" MinWidth="196" Height="36" Margin="8,0,0,0"
+                                    Style="{DynamicResource Button.Secondary}" Content="Create allowed-time window"
+                                    Click="OpenAllowedWindow_Click"/>
+                        </Grid>
+
+                        <Border Margin="0,14,0,0" Padding="10,8"
+                                Background="{DynamicResource Brush.SurfaceMuted}"
+                                BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="8">
+                            <TextBlock Style="{DynamicResource Text.Muted}"
+                                       Text="RouterPilot must be running in the notification area for schedules to run."/>
+                        </Border>
+
+                        <ItemsControl Margin="0,14,0,0" ItemsSource="{Binding Schedules}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Margin="0,0,0,10" Padding="14" Background="{DynamicResource Brush.SurfaceMuted}"
+                                            BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="10">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+
+                                            <TextBlock VerticalAlignment="Center" FontSize="15" FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource Brush.TextPrimary}" Text="{Binding Name}"/>
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                                <CheckBox Margin="0" VerticalAlignment="Center" Style="{StaticResource Protection.Option}"
+                                                          Content="Enabled" IsChecked="{Binding IsEnabled, Mode=OneWay}"
+                                                          Command="{Binding DataContext.ToggleCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                          CommandParameter="{Binding}"/>
+                                                <Button Margin="12,0,0,0" MinWidth="72" Height="32" Padding="12,4"
+                                                        Style="{DynamicResource Button.Primary}" Content="Edit"
+                                                        Click="EditSchedule_Click"
+                                                        Command="{Binding DataContext.EditCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}"/>
+                                                <Button Style="{StaticResource Schedule.CompactButton}" Content="Run now"
+                                                        ToolTip="Apply this schedule immediately" Click="RunScheduleNow_Click"/>
+                                                <Button Style="{StaticResource Schedule.CompactButton}" Content="Duplicate"
+                                                        ToolTip="Create a copy of this schedule"
+                                                        Command="{Binding DataContext.DuplicateCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}"/>
+                                                <Button Style="{StaticResource Schedule.CompactButton}" Foreground="{DynamicResource Brush.Danger}"
+                                                        Content="Delete" ToolTip="Delete this schedule" Click="DeleteSchedule_Click"/>
+                                            </StackPanel>
+
+                                            <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Margin="0,10,0,0" Orientation="Horizontal">
+                                                <Border Style="{StaticResource Schedule.Badge}">
+                                                    <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" Text="{Binding Action}"/>
+                                                </Border>
+                                                <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" Style="{DynamicResource Text.Secondary}"
+                                                           Text="{Binding ServiceDisplay}" TextTrimming="CharacterEllipsis"/>
+                                            </StackPanel>
+
+                                            <Grid Grid.Row="2" Grid.ColumnSpan="2" Margin="0,10,0,0">
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                                <StackPanel>
+                                                    <TextBlock Style="{StaticResource Schedule.FieldLabel}" Text="RECURRENCE"/>
+                                                    <TextBlock Style="{DynamicResource Text.Secondary}" Text="{Binding RecurrenceDisplay}"/>
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="1">
+                                                    <TextBlock Style="{StaticResource Schedule.FieldLabel}" Text="NEXT RUN"/>
+                                                    <TextBlock Style="{DynamicResource Text.Secondary}" Text="{Binding NextExecutionDisplay}"/>
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="2">
+                                                    <TextBlock Style="{StaticResource Schedule.FieldLabel}" Text="LAST RESULT"/>
+                                                    <TextBlock Style="{DynamicResource Text.Secondary}" Text="{Binding LastResultDisplay}" TextTrimming="CharacterEllipsis"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <Expander x:Name="ScheduleEditor" Margin="0,8,0,0" Header="Schedule editor">
+                            <Grid Margin="0,12,0,0">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/><RowDefinition Height="14"/>
+                                    <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="18"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource Schedule.FieldLabel}" Text="SCHEDULE NAME"/>
+                                    <TextBox Style="{StaticResource Protection.Input}" Text="{Binding EditorName, UpdateSourceTrigger=PropertyChanged}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Style="{StaticResource Schedule.FieldLabel}" Text="ACTION"/>
+                                    <ComboBox Style="{StaticResource Protection.ComboBox}" ItemsSource="{Binding Actions}" SelectedItem="{Binding EditorAction}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Row="2">
+                                    <TextBlock Style="{StaticResource Schedule.FieldLabel}" Text="SERVICES"/>
+                                    <Border Padding="10" Background="{DynamicResource Brush.SurfaceMuted}" CornerRadius="8">
+                                        <ItemsControl ItemsSource="{Binding AvailableServices}" MaxHeight="150">
+                                            <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate><DataTemplate><CheckBox Margin="0,0,16,8" Style="{StaticResource Protection.Option}" Content="{Binding Name}" IsChecked="{Binding IsSelected}"/></DataTemplate></ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </Border>
+                                </StackPanel>
+                                <StackPanel Grid.Row="2" Grid.Column="2">
+                                    <TextBlock Style="{StaticResource Schedule.FieldLabel}" Text="TIMING AND RECURRENCE"/>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="110"/><ColumnDefinition Width="10"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                        <TextBox Style="{StaticResource Protection.Input}" Text="{Binding EditorTime}" ToolTip="Local time (HH:mm)"/>
+                                        <ComboBox Grid.Column="2" Style="{StaticResource Protection.ComboBox}" ItemsSource="{Binding Recurrences}" SelectedItem="{Binding EditorRecurrence}"/>
+                                    </Grid>
+                                    <WrapPanel Margin="0,10,0,0">
+                                        <CheckBox Style="{StaticResource Protection.Option}" Margin="0,0,10,8" Content="Mon" IsChecked="{Binding Monday}"/>
+                                        <CheckBox Style="{StaticResource Protection.Option}" Margin="0,0,10,8" Content="Tue" IsChecked="{Binding Tuesday}"/>
+                                        <CheckBox Style="{StaticResource Protection.Option}" Margin="0,0,10,8" Content="Wed" IsChecked="{Binding Wednesday}"/>
+                                        <CheckBox Style="{StaticResource Protection.Option}" Margin="0,0,10,8" Content="Thu" IsChecked="{Binding Thursday}"/>
+                                        <CheckBox Style="{StaticResource Protection.Option}" Margin="0,0,10,8" Content="Fri" IsChecked="{Binding Friday}"/>
+                                        <CheckBox Style="{StaticResource Protection.Option}" Margin="0,0,10,8" Content="Sat" IsChecked="{Binding Saturday}"/>
+                                        <CheckBox Style="{StaticResource Protection.Option}" Margin="0,0,10,8" Content="Sun" IsChecked="{Binding Sunday}"/>
+                                    </WrapPanel>
+                                    <DatePicker Width="180" HorizontalAlignment="Left" SelectedDate="{Binding EditorOneTimeDate}" ToolTip="Date for a one-time schedule"/>
+                                </StackPanel>
+                                <TextBlock Grid.Row="3" Grid.ColumnSpan="3" Margin="0,10,0,8"
+                                           Foreground="{DynamicResource Brush.Warning}" Text="{Binding Status}"/>
+                                <StackPanel Grid.Row="4" Grid.ColumnSpan="3" HorizontalAlignment="Right" Orientation="Horizontal">
+                                    <Button MinWidth="90" Height="36" Margin="0,0,8,0" Style="{DynamicResource Button.Secondary}"
+                                            Content="Cancel" Command="{Binding NewScheduleCommand}" Click="CancelSchedule_Click"/>
+                                    <Button MinWidth="120" Height="36" Style="{DynamicResource Button.Primary}" Content="Save schedule" Command="{Binding SaveCommand}"/>
+                                </StackPanel>
+                            </Grid>
+                        </Expander>
+
+                        <Expander x:Name="AllowedWindowEditor" Margin="0,10,0,0" Header="Allowed-time window">
+                            <StackPanel Margin="0,12,0,0">
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="14"/><ColumnDefinition Width="110"/><ColumnDefinition Width="14"/><ColumnDefinition Width="110"/><ColumnDefinition Width="14"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource Schedule.FieldLabel}" Text="SERVICE"/>
+                                    <ComboBox Style="{StaticResource Protection.ComboBox}" ItemsSource="{Binding AvailableServices}" DisplayMemberPath="Name" SelectedItem="{Binding WindowService}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Style="{StaticResource Schedule.FieldLabel}" Text="ALLOW AT"/>
+                                    <TextBox Style="{StaticResource Protection.Input}" Text="{Binding WindowAllowTime}" ToolTip="HH:mm"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="4">
+                                    <TextBlock Style="{StaticResource Schedule.FieldLabel}" Text="BLOCK AGAIN"/>
+                                    <TextBox Style="{StaticResource Protection.Input}" Text="{Binding WindowBlockTime}" ToolTip="HH:mm"/>
+                                </StackPanel>
+                                <Button Grid.Column="6" MinWidth="128" Height="36" VerticalAlignment="Bottom"
+                                        Style="{DynamicResource Button.Primary}" Content="Create window" Command="{Binding CreateWindowCommand}"/>
+                            </Grid>
+                            <StackPanel Margin="0,10,0,0">
+                                <TextBlock Style="{StaticResource Schedule.FieldLabel}" Text="DAYS"/>
+                                <WrapPanel>
+                                    <CheckBox Style="{StaticResource Protection.Option}" Margin="0,0,10,0" Content="Mon" IsChecked="{Binding Monday}"/>
+                                    <CheckBox Style="{StaticResource Protection.Option}" Margin="0,0,10,0" Content="Tue" IsChecked="{Binding Tuesday}"/>
+                                    <CheckBox Style="{StaticResource Protection.Option}" Margin="0,0,10,0" Content="Wed" IsChecked="{Binding Wednesday}"/>
+                                    <CheckBox Style="{StaticResource Protection.Option}" Margin="0,0,10,0" Content="Thu" IsChecked="{Binding Thursday}"/>
+                                    <CheckBox Style="{StaticResource Protection.Option}" Margin="0,0,10,0" Content="Fri" IsChecked="{Binding Friday}"/>
+                                    <CheckBox Style="{StaticResource Protection.Option}" Margin="0,0,10,0" Content="Sat" IsChecked="{Binding Saturday}"/>
+                                    <CheckBox Style="{StaticResource Protection.Option}" Margin="0" Content="Sun" IsChecked="{Binding Sunday}"/>
+                                </WrapPanel>
+                            </StackPanel>
+                            </StackPanel>
+                        </Expander>
                     </StackPanel>
                 </Border>
 

@@ -215,8 +215,7 @@
 
         <ContentControl x:Name="PageContent"
                         Grid.Row="1"
-                        Grid.Column="1"
-                        Margin="20">
+                        Grid.Column="1">
             <views:OverviewView/>
         </ContentControl>
 
