@@ -14,6 +14,7 @@ namespace AdGuardTray.Views
     {
         private readonly ClientsViewModel _viewModel;
         private readonly DispatcherTimer _refreshTimer;
+        private bool _isRefreshNotifierSubscribed;
 
         public ClientsView()
         {
@@ -34,15 +35,14 @@ namespace AdGuardTray.Views
 
             Loaded += ClientsView_Loaded;
             Unloaded += ClientsView_Unloaded;
-
-            ClientRefreshNotifier.RefreshRequested +=
-                ClientRefreshNotifier_RefreshRequested;
         }
 
         private async void ClientsView_Loaded(
             object sender,
             RoutedEventArgs e)
         {
+            SubscribeToRefreshNotifier();
+
             await RefreshClientsAsync();
 
             if (!_refreshTimer.IsEnabled)
@@ -69,6 +69,31 @@ namespace AdGuardTray.Views
             RoutedEventArgs e)
         {
             _refreshTimer.Stop();
+            UnsubscribeFromRefreshNotifier();
+        }
+
+        private void SubscribeToRefreshNotifier()
+        {
+            if (_isRefreshNotifierSubscribed)
+            {
+                return;
+            }
+
+            ClientRefreshNotifier.RefreshRequested +=
+                ClientRefreshNotifier_RefreshRequested;
+            _isRefreshNotifierSubscribed = true;
+        }
+
+        private void UnsubscribeFromRefreshNotifier()
+        {
+            if (!_isRefreshNotifierSubscribed)
+            {
+                return;
+            }
+
+            ClientRefreshNotifier.RefreshRequested -=
+                ClientRefreshNotifier_RefreshRequested;
+            _isRefreshNotifierSubscribed = false;
         }
 
         private async void ClientRefreshNotifier_RefreshRequested(
