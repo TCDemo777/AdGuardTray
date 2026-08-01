@@ -220,7 +220,11 @@ namespace AdGuardTray.Services
                     using JsonDocument document = JsonDocument.Parse(clientJson);
                     foreach (JsonElement client in EnumerateClientObjects(document.RootElement))
                     {
-                        if (!GetFlexibleBoolean(client, "online", true))
+                        bool onlineStateKnown = TryGetFlexibleBoolean(
+                            client,
+                            "online",
+                            out bool isOnline);
+                        if (onlineStateKnown && !isOnline)
                         {
                             continue;
                         }
@@ -257,7 +261,9 @@ namespace AdGuardTray.Services
                             Signal = FormatSignal(signal),
                             Band = band,
                             Interface = string.IsNullOrWhiteSpace(iface) ? network.Interface : iface,
-                            Ssid = network.Ssid
+                            Ssid = network.Ssid,
+                            IsCurrentlyOnline = isOnline,
+                            IsOnlineStateKnown = onlineStateKnown
                         });
                     }
                 }
@@ -442,6 +448,9 @@ namespace AdGuardTray.Services
                 {
                     existing.Signal = FormatSignal(signal);
                 }
+                existing.IsCurrentlyOnline = true;
+                existing.IsOnlineStateKnown = true;
+                existing.IsActiveStation = true;
                 network.Clients.Add(existing);
                 return;
             }
@@ -459,7 +468,10 @@ namespace AdGuardTray.Services
                 Interface = string.IsNullOrWhiteSpace(runtimeInterface)
                     ? network.Interface
                     : runtimeInterface,
-                Ssid = network.Ssid
+                Ssid = network.Ssid,
+                IsCurrentlyOnline = true,
+                IsOnlineStateKnown = true,
+                IsActiveStation = true
             });
         }
 
@@ -530,13 +542,21 @@ namespace AdGuardTray.Services
 
         public async Task<List<WifiClientInfo>> GetGlClientInventoryAsync()
         {
+            (List<WifiClientInfo> clients, _) =
+                await GetGlClientInventorySnapshotAsync();
+            return clients;
+        }
+
+        public async Task<(List<WifiClientInfo> Clients, bool IsComplete)>
+            GetGlClientInventorySnapshotAsync()
+        {
             string clientJson = await _ssh.RunCommandAsync(
                 "ubus call gl-clients list 2>/dev/null || true");
 
             var clients = new List<WifiClientInfo>();
             if (string.IsNullOrWhiteSpace(clientJson))
             {
-                return clients;
+                return (clients, false);
             }
 
             try
@@ -544,7 +564,11 @@ namespace AdGuardTray.Services
                 using JsonDocument document = JsonDocument.Parse(clientJson);
                 foreach (JsonElement client in EnumerateClientObjects(document.RootElement))
                 {
-                    if (!GetFlexibleBoolean(client, "online", true))
+                    bool onlineStateKnown = TryGetFlexibleBoolean(
+                        client,
+                        "online",
+                        out bool isOnline);
+                    if (onlineStateKnown && !isOnline)
                     {
                         continue;
                     }
@@ -573,16 +597,19 @@ namespace AdGuardTray.Services
                         Band = string.IsNullOrWhiteSpace(band) ?
                             (rawInterface.Contains("cable", StringComparison.OrdinalIgnoreCase) ? "Ethernet" : "Unknown") : band,
                         Interface = string.IsNullOrWhiteSpace(rawInterface) ? "-" : rawInterface,
-                        Ssid = string.IsNullOrWhiteSpace(ssid) ? "-" : ssid
+                        Ssid = string.IsNullOrWhiteSpace(ssid) ? "-" : ssid,
+                        IsCurrentlyOnline = isOnline,
+                        IsOnlineStateKnown = onlineStateKnown
                     });
                 }
+
+                return (clients, true);
             }
             catch (JsonException)
             {
                 // Return an empty inventory while leaving AdGuard client data usable.
+                return (clients, false);
             }
-
-            return clients;
         }
 
         private static IEnumerable<JsonElement> EnumerateClientObjects(JsonElement element)
@@ -662,6 +689,53 @@ namespace AdGuardTray.Services
                      text.Equals("online", StringComparison.OrdinalIgnoreCase)),
                 _ => defaultValue
             };
+        }
+
+        private static bool TryGetFlexibleBoolean(
+            JsonElement element,
+            string name,
+            out bool result)
+        {
+            if (!TryGetPropertyIgnoreCase(element, name, out JsonElement value))
+            {
+                result = false;
+                return false;
+            }
+
+            switch (value.ValueKind)
+            {
+                case JsonValueKind.True:
+                    result = true;
+                    return true;
+                case JsonValueKind.False:
+                    result = false;
+                    return true;
+                case JsonValueKind.Number when value.TryGetInt32(out int number):
+                    result = number != 0;
+                    return true;
+                case JsonValueKind.String:
+                    string text = value.GetString() ?? string.Empty;
+                    if (text == "1" ||
+                        text.Equals("true", StringComparison.OrdinalIgnoreCase) ||
+                        text.Equals("online", StringComparison.OrdinalIgnoreCase))
+                    {
+                        result = true;
+                        return true;
+                    }
+
+                    if (text == "0" ||
+                        text.Equals("false", StringComparison.OrdinalIgnoreCase) ||
+                        text.Equals("offline", StringComparison.OrdinalIgnoreCase))
+                    {
+                        result = false;
+                        return true;
+                    }
+
+                    break;
+            }
+
+            result = false;
+            return false;
         }
 
         private static bool TryGetPropertyIgnoreCase(

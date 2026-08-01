@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Windows;
 using AdGuardTray.Models;
 using AdGuardTray.Services;
+using AdGuardTray.Services.Insights;
 using AdGuardTray.Tray;
 using AdGuardTray.Views;
 using AdGuardTray.ViewModels;
@@ -28,12 +29,26 @@ namespace AdGuardTray
 
             var serviceCollection = new ServiceCollection();
             serviceCollection.AddSingleton<SettingsService>();
+            serviceCollection.AddSingleton<DatabaseInitializer>();
+            serviceCollection.AddSingleton<SQLiteDataStore>();
+            serviceCollection.AddSingleton<IDataStore>(provider =>
+                provider.GetRequiredService<SQLiteDataStore>());
+            serviceCollection.AddSingleton<HistoryRepository>();
             serviceCollection.AddSingleton<IRouterManagerProvider,
                 RouterManagerProvider>();
             serviceCollection.AddSingleton(
                 _ => new NotificationService(Dispatcher));
             serviceCollection.AddSingleton<AdGuardProtectionNotificationTracker>();
+            serviceCollection.AddSingleton<DeviceHistoryService>();
             serviceCollection.AddSingleton<NewDeviceNotificationTracker>();
+            serviceCollection.AddSingleton<IInsightRule, RouterUptimeRule>();
+            serviceCollection.AddSingleton<IInsightRule, InternetDisconnectRule>();
+            serviceCollection.AddSingleton<IInsightRule, AdGuardDisabledRule>();
+            serviceCollection.AddSingleton<IInsightRule, NewDevicesTodayRule>();
+            serviceCollection.AddSingleton<IInsightRule, NoClientsConnectedRule>();
+            serviceCollection.AddSingleton<IInsightRule, HighCpuRule>();
+            serviceCollection.AddSingleton<IInsightRule, HighMemoryRule>();
+            serviceCollection.AddSingleton<InsightEngine>();
             serviceCollection.AddSingleton<NotificationCentreViewModel>();
             serviceCollection.AddTransient<ClientsViewModel>();
             serviceCollection.AddTransient<LogsViewModel>();
@@ -42,7 +57,20 @@ namespace AdGuardTray
             serviceCollection.AddTransient<SettingsViewModel>();
             _services = serviceCollection.BuildServiceProvider();
 
+            await Services.GetRequiredService<IDataStore>()
+                .InitializeAsync();
+            int historySchemaVersion = await Services
+                .GetRequiredService<HistoryRepository>()
+                .GetSchemaVersionAsync();
+            if (historySchemaVersion != DatabaseInitializer.CurrentSchemaVersion)
+            {
+                throw new InvalidOperationException(
+                    $"Unexpected history database schema version {historySchemaVersion}.");
+            }
+
             await Services.GetRequiredService<NotificationService>()
+                .InitializeAsync();
+            await Services.GetRequiredService<DeviceHistoryService>()
                 .InitializeAsync();
 
             AppSettings savedSettings = new SettingsService().Load();
@@ -153,6 +181,21 @@ namespace AdGuardTray
 
             if (_services is not null)
             {
+                try
+                {
+                    await _services
+                        .GetRequiredService<DeviceHistoryService>()
+                        .DisposeAsync();
+                }
+                catch (OperationCanceledException)
+                {
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(
+                        $"Unable to flush device history during shutdown: {ex}");
+                }
+
                 try
                 {
                     await _services

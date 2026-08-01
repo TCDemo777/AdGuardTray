@@ -15,6 +15,7 @@ namespace AdGuardTray.ViewModels
         private readonly IRouterManagerProvider _routerManagerProvider;
         private readonly ClientProfileService _clientProfileService;
         private readonly NewDeviceNotificationTracker _newDeviceNotificationTracker;
+        private readonly DeviceHistoryService _deviceHistoryService;
         private readonly Dictionary<string, ClientProfile> _clientProfiles;
         private DateTime _lastProfileSaveUtc = DateTime.MinValue;
         private readonly List<ClientInfo> _allClients = new();
@@ -91,10 +92,12 @@ namespace AdGuardTray.ViewModels
 
         public ClientsViewModel(
             IRouterManagerProvider routerManagerProvider,
-            NewDeviceNotificationTracker newDeviceNotificationTracker)
+            NewDeviceNotificationTracker newDeviceNotificationTracker,
+            DeviceHistoryService deviceHistoryService)
         {
             _routerManagerProvider = routerManagerProvider;
             _newDeviceNotificationTracker = newDeviceNotificationTracker;
+            _deviceHistoryService = deviceHistoryService;
             _clientProfileService = new ClientProfileService();
             _clientProfiles = _clientProfileService.Load();
 
@@ -151,8 +154,9 @@ namespace AdGuardTray.ViewModels
 
                 // Retain Ethernet and any firmware-only clients that are not
                 // represented in the Wi-Fi network collection.
-                List<WifiClientInfo> inventoryClients =
-                    await routerManager.GetGlClientInventoryAsync();
+                (List<WifiClientInfo> inventoryClients,
+                    bool connectedSnapshotComplete) =
+                    await routerManager.GetGlClientInventorySnapshotAsync();
 
                 foreach (WifiClientInfo inventoryClient in inventoryClients)
                 {
@@ -174,8 +178,17 @@ namespace AdGuardTray.ViewModels
                     RecordActivitySnapshot(client);
                 }
 
-                await _newDeviceNotificationTracker.ProcessAsync(
-                    BuildConnectedClientList(clients, liveClients));
+                var connectedSnapshot = new ConnectedClientSnapshot(
+                    BuildConnectedClientList(clients, liveClients).ToList(),
+                    connectedSnapshotComplete);
+
+                if (connectedSnapshot.IsComplete)
+                {
+                    await _newDeviceNotificationTracker.ProcessAsync(
+                        connectedSnapshot.Clients);
+                    await _deviceHistoryService.UpdateFromConnectedClientsAsync(
+                        connectedSnapshot);
+                }
 
                 _allClients.Clear();
                 _allClients.AddRange(clients);
@@ -853,6 +866,12 @@ namespace AdGuardTray.ViewModels
 
             foreach (WifiClientInfo live in liveClients)
             {
+                if (!live.IsActiveStation &&
+                    (!live.IsOnlineStateKnown || !live.IsCurrentlyOnline))
+                {
+                    continue;
+                }
+
                 string liveMac = NormaliseMac(live.MacAddress);
                 if (liveMac.Length != 12)
                     continue;

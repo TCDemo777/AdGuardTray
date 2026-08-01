@@ -15,6 +15,8 @@ namespace AdGuardTray.ViewModels
     public partial class ClientDetailsViewModel : ObservableObject
     {
         private readonly IRouterManagerProvider _routerManagerProvider;
+        private readonly DeviceHistoryService _deviceHistoryService;
+        private readonly HistoryRepository _historyRepository;
         private readonly ClientProfileService _clientProfileService;
         private readonly Dictionary<string, ClientProfile> _clientProfiles;
         private readonly DispatcherTimer _refreshTimer;
@@ -29,20 +31,40 @@ namespace AdGuardTray.ViewModels
         public ObservableCollection<DomainStat> TopBlockedDomains { get; } =
             new();
 
+        public ObservableCollection<DeviceConnectionEvent> RecentActivity { get; } =
+            new();
+
         public string ClientName =>
             string.IsNullOrWhiteSpace(ProfileNickname)
                 ? _client.Name
                 : ProfileNickname;
         public string IpAddress => _client.IpAddress;
         public string MacAddress => _client.MacAddress;
-        public string LastSeen => _client.LastSeen;
+        public string ClientLastSeen => _client.LastSeen;
         public int TotalQueries => _client.TotalQueries;
         public int BlockedQueries => _client.BlockedQueries;
         public double BlockRate => _client.BlockRate;
 
+        public DateTimeOffset? FirstSeen { get; private set; }
+        public DateTimeOffset? LastSeen { get; private set; }
+        public long TimesConnected { get; private set; }
+        public bool IsCurrentlyOnline { get; private set; }
+        public IReadOnlyList<string> PreviousIpAddresses { get; private set; } =
+            Array.Empty<string>();
+        public IReadOnlyList<string> PreviousNetworkNames { get; private set; } =
+            Array.Empty<string>();
+        public bool HasHistory { get; private set; }
+        public bool HasPreviousIpAddresses => PreviousIpAddresses.Count > 0;
+        public bool HasPreviousNetworkNames => PreviousNetworkNames.Count > 0;
+        public string HistoryStatus => IsCurrentlyOnline ? "Online" : "Offline";
+        public string FirstSeenDisplay => FirstSeen?.ToLocalTime().ToString("g") ?? "—";
+        public string LastSeenHistoryDisplay =>
+            LastSeen?.ToLocalTime().ToString("g") ?? "—";
+
         public bool HasRecentQueries => RecentQueries.Count > 0;
         public bool HasTopDomains => TopDomains.Count > 0;
         public bool HasTopBlockedDomains => TopBlockedDomains.Count > 0;
+        public bool HasRecentActivity => RecentActivity.Count > 0;
 
         [ObservableProperty]
         private string statusMessage =
@@ -68,14 +90,19 @@ namespace AdGuardTray.ViewModels
 
         public ClientDetailsViewModel(
             ClientInfo client,
-            IRouterManagerProvider routerManagerProvider)
+            IRouterManagerProvider routerManagerProvider,
+            DeviceHistoryService deviceHistoryService,
+            HistoryRepository historyRepository)
         {
             _client = client;
             _routerManagerProvider = routerManagerProvider;
+            _deviceHistoryService = deviceHistoryService;
+            _historyRepository = historyRepository;
             _clientProfileService = new ClientProfileService();
             _clientProfiles = _clientProfileService.Load();
 
             LoadProfile();
+            LoadHistory();
 
             _refreshTimer =
                 new DispatcherTimer
@@ -88,6 +115,7 @@ namespace AdGuardTray.ViewModels
 
         public async Task StartAsync()
         {
+            await LoadRecentActivityAsync();
             await RefreshAsync();
 
             if (!_refreshTimer.IsEnabled)
@@ -219,6 +247,57 @@ namespace AdGuardTray.ViewModels
             ProfileNickname = profile.Nickname;
             ProfileCategory = profile.Category;
             ProfileNotes = profile.Notes;
+        }
+
+        private async Task LoadRecentActivityAsync()
+        {
+            IReadOnlyList<DeviceConnectionEvent> events;
+            try
+            {
+                events = await _historyRepository.GetRecentEventsByMacAsync(
+                    _client.MacAddress,
+                    20);
+            }
+            catch
+            {
+                events = Array.Empty<DeviceConnectionEvent>();
+            }
+
+            RecentActivity.Clear();
+            foreach (DeviceConnectionEvent connectionEvent in events)
+                RecentActivity.Add(connectionEvent);
+
+            OnPropertyChanged(nameof(HasRecentActivity));
+        }
+
+        private void LoadHistory()
+        {
+            DeviceHistoryRecord? history =
+                _deviceHistoryService.GetByMacAddress(_client.MacAddress);
+            if (history is null)
+                return;
+
+            HasHistory = true;
+            FirstSeen = history.FirstSeen;
+            LastSeen = history.LastSeen;
+            TimesConnected = history.TimesConnected;
+            IsCurrentlyOnline = history.IsCurrentlyOnline;
+
+            PreviousIpAddresses = history.PreviousIpAddresses
+                .Where(address =>
+                    !string.IsNullOrWhiteSpace(address) &&
+                    !address.Equals(
+                        _client.IpAddress,
+                        StringComparison.OrdinalIgnoreCase))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Reverse()
+                .ToArray();
+
+            PreviousNetworkNames = history.PreviousNetworkNames
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Reverse()
+                .ToArray();
         }
 
         private static string ClientKey(ClientInfo client)

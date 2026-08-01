@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -24,6 +25,8 @@ namespace AdGuardTray.Views
         private readonly NotificationService _notificationService;
         private readonly NotificationCentreViewModel _notificationCentreViewModel;
         private readonly AdGuardProtectionNotificationTracker _protectionNotificationTracker;
+        private readonly InsightEngine _insightEngine;
+        private readonly DeviceHistoryService _deviceHistoryService;
         private readonly RefreshCoordinator _refreshCoordinator;
         private readonly SemaphoreSlim _routerManagerUsageGate = new(1, 1);
         private bool _refreshInProgress;
@@ -58,7 +61,7 @@ namespace AdGuardTray.Views
             InitializeComponent();
 
             _viewModel =
-                new DashboardViewModel();
+                new DashboardViewModel(ExecuteInsightActionAsync);
 
             DataContext =
                 _viewModel;
@@ -69,6 +72,10 @@ namespace AdGuardTray.Views
                 .Services.GetRequiredService<NotificationCentreViewModel>();
             _protectionNotificationTracker = ((App)Application.Current)
                 .Services.GetRequiredService<AdGuardProtectionNotificationTracker>();
+            _insightEngine = ((App)Application.Current)
+                .Services.GetRequiredService<InsightEngine>();
+            _deviceHistoryService = ((App)Application.Current)
+                .Services.GetRequiredService<DeviceHistoryService>();
             _routerManagerProvider = ((App)Application.Current).Services
                 .GetRequiredService<IRouterManagerProvider>();
             NotificationButton.DataContext = _notificationService;
@@ -353,9 +360,10 @@ namespace AdGuardTray.Views
                 _viewModel.Latency =
                     network.Latency;
 
+                List<WifiRadioInfo> wifiRadios;
                 try
                 {
-                    List<WifiRadioInfo> wifiRadios =
+                    wifiRadios =
                         await router.GetWifiRadiosAsync();
 
                     cancellationToken.ThrowIfCancellationRequested();
@@ -371,7 +379,8 @@ namespace AdGuardTray.Views
                     // Wi-Fi discovery differs between GL.iNet/OpenWrt firmware
                     // builds. A discovery failure must not invalidate the main
                     // authenticated router session or the rest of the dashboard.
-                    _viewModel.UpdateWifiRadios(Array.Empty<WifiRadioInfo>());
+                    wifiRadios = new List<WifiRadioInfo>();
+                    _viewModel.UpdateWifiRadios(wifiRadios);
                 }
 
                 _viewModel.StatusMessage =
@@ -382,6 +391,53 @@ namespace AdGuardTray.Views
                 await UpdateRouterConnectivityAsync(isOnline: true);
 
                 _viewModel.RefreshStatusIndicators();
+
+                IReadOnlyCollection<DeviceHistoryRecord> deviceHistory =
+                    _deviceHistoryService.Records;
+                var connectedMacAddresses = deviceHistory
+                    .Where(record => record.IsCurrentlyOnline)
+                    .Select(record => record.MacAddress)
+                    .Concat(wifiRadios
+                        .SelectMany(radio => radio.Clients)
+                        .Where(client =>
+                            client.IsActiveStation ||
+                            (client.IsOnlineStateKnown &&
+                             client.IsCurrentlyOnline))
+                        .Select(client =>
+                            DeviceHistoryService.NormalizeMacAddress(
+                                client.MacAddress)))
+                    .Where(mac => mac.Length == 12)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                var insightContext = new InsightContext
+                {
+                    EvaluatedAt = DateTimeOffset.Now,
+                    RouterConnected = true,
+                    RouterHealth = info,
+                    CpuPercentage = _viewModel.CpuPercentage,
+                    MemoryPercentage = _viewModel.MemoryPercentage,
+                    StoragePercentage = _viewModel.StoragePercentage,
+                    WanStatus = network,
+                    AdGuardStatus = adGuard,
+                    AdGuardProtectionStatusKnown =
+                        _viewModel.AdGuardProtectionStatusKnown,
+                    AdGuardProtectionEnabled =
+                        _viewModel.AdGuardProtectionEnabled,
+                    DnsStatistics = statistics,
+                    DeviceHistory = deviceHistory,
+                    NotificationHistory =
+                        _notificationService.Notifications.ToArray(),
+                    ConnectedClientMacAddresses = connectedMacAddresses,
+                    ConnectedClientSnapshotComplete =
+                        _deviceHistoryService.HasCompleteSnapshot
+                };
+
+                IReadOnlyList<Insight> insights =
+                    await _insightEngine.EvaluateAsync(
+                        insightContext,
+                        cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+                _viewModel.UpdateInsights(insights);
 
                 _viewModel.LastRefresh =
                     "Last refresh: " +
@@ -797,22 +853,14 @@ namespace AdGuardTray.Views
             object sender,
             RoutedEventArgs e)
         {
-            PageContent.Content =
-                new ProtectionView();
-
-            SelectNavigationButton(
-                ProtectionButton);
+            NavigateToProtection();
         }
 
         private void Analytics_Click(
             object sender,
             RoutedEventArgs e)
         {
-            PageContent.Content =
-                new AnalyticsView();
-
-            SelectNavigationButton(
-                AnalyticsButton);
+            NavigateToAnalytics();
         }
 
         private void Network_Click(
@@ -830,11 +878,7 @@ namespace AdGuardTray.Views
             object sender,
             RoutedEventArgs e)
         {
-            PageContent.Content =
-                new ClientsView();
-
-            SelectNavigationButton(
-                ClientsButton);
+            NavigateToClients();
         }
 
         private void Logs_Click(
@@ -863,10 +907,102 @@ namespace AdGuardTray.Views
             object sender,
             RoutedEventArgs e)
         {
+            NavigateToNotifications();
+        }
+
+        private void NavigateToProtection()
+        {
+            PageContent.Content = new ProtectionView();
+            SelectNavigationButton(ProtectionButton);
+        }
+
+        private void NavigateToAnalytics()
+        {
+            PageContent.Content = new AnalyticsView();
+            SelectNavigationButton(AnalyticsButton);
+        }
+
+        private void NavigateToClients()
+        {
+            PageContent.Content = new ClientsView();
+            SelectNavigationButton(ClientsButton);
+        }
+
+        private void NavigateToNotifications()
+        {
             PageContent.Content =
                 new NotificationCentreView(_notificationCentreViewModel);
-
             SelectNavigationButton(NotificationButton);
+        }
+
+        private async Task ExecuteInsightActionAsync(Insight insight)
+        {
+            switch (insight.Action)
+            {
+                case InsightActionKind.RebootRouter:
+                    await RebootRouterFromInsightAsync();
+                    break;
+
+                case InsightActionKind.EnableProtection:
+                    NavigateToProtection();
+                    ProtectionViewModel protectionViewModel =
+                        ((App)Application.Current).Services
+                            .GetRequiredService<ProtectionViewModel>();
+                    if (protectionViewModel.EnableProtectionCommand.CanExecute(null))
+                    {
+                        await protectionViewModel.EnableProtectionCommand
+                            .ExecuteAsync(null);
+                    }
+                    break;
+
+                case InsightActionKind.ViewNotifications:
+                    NavigateToNotifications();
+                    break;
+
+                case InsightActionKind.OpenClients:
+                    NavigateToClients();
+                    break;
+
+                case InsightActionKind.ViewAnalytics:
+                    NavigateToAnalytics();
+                    break;
+            }
+        }
+
+        private async Task RebootRouterFromInsightAsync()
+        {
+            if (MessageBox.Show(
+                    "Reboot the router now? Network access will be interrupted temporarily.",
+                    "Reboot Router",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            bool gateEntered = false;
+            try
+            {
+                await _routerManagerUsageGate.WaitAsync();
+                gateEntered = true;
+                RouterManager router =
+                    await _routerManagerProvider.GetRouterManagerAsync();
+                await router.RebootRouterAsync();
+                _viewModel.StatusMessage = "Router reboot requested.";
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "Unable to reboot the router: " + ex.Message,
+                    "Reboot Router",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+            finally
+            {
+                if (gateEntered)
+                    _routerManagerUsageGate.Release();
+            }
         }
 
         private void NavigationSettings_Click(

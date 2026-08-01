@@ -9,6 +9,7 @@ namespace AdGuardTray.Services;
 public sealed class NewDeviceNotificationTracker
 {
     private readonly NotificationService _notificationService;
+    private readonly DeviceHistoryService _deviceHistoryService;
     private readonly object _syncRoot = new();
     private readonly HashSet<string> _seenMacAddresses =
         new(StringComparer.OrdinalIgnoreCase);
@@ -16,9 +17,12 @@ public sealed class NewDeviceNotificationTracker
         new(StringComparer.OrdinalIgnoreCase);
     private bool _baselineEstablished;
 
-    public NewDeviceNotificationTracker(NotificationService notificationService)
+    public NewDeviceNotificationTracker(
+        NotificationService notificationService,
+        DeviceHistoryService deviceHistoryService)
     {
         _notificationService = notificationService;
+        _deviceHistoryService = deviceHistoryService;
     }
 
     public async Task ProcessAsync(IEnumerable<ClientInfo> connectedClients)
@@ -50,7 +54,8 @@ public sealed class NewDeviceNotificationTracker
             newDevices = current
                 .Where(item =>
                     !_previouslyConnected.Contains(item.Key) &&
-                    _seenMacAddresses.Add(item.Key))
+                    _seenMacAddresses.Add(item.Key) &&
+                    !_deviceHistoryService.HasSeenDevice(item.Key))
                 .Select(item => (item.Key, item.Value))
                 .ToList();
 
@@ -94,8 +99,5 @@ public sealed class NewDeviceNotificationTracker
         !value.Equals("Unknown network", StringComparison.OrdinalIgnoreCase);
 
     private static string NormaliseMac(string? value) =>
-        new((value ?? string.Empty)
-            .Where(char.IsLetterOrDigit)
-            .Select(char.ToUpperInvariant)
-            .ToArray());
+        DeviceHistoryService.NormalizeMacAddress(value);
 }

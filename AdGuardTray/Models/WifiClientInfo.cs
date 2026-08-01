@@ -9,5 +9,11 @@ namespace AdGuardTray.Models
         public string Band { get; set; } = "-";
         public string Interface { get; set; } = "-";
         public string Ssid { get; set; } = "-";
+
+        // A lease, cached inventory row or remembered address is not proof of
+        // connectivity. These flags describe the live source that observed it.
+        public bool IsCurrentlyOnline { get; set; }
+        public bool IsOnlineStateKnown { get; set; }
+        public bool IsActiveStation { get; set; }
     }
 }

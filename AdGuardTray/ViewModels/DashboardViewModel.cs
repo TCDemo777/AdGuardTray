@@ -2,9 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using AdGuardTray.Models;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using LiveChartsCore;
 using LiveChartsCore.Kernel;
 using LiveChartsCore.SkiaSharpView;
@@ -17,6 +19,12 @@ namespace AdGuardTray.ViewModels
         private const int TrafficSampleIntervalSeconds = 2;
         private const int QueryHistoryCapacity = 120;
         private string _queryHistoryTimeUnits = "hours";
+
+        public ObservableCollection<Insight> Insights { get; } = new();
+
+        public bool HasInsights => Insights.Count > 0;
+
+        public IAsyncRelayCommand<Insight> ExecuteInsightActionCommand { get; }
 
         //
         // Router
@@ -275,8 +283,16 @@ namespace AdGuardTray.ViewModels
 
         public Axis[] NetworkTrafficYAxes { get; }
 
-        public DashboardViewModel()
+        public DashboardViewModel(
+            Func<Insight, Task>? insightActionHandler = null)
         {
+            ExecuteInsightActionCommand = new AsyncRelayCommand<Insight>(
+                insight => insightActionHandler is null || insight is null
+                    ? Task.CompletedTask
+                    : insightActionHandler(insight),
+                insight => insight?.CanExecuteAction == true &&
+                           insightActionHandler is not null);
+
             QueryHistorySeries = new ISeries[]
             {
                 new LineSeries<AdGuardTimePoint>
@@ -358,6 +374,22 @@ namespace AdGuardTray.ViewModels
                     MinLimit = 0
                 }
             };
+        }
+
+        public void UpdateInsights(IEnumerable<Insight> insights)
+        {
+            if (Application.Current?.Dispatcher is { } dispatcher &&
+                !dispatcher.CheckAccess())
+            {
+                dispatcher.Invoke(() => UpdateInsights(insights));
+                return;
+            }
+
+            Insights.Clear();
+            foreach (Insight insight in insights.Take(5))
+                Insights.Add(insight);
+
+            OnPropertyChanged(nameof(HasInsights));
         }
 
         public string DnsServer

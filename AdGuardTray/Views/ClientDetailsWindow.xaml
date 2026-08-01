@@ -53,6 +53,10 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="16"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="16"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="16"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
@@ -160,7 +164,7 @@
                     <TextBlock Margin="0,8,0,3" FontSize="25" FontWeight="Bold" Foreground="{DynamicResource Brush.Warning}"
                                Text="{Binding BlockRate, StringFormat={}{0:F1}%}"/>
                     <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextMuted}" TextTrimming="CharacterEllipsis"
-                               ToolTip="{Binding LastSeen}" Text="{Binding LastSeen, StringFormat=Last seen: {0}}"/>
+                               ToolTip="{Binding ClientLastSeen}" Text="{Binding ClientLastSeen, StringFormat=Last seen: {0}}"/>
                 </StackPanel>
             </Border>
         </Grid>
@@ -216,7 +220,213 @@
             </Grid>
         </Border>
 
-        <Grid Grid.Row="6">
+        <Border Grid.Row="6" Style="{StaticResource CardStyle}">
+            <Grid>
+                <TextBlock VerticalAlignment="Center"
+                           Text="No historical data available yet.">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource Text.EmptyStateMessage}">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding HasHistory}" Value="False">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+
+                <StackPanel>
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Setter Property="Visibility" Value="Visible"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding HasHistory}" Value="False">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+
+                    <TextBlock Style="{DynamicResource Text.SectionTitle}" Text="History"/>
+                    <TextBlock Margin="0,4,0,16"
+                               Style="{DynamicResource Text.Secondary}"
+                               Text="Long-term observations stored locally by RouterPilot."/>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel>
+                            <TextBlock Style="{DynamicResource Text.CardCaption}" Text="STATUS"/>
+                            <TextBlock Margin="0,7,0,0" FontSize="17" FontWeight="SemiBold"
+                                       Text="{Binding HistoryStatus}">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{DynamicResource Brush.Danger}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsCurrentlyOnline}" Value="True">
+                                                <Setter Property="Foreground" Value="{DynamicResource Brush.Success}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Style="{DynamicResource Text.CardCaption}" Text="FIRST SEEN"/>
+                            <TextBlock Margin="0,7,0,0" FontWeight="SemiBold"
+                                       Text="{Binding FirstSeenDisplay}"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="4">
+                            <TextBlock Style="{DynamicResource Text.CardCaption}" Text="LAST SEEN"/>
+                            <TextBlock Margin="0,7,0,0" FontWeight="SemiBold"
+                                       Text="{Binding LastSeenHistoryDisplay}"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="6">
+                            <TextBlock Style="{DynamicResource Text.CardCaption}" Text="TIMES CONNECTED"/>
+                            <TextBlock Margin="0,7,0,0" FontSize="17" FontWeight="SemiBold"
+                                       Text="{Binding TimesConnected, StringFormat={}{0:N0}}"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <Grid Margin="0,18,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel>
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding HasPreviousIpAddresses}" Value="False">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <TextBlock Style="{DynamicResource Text.CardCaption}"
+                                       Text="PREVIOUS IP ADDRESSES"/>
+                            <ItemsControl Margin="0,7,0,0"
+                                          ItemsSource="{Binding PreviousIpAddresses}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Margin="0,0,0,4" Text="{Binding}"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="2">
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding HasPreviousNetworkNames}" Value="False">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <TextBlock Style="{DynamicResource Text.CardCaption}" Text="KNOWN NETWORKS"/>
+                            <ItemsControl Margin="0,7,0,0"
+                                          ItemsSource="{Binding PreviousNetworkNames}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Margin="0,0,0,4" Text="{Binding}"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="8" Style="{StaticResource CardStyle}">
+            <StackPanel>
+                <TextBlock Style="{DynamicResource Text.SectionTitle}"
+                           Text="Recent Activity"/>
+                <TextBlock Margin="0,4,0,16"
+                           Style="{DynamicResource Text.Secondary}"
+                           Text="Recent connection changes recorded for this device."/>
+
+                <Grid>
+                    <TextBlock VerticalAlignment="Center"
+                               Text="No activity recorded yet.">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock"
+                                   BasedOn="{StaticResource Text.EmptyStateMessage}">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasRecentActivity}" Value="False">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+
+                    <ItemsControl ItemsSource="{Binding RecentActivity}">
+                        <ItemsControl.Style>
+                            <Style TargetType="ItemsControl">
+                                <Setter Property="Visibility" Value="Visible"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasRecentActivity}" Value="False">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ItemsControl.Style>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="150"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Style="{DynamicResource Text.Secondary}"
+                                               Text="{Binding TimestampDisplay}"/>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock FontWeight="SemiBold"
+                                                   Text="{Binding EventTypeDisplay}"/>
+                                        <TextBlock Margin="0,3,0,0"
+                                                   Text="{Binding Details}">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock"
+                                                       BasedOn="{StaticResource Text.Secondary}">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding HasDetails}" Value="False">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <Grid Grid.Row="10">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="16"/>
@@ -454,7 +664,7 @@
             </Border>
         </Grid>
 
-        <TextBlock Grid.Row="7" Margin="2,11,0,0" Foreground="{DynamicResource Brush.TextSecondary}"
+        <TextBlock Grid.Row="9" Margin="2,11,0,0" Foreground="{DynamicResource Brush.TextSecondary}"
                    Text="{Binding StatusMessage}"/>
         </Grid>
     </ScrollViewer>

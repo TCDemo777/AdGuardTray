@@ -152,6 +152,126 @@
                     Value="{Binding MemoryHealthText}" />
             </Grid>
 
+            <!-- Rule-based insights -->
+            <Border Margin="0,0,0,18" Style="{StaticResource Card}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="14" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Orientation="Horizontal">
+                        <Border
+                            Width="38"
+                            Height="38"
+                            Margin="0,0,12,0"
+                            Background="{DynamicResource Brush.PrimarySubtle}"
+                            CornerRadius="10">
+                            <TextBlock
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                FontSize="18"
+                                Foreground="{DynamicResource Brush.Primary}"
+                                Text="&#xE946;" />
+                        </Border>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Style="{StaticResource Overview.CardHeading}" Text="Insights" />
+                            <TextBlock Style="{StaticResource Text.Secondary}"
+                                       Text="Current observations from RouterPilot's health rules" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <TextBlock Grid.Row="2" Text="Everything looks healthy.">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource Text.Secondary}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasInsights}" Value="False">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+
+                    <ItemsControl Grid.Row="2" ItemsSource="{Binding Insights}">
+                        <ItemsControl.Style>
+                            <Style TargetType="ItemsControl">
+                                <Setter Property="Visibility" Value="Visible" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasInsights}" Value="False">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ItemsControl.Style>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="5" />
+                                        <ColumnDefinition Width="12" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border CornerRadius="3">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Background" Value="{DynamicResource Brush.Primary}" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Severity}" Value="Warning">
+                                                        <Setter Property="Background" Value="{DynamicResource Brush.Warning}" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Severity}" Value="Critical">
+                                                        <Setter Property="Background" Value="{DynamicResource Brush.Danger}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                    </Border>
+                                    <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                        <TextBlock Style="{StaticResource Text.Body}"
+                                                   FontWeight="SemiBold"
+                                                   Text="{Binding Title}" />
+                                        <TextBlock Margin="0,3,0,0"
+                                                   Style="{StaticResource Text.Secondary}"
+                                                   Text="{Binding Description}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="3"
+                                                Margin="16,0,0,0"
+                                                HorizontalAlignment="Right"
+                                                VerticalAlignment="Center">
+                                        <TextBlock HorizontalAlignment="Right"
+                                                   Style="{StaticResource Text.Muted}"
+                                                   Text="{Binding Category}" />
+                                        <Button Margin="0,6,0,0"
+                                                MinWidth="108"
+                                                Padding="12,6"
+                                                Command="{Binding DataContext.ExecuteInsightActionCommand,
+                                                    RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                CommandParameter="{Binding}"
+                                                Content="{Binding ActionLabel}">
+                                            <Button.Style>
+                                                <Style TargetType="Button" BasedOn="{StaticResource Button.Secondary}">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding CanExecuteAction}" Value="False">
+                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
+            </Border>
+
             <!-- Main details -->
             <TextBlock
                 Margin="0,4,0,12"
