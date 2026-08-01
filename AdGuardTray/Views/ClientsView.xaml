@@ -15,13 +15,12 @@
         </Grid.RowDefinitions>
 
         <StackPanel>
-            <TextBlock FontSize="24" FontWeight="Bold" Text="Clients"/>
-            <TextBlock Margin="0,5,0,0" FontSize="14" Foreground="{DynamicResource Brush.TextSecondary}"
+            <TextBlock Style="{DynamicResource Text.PageTitle}" Text="Clients"/>
+            <TextBlock Margin="0,5,0,0" Style="{DynamicResource Text.Secondary}"
                        Text="Connected devices, identity and DNS activity"/>
         </StackPanel>
 
-        <Border Grid.Row="2" Padding="14" Background="{DynamicResource Brush.Surface}" CornerRadius="10"
-                BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
+        <Border Grid.Row="2" Style="{DynamicResource Card.Compact}">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -54,6 +53,7 @@
 
                     <Button Grid.Column="4"
                             Height="36"
+                            Style="{DynamicResource Button.Secondary}"
                             Command="{Binding ToggleSortDirectionCommand}"
                             Content="{Binding SortDirectionText}"/>
                 </Grid>
@@ -66,15 +66,19 @@
                               Content="Favourites only"/>
 
                     <Button MinWidth="100" Height="36" Margin="0,0,10,8"
+                            Style="{DynamicResource Button.Secondary}"
                             Command="{Binding LoadClientsCommand}"
                             Content="Refresh"/>
                     <Button MinWidth="110" Height="36" Margin="0,0,10,8"
+                            Style="{DynamicResource Button.Secondary}"
                             Command="{Binding PingSelectedClientCommand}"
                             Content="Ping Client"/>
                     <Button MinWidth="115" Height="36" Margin="0,0,10,8"
+                            Style="{DynamicResource Button.Secondary}"
                             Command="{Binding WakeSelectedClientCommand}"
                             Content="Wake Client"/>
                     <Button MinWidth="115" Height="36" Margin="0,0,0,8"
+                            Style="{DynamicResource Button.Primary}"
                             Click="ViewDetailsButton_Click"
                             Content="Open / Personalise"/>
                 </WrapPanel>
@@ -88,8 +92,7 @@
                 <ColumnDefinition Width="4*"/>
             </Grid.ColumnDefinitions>
 
-            <Border Padding="14" Background="{DynamicResource Brush.Surface}" CornerRadius="10"
-                    BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
+            <Border Style="{DynamicResource Card.Compact}">
                 <UniformGrid Columns="3" Rows="2">
                     <StackPanel Margin="0,0,16,12">
                         <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Text="SELECTED CLIENT"/>
@@ -123,8 +126,7 @@
                 </UniformGrid>
             </Border>
 
-            <Border Grid.Column="2" Padding="14" Background="{DynamicResource Brush.Surface}" CornerRadius="10"
-                    BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
+            <Border Grid.Column="2" Style="{DynamicResource Card.Compact}">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -165,6 +167,7 @@
 
         <Border Grid.Row="6" MinHeight="360" Padding="10" Background="{DynamicResource Brush.SurfaceMuted}" CornerRadius="10"
                 BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
+            <Grid>
             <ListBox x:Name="ClientsGrid"
                      ItemsSource="{Binding Clients}"
                      SelectedItem="{Binding SelectedClient}"
@@ -328,6 +331,25 @@
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>
+
+            <StackPanel IsHitTestVisible="False">
+                <StackPanel.Style>
+                    <Style TargetType="StackPanel" BasedOn="{StaticResource EmptyState}">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Clients.Count}" Value="0">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </StackPanel.Style>
+                <TextBlock Style="{StaticResource Icon.EmptyState}" Text="&#xE716;"/>
+                <TextBlock Margin="0,12,0,0" Style="{StaticResource Text.EmptyStateTitle}"
+                           Text="No connected clients"/>
+                <TextBlock Style="{StaticResource Text.EmptyStateMessage}"
+                           Text="Connected devices will appear here after the next refresh."/>
+            </StackPanel>
+            </Grid>
         </Border>
 
         <Grid Grid.Row="7" Margin="2,9,0,0">
@@ -337,12 +359,12 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <TextBlock Foreground="{DynamicResource Brush.TextSecondary}"
+            <TextBlock Style="{DynamicResource Text.Secondary}"
                        Text="{Binding StatusMessage}"/>
 
             <TextBlock Grid.Column="2"
                        HorizontalAlignment="Right"
-                       Foreground="{DynamicResource Brush.TextSecondary}"
+                       Style="{DynamicResource Text.Secondary}"
                        Text="{Binding PingResult}"/>
         </Grid>
     </Grid>

@@ -9,23 +9,16 @@
         Background="{DynamicResource Brush.SurfaceMuted}"
         WindowStartupLocation="CenterOwner">
     <Window.Resources>
-        <Style x:Key="CardStyle" TargetType="Border">
-            <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="12"/>
-            <Setter Property="Padding" Value="16"/>
-        </Style>
+        <Style x:Key="CardStyle"
+               TargetType="Border"
+               BasedOn="{StaticResource Card.Compact}"/>
 
-        <Style x:Key="CopyButtonStyle" TargetType="Button">
+        <Style x:Key="CopyButtonStyle"
+               TargetType="Button"
+               BasedOn="{StaticResource Button.Secondary}">
             <Setter Property="Padding" Value="9,4"/>
             <Setter Property="Margin" Value="8,0,0,0"/>
             <Setter Property="MinWidth" Value="50"/>
-            <Setter Property="Background" Value="#EEF4FF"/>
-            <Setter Property="Foreground" Value="#2457A7"/>
-            <Setter Property="BorderBrush" Value="#C9D9F2"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Cursor" Value="Hand"/>
         </Style>
 
         <Style x:Key="RankingList" TargetType="ListBox">
@@ -255,10 +248,9 @@
                     </StackPanel>
 
                     <Grid Grid.Row="2">
-                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   Foreground="{DynamicResource Brush.TextMuted}" Text="No requested domains recorded.">
+                        <TextBlock VerticalAlignment="Center" Text="No requested domains recorded.">
                             <TextBlock.Style>
-                                <Style TargetType="TextBlock">
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource Text.EmptyStateMessage}">
                                     <Setter Property="Visibility" Value="Visible"/>
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding HasTopDomains}" Value="True">
@@ -330,10 +322,9 @@
                     </StackPanel>
 
                     <Grid Grid.Row="2">
-                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   Foreground="{DynamicResource Brush.TextMuted}" Text="No blocked domains recorded.">
+                        <TextBlock VerticalAlignment="Center" Text="No blocked domains recorded.">
                             <TextBlock.Style>
-                                <Style TargetType="TextBlock">
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource Text.EmptyStateMessage}">
                                     <Setter Property="Visibility" Value="Visible"/>
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding HasTopBlockedDomains}" Value="True">
@@ -399,10 +390,9 @@
                                    Text="Latest 200 requests"/>
                     </DockPanel>
                     <Grid Grid.Row="2">
-                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   Foreground="{DynamicResource Brush.TextMuted}" Text="No recent DNS requests recorded.">
+                        <TextBlock VerticalAlignment="Center" Text="No recent DNS requests recorded.">
                             <TextBlock.Style>
-                                <Style TargetType="TextBlock">
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource Text.EmptyStateMessage}">
                                     <Setter Property="Visibility" Value="Visible"/>
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding HasRecentQueries}" Value="True">

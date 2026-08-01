@@ -70,11 +70,7 @@
                 <ScrollViewer Margin="0,12,0,0"
                               VerticalScrollBarVisibility="Auto">
                     <StackPanel>
-                        <Border Padding="20"
-                                Background="{DynamicResource Brush.Surface}"
-                                CornerRadius="12"
-                                BorderBrush="{DynamicResource Brush.Border}"
-                                BorderThickness="1">
+                        <Border Style="{DynamicResource Card}">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="150"/>
@@ -93,12 +89,10 @@
                                 </Border>
 
                                 <StackPanel Grid.Column="2">
-                                    <TextBlock FontSize="30"
-                                               FontWeight="Bold"
+                                    <TextBlock Style="{DynamicResource Text.CardValue}"
                                                Text="RouterPilot"/>
                                     <TextBlock Margin="0,3,0,0"
-                                               FontSize="14"
-                                               Foreground="{DynamicResource Brush.TextSecondary}"
+                                               Style="{DynamicResource Text.Secondary}"
                                                Text="Companion for GL.iNet Routers &amp; AdGuard Home"/>
                                     <StackPanel Margin="0,3,0,0"
                                                 Orientation="Horizontal">
@@ -171,11 +165,7 @@
                         </Border>
 
                         <Border Margin="0,14,0,0"
-                                Padding="20"
-                                Background="{DynamicResource Brush.Surface}"
-                                CornerRadius="12"
-                                BorderBrush="{DynamicResource Brush.Border}"
-                                BorderThickness="1">
+                                Style="{DynamicResource Card}">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -183,8 +173,7 @@
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Margin="0,0,22,0">
-                                    <TextBlock FontSize="20"
-                                               FontWeight="Bold"
+                                    <TextBlock Style="{DynamicResource Text.SectionTitle}"
                                                Text="Support Development"/>
                                     <TextBlock Margin="0,6,0,0"
                                                FontSize="14"
@@ -213,14 +202,9 @@
                         </Border>
 
                         <Border Margin="0,14,0,0"
-                                Padding="20"
-                                Background="{DynamicResource Brush.Surface}"
-                                CornerRadius="12"
-                                BorderBrush="{DynamicResource Brush.Border}"
-                                BorderThickness="1">
+                                Style="{DynamicResource Card}">
                             <StackPanel>
-                                <TextBlock FontSize="20"
-                                           FontWeight="Bold"
+                                <TextBlock Style="{DynamicResource Text.SectionTitle}"
                                            Text="Credits &amp; Acknowledgements"/>
                                 <TextBlock Margin="0,4,0,0"
                                            Foreground="{DynamicResource Brush.TextSecondary}"
@@ -359,14 +343,9 @@
                               VerticalScrollBarVisibility="Auto"
                               HorizontalScrollBarVisibility="Disabled">
                     <StackPanel>
-                        <Border Padding="20"
-                                Background="{DynamicResource Brush.Surface}"
-                                BorderBrush="{DynamicResource Brush.Border}"
-                                BorderThickness="1"
-                                CornerRadius="12">
+                        <Border Style="{DynamicResource Card}">
                             <StackPanel>
-                                <TextBlock FontSize="20"
-                                           FontWeight="Bold"
+                                <TextBlock Style="{DynamicResource Text.SectionTitle}"
                                            Text="Router Tools"/>
                                 <TextBlock Margin="0,5,0,0"
                                            Foreground="{DynamicResource Brush.TextSecondary}"
@@ -431,11 +410,7 @@
                         </Border>
 
                         <Border Margin="0,14,0,0"
-                                Padding="20"
-                                Background="{DynamicResource Brush.Surface}"
-                                BorderBrush="{DynamicResource Brush.Border}"
-                                BorderThickness="1"
-                                CornerRadius="12">
+                                Style="{DynamicResource Card}">
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>

@@ -227,6 +227,7 @@
                                 BorderThickness="1"
                                 CornerRadius="10"
                                 ClipToBounds="True">
+                            <Grid>
                             <DataGrid AutoGenerateColumns="False"
                                       AlternationCount="2"
                                       CanUserAddRows="False"
@@ -317,6 +318,26 @@
                                     </DataGridTemplateColumn>
                                 </DataGrid.Columns>
                             </DataGrid>
+
+                            <StackPanel IsHitTestVisible="False">
+                                <StackPanel.Style>
+                                    <Style TargetType="StackPanel" BasedOn="{StaticResource EmptyState}">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Entries.Count}" Value="0">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </StackPanel.Style>
+                                <TextBlock Style="{StaticResource Icon.EmptyState}" Text="&#xE8A5;"/>
+                                <TextBlock Margin="0,12,0,0"
+                                           Style="{StaticResource Text.EmptyStateTitle}"
+                                           Text="No DNS requests"/>
+                                <TextBlock Style="{StaticResource Text.EmptyStateMessage}"
+                                           Text="AdGuard Home query activity will appear here."/>
+                            </StackPanel>
+                            </Grid>
                         </Border>
 
                         <!-- Status -->

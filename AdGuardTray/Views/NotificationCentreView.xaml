@@ -154,13 +154,10 @@
                 </ListBox.ItemTemplate>
             </ListBox>
 
-            <Border Padding="32"
-                    Background="{DynamicResource Brush.Surface}"
-                    BorderBrush="{DynamicResource Brush.Border}"
-                    BorderThickness="1"
-                    CornerRadius="14">
+            <Border>
                 <Border.Style>
-                    <Style TargetType="Border">
+                    <Style TargetType="Border" BasedOn="{StaticResource Card}">
+                        <Setter Property="Padding" Value="32"/>
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding NotificationsView.IsEmpty}" Value="True">
@@ -169,19 +166,13 @@
                         </Style.Triggers>
                     </Style>
                 </Border.Style>
-                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <TextBlock HorizontalAlignment="Center"
-                               FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
-                               FontSize="34"
-                               Foreground="{DynamicResource Brush.TextMuted}"
+                <StackPanel Style="{StaticResource EmptyState}">
+                    <TextBlock Style="{StaticResource Icon.EmptyState}"
                                Text="&#xE7ED;"/>
                     <TextBlock Margin="0,14,0,0"
-                               HorizontalAlignment="Center"
-                               Style="{DynamicResource Text.SectionTitle}"
+                               Style="{StaticResource Text.EmptyStateTitle}"
                                Text="No notifications"/>
-                    <TextBlock Margin="0,5,0,0"
-                               HorizontalAlignment="Center"
-                               Style="{DynamicResource Text.Secondary}"
+                    <TextBlock Style="{StaticResource Text.EmptyStateMessage}"
                                Text="RouterPilot events will appear here."/>
                 </StackPanel>
             </Border>
