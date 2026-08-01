@@ -20,9 +20,9 @@ Companion for GL.iNet Routers & AdGuard Home
 - Light, dark and system theme support
 - Notification-area integration with close-to-tray behaviour
 
-## What’s new in 1.5.0
+## What’s new in 1.5.1
 
-Version 1.5.0 introduces the RouterPilot product identity while preserving the existing application architecture and compatibility.
+Version 1.5 series introduces the RouterPilot product identity while preserving the existing application architecture and compatibility.
 
 - Updated user-facing application, dashboard, window and notification-area branding
 - Updated About, diagnostics and support text for RouterPilot
