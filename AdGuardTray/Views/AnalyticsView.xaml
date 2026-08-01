@@ -193,6 +193,132 @@
                 </Grid>
             </Border>
 
+            <!-- Historical WAN usage -->
+            <Border
+                MinHeight="330"
+                Margin="0,0,0,20"
+                Style="{StaticResource Card}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="14" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock
+                                Style="{StaticResource Text.SectionTitle}"
+                                Text="Historical WAN Usage" />
+                            <TextBlock
+                                Margin="0,4,0,0"
+                                Style="{StaticResource Text.Muted}"
+                                Text="Minute-level WAN averages and peaks stored locally" />
+                        </StackPanel>
+
+                        <StackPanel
+                            Grid.Column="1"
+                            Margin="20,0,0,0"
+                            Orientation="Horizontal"
+                            VerticalAlignment="Center">
+                            <Button
+                                Margin="0,0,8,0"
+                                Command="{Binding LoadWanHistoryCommand}"
+                                CommandParameter="1 hour"
+                                Content="1 hour"
+                                Style="{StaticResource Button.Secondary}" />
+                            <Button
+                                Margin="0,0,8,0"
+                                Command="{Binding LoadWanHistoryCommand}"
+                                CommandParameter="24 hours"
+                                Content="24 hours"
+                                Style="{StaticResource Button.Secondary}" />
+                            <Button
+                                Margin="0,0,8,0"
+                                Command="{Binding LoadWanHistoryCommand}"
+                                CommandParameter="7 days"
+                                Content="7 days"
+                                Style="{StaticResource Button.Secondary}" />
+                            <Button
+                                Command="{Binding LoadWanHistoryCommand}"
+                                CommandParameter="30 days"
+                                Content="30 days"
+                                Style="{StaticResource Button.Secondary}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <Grid
+                        Grid.Row="2"
+                        MinHeight="235"
+                        Background="{DynamicResource Brush.SurfaceMuted}">
+                        <lvc:CartesianChart
+                            Margin="8"
+                            AnimationsSpeed="0:0:0.25"
+                            Background="Transparent"
+                            LegendPosition="Top"
+                            Series="{Binding HistoricalWanSeries}"
+                            TooltipPosition="Top"
+                            XAxes="{Binding HistoricalWanXAxes}"
+                            YAxes="{Binding HistoricalWanYAxes}">
+                            <lvc:CartesianChart.Style>
+                                <Style TargetType="lvc:CartesianChart">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding HasHistoricalWanData}" Value="False">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </lvc:CartesianChart.Style>
+                        </lvc:CartesianChart>
+
+                        <StackPanel
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center">
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding HasHistoricalWanData}" Value="False" />
+                                                <Condition Binding="{Binding IsWanHistoryLoading}" Value="False" />
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </MultiDataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <TextBlock
+                                Style="{StaticResource Text.EmptyStateMessage}"
+                                Text="Historical WAN data will appear as RouterPilot collects traffic samples." />
+                        </StackPanel>
+
+                        <TextBlock
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Text="Loading historical WAN data…">
+                            <TextBlock.Style>
+                                <Style
+                                    TargetType="TextBlock"
+                                    BasedOn="{StaticResource Text.Secondary}">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsWanHistoryLoading}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Grid>
+                </Grid>
+            </Border>
+
             <!-- Summary -->
             <TextBlock
                 Margin="0,0,0,12"

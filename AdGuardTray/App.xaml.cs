@@ -34,6 +34,7 @@ namespace AdGuardTray
             serviceCollection.AddSingleton<IDataStore>(provider =>
                 provider.GetRequiredService<SQLiteDataStore>());
             serviceCollection.AddSingleton<HistoryRepository>();
+            serviceCollection.AddSingleton<WanHistoryCollector>();
             serviceCollection.AddSingleton<IRouterManagerProvider,
                 RouterManagerProvider>();
             serviceCollection.AddSingleton(
@@ -181,6 +182,21 @@ namespace AdGuardTray
 
             if (_services is not null)
             {
+                try
+                {
+                    await _services
+                        .GetRequiredService<WanHistoryCollector>()
+                        .DisposeAsync();
+                }
+                catch (OperationCanceledException)
+                {
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(
+                        $"Unable to flush WAN history during shutdown: {ex}");
+                }
+
                 try
                 {
                     await _services

@@ -99,6 +99,115 @@ public sealed class HistoryRepository
         return await ReadEventsAsync(command, cancellationToken);
     }
 
+    public async Task AddOrUpdateWanMinuteAsync(
+        WanMinuteSnapshot snapshot,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+
+        await using var connection =
+            await _dataStore.OpenConnectionAsync(cancellationToken);
+        await using SqliteCommand command = connection.CreateCommand();
+        command.CommandText = """
+            INSERT INTO NetworkSnapshots
+                (TimestampUtc, IsWanConnected, DownloadMbps, UploadMbps,
+                 AverageDownloadMbps, AverageUploadMbps,
+                 PeakDownloadMbps, PeakUploadMbps,
+                 ReceivedBytesTotal, TransmittedBytesTotal, SampleCount)
+            VALUES
+                ($timestampUtc, 1, $averageDownload, $averageUpload,
+                 $averageDownload, $averageUpload,
+                 $peakDownload, $peakUpload,
+                 $receivedTotal, $transmittedTotal, $sampleCount)
+            ON CONFLICT(TimestampUtc) DO UPDATE SET
+                IsWanConnected = 1,
+                DownloadMbps = excluded.DownloadMbps,
+                UploadMbps = excluded.UploadMbps,
+                AverageDownloadMbps = excluded.AverageDownloadMbps,
+                AverageUploadMbps = excluded.AverageUploadMbps,
+                PeakDownloadMbps = excluded.PeakDownloadMbps,
+                PeakUploadMbps = excluded.PeakUploadMbps,
+                ReceivedBytesTotal = excluded.ReceivedBytesTotal,
+                TransmittedBytesTotal = excluded.TransmittedBytesTotal,
+                SampleCount = excluded.SampleCount;
+            """;
+        command.Parameters.AddWithValue(
+            "$timestampUtc",
+            snapshot.TimestampUtc.ToUniversalTime().ToString("O"));
+        command.Parameters.AddWithValue("$averageDownload", snapshot.AverageDownloadMbps);
+        command.Parameters.AddWithValue("$averageUpload", snapshot.AverageUploadMbps);
+        command.Parameters.AddWithValue("$peakDownload", snapshot.PeakDownloadMbps);
+        command.Parameters.AddWithValue("$peakUpload", snapshot.PeakUploadMbps);
+        command.Parameters.AddWithValue("$receivedTotal", snapshot.ReceivedBytesTotal);
+        command.Parameters.AddWithValue("$transmittedTotal", snapshot.TransmittedBytesTotal);
+        command.Parameters.AddWithValue("$sampleCount", snapshot.SampleCount);
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<WanMinuteSnapshot>> GetWanHistoryAsync(
+        DateTimeOffset fromUtc,
+        DateTimeOffset toUtc,
+        CancellationToken cancellationToken = default)
+    {
+        if (toUtc < fromUtc)
+            throw new ArgumentOutOfRangeException(nameof(toUtc));
+
+        await using var connection =
+            await _dataStore.OpenConnectionAsync(cancellationToken);
+        await using SqliteCommand command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT Id, TimestampUtc,
+                   COALESCE(AverageDownloadMbps, DownloadMbps, 0),
+                   COALESCE(AverageUploadMbps, UploadMbps, 0),
+                   COALESCE(PeakDownloadMbps, DownloadMbps, 0),
+                   COALESCE(PeakUploadMbps, UploadMbps, 0),
+                   COALESCE(ReceivedBytesTotal, 0),
+                   COALESCE(TransmittedBytesTotal, 0),
+                   COALESCE(SampleCount, 1)
+            FROM NetworkSnapshots
+            WHERE TimestampUtc >= $fromUtc AND TimestampUtc <= $toUtc
+            ORDER BY TimestampUtc ASC, Id ASC;
+            """;
+        command.Parameters.AddWithValue("$fromUtc", fromUtc.ToUniversalTime().ToString("O"));
+        command.Parameters.AddWithValue("$toUtc", toUtc.ToUniversalTime().ToString("O"));
+
+        var snapshots = new List<WanMinuteSnapshot>();
+        await using SqliteDataReader reader =
+            await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            snapshots.Add(new WanMinuteSnapshot
+            {
+                Id = reader.GetInt64(0),
+                TimestampUtc = DateTimeOffset.Parse(reader.GetString(1)),
+                AverageDownloadMbps = reader.GetDouble(2),
+                AverageUploadMbps = reader.GetDouble(3),
+                PeakDownloadMbps = reader.GetDouble(4),
+                PeakUploadMbps = reader.GetDouble(5),
+                ReceivedBytesTotal = reader.GetInt64(6),
+                TransmittedBytesTotal = reader.GetInt64(7),
+                SampleCount = reader.GetInt32(8)
+            });
+        }
+
+        return snapshots;
+    }
+
+    public async Task<int> DeleteWanHistoryBeforeAsync(
+        DateTimeOffset cutoffUtc,
+        CancellationToken cancellationToken = default)
+    {
+        await using var connection =
+            await _dataStore.OpenConnectionAsync(cancellationToken);
+        await using SqliteCommand command = connection.CreateCommand();
+        command.CommandText =
+            "DELETE FROM NetworkSnapshots WHERE TimestampUtc < $cutoffUtc;";
+        command.Parameters.AddWithValue(
+            "$cutoffUtc",
+            cutoffUtc.ToUniversalTime().ToString("O"));
+        return await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
     private static void AddEventParameters(
         SqliteCommand command,
         DeviceConnectionEvent connectionEvent,

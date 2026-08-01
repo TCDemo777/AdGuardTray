@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using AdGuardTray.Models;
+using AdGuardTray.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LiveChartsCore;
@@ -19,6 +20,8 @@ namespace AdGuardTray.ViewModels
         private const int TrafficSampleIntervalSeconds = 2;
         private const int QueryHistoryCapacity = 120;
         private string _queryHistoryTimeUnits = "hours";
+        private readonly HistoryRepository? _historyRepository;
+        private string _wanHistoryRange = "24 hours";
 
         public ObservableCollection<Insight> Insights { get; } = new();
 
@@ -283,9 +286,36 @@ namespace AdGuardTray.ViewModels
 
         public Axis[] NetworkTrafficYAxes { get; }
 
+        public ObservableCollection<WanHistoryChartPoint>
+            HistoricalDownloadHistory { get; } = new();
+
+        public ObservableCollection<WanHistoryChartPoint>
+            HistoricalUploadHistory { get; } = new();
+
+        public ISeries[] HistoricalWanSeries { get; }
+
+        public Axis[] HistoricalWanXAxes { get; }
+
+        public Axis[] HistoricalWanYAxes { get; }
+
+        public IAsyncRelayCommand<string> LoadWanHistoryCommand { get; }
+
+        [ObservableProperty]
+        private bool isWanHistoryLoading;
+
+        [ObservableProperty]
+        private string selectedWanHistoryRange = "24 hours";
+
+        public bool HasHistoricalWanData =>
+            HistoricalDownloadHistory.Count > 0;
+
         public DashboardViewModel(
-            Func<Insight, Task>? insightActionHandler = null)
+            Func<Insight, Task>? insightActionHandler = null,
+            HistoryRepository? historyRepository = null)
         {
+            _historyRepository = historyRepository;
+            LoadWanHistoryCommand = new AsyncRelayCommand<string>(
+                LoadWanHistoryAsync);
             ExecuteInsightActionCommand = new AsyncRelayCommand<Insight>(
                 insight => insightActionHandler is null || insight is null
                     ? Task.CompletedTask
@@ -373,6 +403,179 @@ namespace AdGuardTray.ViewModels
                     Name = "Mbps",
                     MinLimit = 0
                 }
+            };
+
+            HistoricalWanSeries = new ISeries[]
+            {
+                new LineSeries<WanHistoryChartPoint>
+                {
+                    Name = "Download",
+                    Values = HistoricalDownloadHistory,
+                    Mapping = (point, _) => new Coordinate(
+                        point.TimestampUtc.UtcTicks,
+                        point.AverageMbps),
+                    GeometrySize = 0,
+                    LineSmoothness = 0.25,
+                    XToolTipLabelFormatter = point =>
+                        point.Model is { } model
+                            ? model.TimestampUtc.ToLocalTime().ToString("g")
+                            : "Time: -",
+                    YToolTipLabelFormatter = point =>
+                        point.Model is { } model
+                            ? $"Download: {model.AverageMbps:0.00} Mbps avg · {model.PeakMbps:0.00} Mbps peak"
+                            : "Download: 0.00 Mbps"
+                },
+                new LineSeries<WanHistoryChartPoint>
+                {
+                    Name = "Upload",
+                    Values = HistoricalUploadHistory,
+                    Mapping = (point, _) => new Coordinate(
+                        point.TimestampUtc.UtcTicks,
+                        point.AverageMbps),
+                    GeometrySize = 0,
+                    LineSmoothness = 0.25,
+                    XToolTipLabelFormatter = point =>
+                        point.Model is { } model
+                            ? model.TimestampUtc.ToLocalTime().ToString("g")
+                            : "Time: -",
+                    YToolTipLabelFormatter = point =>
+                        point.Model is { } model
+                            ? $"Upload: {model.AverageMbps:0.00} Mbps avg · {model.PeakMbps:0.00} Mbps peak"
+                            : "Upload: 0.00 Mbps"
+                }
+            };
+
+            HistoricalWanXAxes = new Axis[]
+            {
+                new Axis
+                {
+                    Labeler = FormatHistoricalWanTimeLabel
+                }
+            };
+
+            HistoricalWanYAxes = new Axis[]
+            {
+                new Axis
+                {
+                    Name = "Mbps",
+                    MinLimit = 0
+                }
+            };
+        }
+
+        public async Task LoadWanHistoryAsync(string? range)
+        {
+            if (_historyRepository is null || IsWanHistoryLoading)
+                return;
+
+            string normalizedRange = NormalizeWanHistoryRange(range);
+            SelectedWanHistoryRange = normalizedRange;
+            _wanHistoryRange = normalizedRange;
+            IsWanHistoryLoading = true;
+
+            try
+            {
+                DateTimeOffset toUtc = DateTimeOffset.UtcNow;
+                TimeSpan duration = normalizedRange switch
+                {
+                    "1 hour" => TimeSpan.FromHours(1),
+                    "7 days" => TimeSpan.FromDays(7),
+                    "30 days" => TimeSpan.FromDays(30),
+                    _ => TimeSpan.FromHours(24)
+                };
+                TimeSpan bucketSize = normalizedRange switch
+                {
+                    "1 hour" => TimeSpan.FromMinutes(1),
+                    "7 days" => TimeSpan.FromHours(1),
+                    "30 days" => TimeSpan.FromHours(6),
+                    _ => TimeSpan.FromMinutes(5)
+                };
+
+                IReadOnlyList<WanMinuteSnapshot> points = await Task.Run(
+                    async () =>
+                    {
+                        IReadOnlyList<WanMinuteSnapshot> snapshots =
+                            await _historyRepository.GetWanHistoryAsync(
+                                    toUtc - duration,
+                                    toUtc)
+                                .ConfigureAwait(false);
+                        return DownsampleWanHistory(snapshots, bucketSize);
+                    });
+
+                HistoricalDownloadHistory.Clear();
+                HistoricalUploadHistory.Clear();
+                foreach (WanMinuteSnapshot point in points)
+                {
+                    HistoricalDownloadHistory.Add(new WanHistoryChartPoint
+                    {
+                        TimestampUtc = point.TimestampUtc,
+                        AverageMbps = point.AverageDownloadMbps,
+                        PeakMbps = point.PeakDownloadMbps
+                    });
+                    HistoricalUploadHistory.Add(new WanHistoryChartPoint
+                    {
+                        TimestampUtc = point.TimestampUtc,
+                        AverageMbps = point.AverageUploadMbps,
+                        PeakMbps = point.PeakUploadMbps
+                    });
+                }
+
+                OnPropertyChanged(nameof(HasHistoricalWanData));
+            }
+            finally
+            {
+                IsWanHistoryLoading = false;
+            }
+        }
+
+        private static IReadOnlyList<WanMinuteSnapshot> DownsampleWanHistory(
+            IEnumerable<WanMinuteSnapshot> snapshots,
+            TimeSpan bucketSize)
+        {
+            long bucketTicks = bucketSize.Ticks;
+            return snapshots
+                .GroupBy(snapshot =>
+                    snapshot.TimestampUtc.UtcTicks / bucketTicks * bucketTicks)
+                .OrderBy(group => group.Key)
+                .Select(group =>
+                {
+                    int samples = group.Sum(item => Math.Max(1, item.SampleCount));
+                    return new WanMinuteSnapshot
+                    {
+                        TimestampUtc = new DateTimeOffset(group.Key, TimeSpan.Zero),
+                        AverageDownloadMbps = group.Sum(item =>
+                            item.AverageDownloadMbps * Math.Max(1, item.SampleCount)) / samples,
+                        AverageUploadMbps = group.Sum(item =>
+                            item.AverageUploadMbps * Math.Max(1, item.SampleCount)) / samples,
+                        PeakDownloadMbps = group.Max(item => item.PeakDownloadMbps),
+                        PeakUploadMbps = group.Max(item => item.PeakUploadMbps),
+                        ReceivedBytesTotal = group.Last().ReceivedBytesTotal,
+                        TransmittedBytesTotal = group.Last().TransmittedBytesTotal,
+                        SampleCount = samples
+                    };
+                })
+                .Take(300)
+                .ToArray();
+        }
+
+        private static string NormalizeWanHistoryRange(string? range) =>
+            range is "1 hour" or "24 hours" or "7 days" or "30 days"
+                ? range
+                : "24 hours";
+
+        private string FormatHistoricalWanTimeLabel(double ticks)
+        {
+            if (ticks < DateTime.MinValue.Ticks || ticks > DateTime.MaxValue.Ticks)
+                return string.Empty;
+
+            DateTime local = new DateTime((long)ticks, DateTimeKind.Utc)
+                .ToLocalTime();
+            return _wanHistoryRange switch
+            {
+                "1 hour" => local.ToString("HH:mm"),
+                "24 hours" => local.ToString("HH:mm"),
+                "7 days" => local.ToString("ddd HH:mm"),
+                _ => local.ToString("dd MMM")
             };
         }
 

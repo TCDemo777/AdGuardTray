@@ -27,6 +27,7 @@ namespace AdGuardTray.Views
         private readonly AdGuardProtectionNotificationTracker _protectionNotificationTracker;
         private readonly InsightEngine _insightEngine;
         private readonly DeviceHistoryService _deviceHistoryService;
+        private readonly WanHistoryCollector _wanHistoryCollector;
         private readonly RefreshCoordinator _refreshCoordinator;
         private readonly SemaphoreSlim _routerManagerUsageGate = new(1, 1);
         private bool _refreshInProgress;
@@ -60,8 +61,11 @@ namespace AdGuardTray.Views
         {
             InitializeComponent();
 
-            _viewModel =
-                new DashboardViewModel(ExecuteInsightActionAsync);
+            HistoryRepository historyRepository = ((App)Application.Current)
+                .Services.GetRequiredService<HistoryRepository>();
+            _viewModel = new DashboardViewModel(
+                ExecuteInsightActionAsync,
+                historyRepository);
 
             DataContext =
                 _viewModel;
@@ -76,6 +80,8 @@ namespace AdGuardTray.Views
                 .Services.GetRequiredService<InsightEngine>();
             _deviceHistoryService = ((App)Application.Current)
                 .Services.GetRequiredService<DeviceHistoryService>();
+            _wanHistoryCollector = ((App)Application.Current)
+                .Services.GetRequiredService<WanHistoryCollector>();
             _routerManagerProvider = ((App)Application.Current).Services
                 .GetRequiredService<IRouterManagerProvider>();
             NotificationButton.DataContext = _notificationService;
@@ -515,7 +521,7 @@ namespace AdGuardTray.Views
                     return;
                 }
 
-                UpdateNetworkTraffic(snapshot);
+                await UpdateNetworkTrafficAsync(snapshot, cancellationToken);
             }
             catch (OperationCanceledException)
                 when (cancellationToken.IsCancellationRequested)
@@ -560,8 +566,9 @@ namespace AdGuardTray.Views
             _trafficSampleCount = 0;
         }
 
-        private void UpdateNetworkTraffic(
-            NetworkTrafficSnapshot snapshot)
+        private async Task UpdateNetworkTrafficAsync(
+            NetworkTrafficSnapshot snapshot,
+            CancellationToken cancellationToken)
         {
             if (_trafficBaselineRequired ||
                 _previousTrafficSnapshot == null)
@@ -627,6 +634,29 @@ namespace AdGuardTray.Views
                 _downloadTotalMbps / _trafficSampleCount,
                 _uploadTotalMbps / _trafficSampleCount,
                 snapshot.InterfaceName);
+
+            try
+            {
+                await _wanHistoryCollector.RecordSampleAsync(
+                    new DateTimeOffset(
+                        DateTime.SpecifyKind(
+                            snapshot.CapturedAtUtc,
+                            DateTimeKind.Utc)),
+                    downloadMbps,
+                    uploadMbps,
+                    snapshot.ReceivedBytes,
+                    snapshot.TransmittedBytes,
+                    cancellationToken);
+            }
+            catch (OperationCanceledException)
+                when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch
+            {
+                // Historical persistence must not interrupt the live graph.
+            }
 
             _previousTrafficSnapshot = snapshot;
         }

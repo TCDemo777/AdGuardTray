@@ -4,7 +4,7 @@ namespace AdGuardTray.Services;
 
 public sealed class DatabaseInitializer
 {
-    public const int CurrentSchemaVersion = 2;
+    public const int CurrentSchemaVersion = 3;
 
     public async Task InitializeAsync(
         SqliteConnection connection,
@@ -49,6 +49,20 @@ public sealed class DatabaseInitializer
                 transaction,
                 cancellationToken);
             version = 2;
+            await SetSchemaVersionAsync(
+                connection,
+                transaction,
+                version,
+                cancellationToken);
+        }
+
+        if (version < 3)
+        {
+            await UpgradeToVersionThreeAsync(
+                connection,
+                transaction,
+                cancellationToken);
+            version = 3;
             await SetSchemaVersionAsync(
                 connection,
                 transaction,
@@ -221,6 +235,26 @@ public sealed class DatabaseInitializer
             WHERE legacy.DisconnectedAtUtc IS NOT NULL;
 
             DROP TABLE DeviceConnections_V1;
+            """;
+
+        await ExecuteAsync(connection, transaction, migration, cancellationToken);
+    }
+
+    private static async Task UpgradeToVersionThreeAsync(
+        SqliteConnection connection,
+        SqliteTransaction transaction,
+        CancellationToken cancellationToken)
+    {
+        const string migration = """
+            ALTER TABLE NetworkSnapshots ADD COLUMN AverageDownloadMbps REAL NULL;
+            ALTER TABLE NetworkSnapshots ADD COLUMN AverageUploadMbps REAL NULL;
+            ALTER TABLE NetworkSnapshots ADD COLUMN PeakDownloadMbps REAL NULL;
+            ALTER TABLE NetworkSnapshots ADD COLUMN PeakUploadMbps REAL NULL;
+            ALTER TABLE NetworkSnapshots ADD COLUMN ReceivedBytesTotal INTEGER NULL;
+            ALTER TABLE NetworkSnapshots ADD COLUMN TransmittedBytesTotal INTEGER NULL;
+            ALTER TABLE NetworkSnapshots ADD COLUMN SampleCount INTEGER NULL;
+            CREATE UNIQUE INDEX IF NOT EXISTS UX_NetworkSnapshots_TimestampUtc
+                ON NetworkSnapshots (TimestampUtc);
             """;
 
         await ExecuteAsync(connection, transaction, migration, cancellationToken);
