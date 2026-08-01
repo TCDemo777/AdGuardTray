@@ -158,8 +158,11 @@
                         CornerRadius="10">
                         <lvc:CartesianChart
                             MinHeight="210"
+                            AnimationsSpeed="0:0:0.25"
                             Background="Transparent"
+                            LegendPosition="Top"
                             Series="{Binding NetworkTrafficSeries}"
+                            TooltipPosition="Top"
                             XAxes="{Binding NetworkTrafficXAxes}"
                             YAxes="{Binding NetworkTrafficYAxes}" />
                     </Border>
