@@ -21,6 +21,8 @@ namespace AdGuardTray.ViewModels
         private string _theme = ThemeService.SystemTheme;
         private int _refreshIntervalSeconds = 30;
         private int _defaultPauseMinutes = 30;
+        private bool _automaticallyCheckForUpdates = true;
+        private bool _includePrereleaseUpdates;
         private string _statusMessage = "Settings loaded.";
         private bool _hasUnsavedChanges;
         private bool _isLoading;
@@ -125,6 +127,18 @@ namespace AdGuardTray.ViewModels
             }
         }
 
+        public bool AutomaticallyCheckForUpdates
+        {
+            get => _automaticallyCheckForUpdates;
+            set { if (SetProperty(ref _automaticallyCheckForUpdates, value)) MarkChanged(); }
+        }
+
+        public bool IncludePrereleaseUpdates
+        {
+            get => _includePrereleaseUpdates;
+            set { if (SetProperty(ref _includePrereleaseUpdates, value)) MarkChanged(); }
+        }
+
         public string StatusMessage
         {
             get => _statusMessage;
@@ -197,6 +211,9 @@ namespace AdGuardTray.ViewModels
                         ? 30
                         : settings.DefaultPauseMinutes;
 
+                AutomaticallyCheckForUpdates = settings.AutomaticallyCheckForUpdates;
+                IncludePrereleaseUpdates = settings.IncludePrereleaseUpdates;
+
                 HasUnsavedChanges =
                     false;
 
@@ -264,7 +281,13 @@ namespace AdGuardTray.ViewModels
                             RefreshIntervalSeconds,
 
                         DefaultPauseMinutes =
-                            DefaultPauseMinutes
+                            DefaultPauseMinutes,
+
+                        AutomaticallyCheckForUpdates = AutomaticallyCheckForUpdates,
+                        IncludePrereleaseUpdates = IncludePrereleaseUpdates,
+                        LastSuccessfulUpdateCheckUtc = existing.LastSuccessfulUpdateCheckUtc,
+                        LatestVersionSeen = existing.LatestVersionSeen,
+                        LastNotifiedUpdateVersion = existing.LastNotifiedUpdateVersion
                     };
 
                 _settingsService.Save(

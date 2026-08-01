@@ -10,4 +10,7 @@ public interface IDataStore
 
     Task<SqliteConnection> OpenConnectionAsync(
         CancellationToken cancellationToken = default);
+
+    Task<SqliteConnection> OpenReadOnlyConnectionAsync(
+        CancellationToken cancellationToken = default);
 }

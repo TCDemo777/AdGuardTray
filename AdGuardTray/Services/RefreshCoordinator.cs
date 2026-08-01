@@ -4,11 +4,27 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using AdGuardTray.Models;
 
 namespace AdGuardTray.Services;
 
 public sealed class RefreshCoordinator : IAsyncDisposable
 {
+    public IReadOnlyList<RefreshTaskDiagnosticState> GetDiagnosticState()
+    {
+        lock (_syncRoot)
+        {
+            return _tasks.Values
+                .Select(task => new RefreshTaskDiagnosticState(
+                    task.Name,
+                    task.Interval,
+                    task.Enabled,
+                    task.LoopTask is { IsCompleted: false }))
+                .OrderBy(task => task.Name)
+                .ToArray();
+        }
+    }
+
     private sealed class RefreshTaskRegistration
     {
         public required string Name { get; init; }

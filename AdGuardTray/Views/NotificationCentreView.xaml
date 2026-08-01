@@ -147,6 +147,25 @@
                                                 RelativeSource={RelativeSource AncestorType=ListBox}}"
                                             CommandParameter="{Binding}"
                                             Content="Remove"/>
+                                    <Button MinWidth="92"
+                                            Margin="0,7,0,0"
+                                            Tag="{Binding ActionTarget}"
+                                            Click="OpenNotificationAction_Click"
+                                            Content="Open">
+                                        <Button.Style>
+                                            <Style TargetType="Button" BasedOn="{StaticResource Button.Primary}">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding ActionTarget}" Value="{x:Null}">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding ActionTarget}" Value="">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
                                 </StackPanel>
                             </Grid>
                         </Border>

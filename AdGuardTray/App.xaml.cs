@@ -34,12 +34,23 @@ namespace AdGuardTray
             serviceCollection.AddSingleton<IDataStore>(provider =>
                 provider.GetRequiredService<SQLiteDataStore>());
             serviceCollection.AddSingleton<HistoryRepository>();
+            serviceCollection.AddSingleton<DiagnosticRedactor>();
+            serviceCollection.AddSingleton(provider =>
+                new DiagnosticExportService(
+                    provider.GetRequiredService<SettingsService>(),
+                    provider.GetRequiredService<NotificationService>(),
+                    provider.GetRequiredService<DeviceHistoryService>(),
+                    provider.GetRequiredService<HistoryRepository>(),
+                    provider.GetRequiredService<IDataStore>(),
+                    provider.GetRequiredService<DiagnosticRedactor>(),
+                    Dispatcher));
             serviceCollection.AddSingleton<WanHistoryCollector>();
             serviceCollection.AddSingleton<RouterHealthHistoryCollector>();
             serviceCollection.AddSingleton<IRouterManagerProvider,
                 RouterManagerProvider>();
             serviceCollection.AddSingleton(
                 _ => new NotificationService(Dispatcher));
+            serviceCollection.AddSingleton<UpdateService>();
             serviceCollection.AddSingleton<AdGuardProtectionNotificationTracker>();
             serviceCollection.AddSingleton<DeviceHistoryService>();
             serviceCollection.AddSingleton(provider =>

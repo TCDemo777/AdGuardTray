@@ -1,7 +1,6 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Compression;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -10,6 +9,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Navigation;
 using AdGuardTray.Services;
+using AdGuardTray.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Win32;
 
@@ -19,22 +19,77 @@ namespace AdGuardTray.Views
     {
         private readonly IRouterManagerProvider _routerManagerProvider;
         private readonly SettingsService _settingsService;
+        private readonly DiagnosticExportService _diagnosticExportService;
+        private readonly UpdateService _updateService;
+        private readonly Func<DiagnosticRuntimeState>? _runtimeStateProvider;
+        private CancellationTokenSource? _exportCancellation;
 
         private readonly StringBuilder _supportLog =
             new StringBuilder();
 
-        public AboutView()
+        public AboutView(Func<DiagnosticRuntimeState>? runtimeStateProvider = null)
         {
             InitializeComponent();
             _routerManagerProvider = ((App)Application.Current).Services
                 .GetRequiredService<IRouterManagerProvider>();
             _settingsService = ((App)Application.Current).Services
                 .GetRequiredService<SettingsService>();
+            _diagnosticExportService = ((App)Application.Current).Services
+                .GetRequiredService<DiagnosticExportService>();
+            _updateService = ((App)Application.Current).Services
+                .GetRequiredService<UpdateService>();
+            _runtimeStateProvider = runtimeStateProvider;
             VersionTextBlock.Text = "Version " + GetApplicationVersion();
             BuildDateTextBlock.Text = "Build date: " + GetBuildDate();
             LoadChangelog();
             LoadSystemInformation();
             AppendLog("Support page opened.");
+            UpdateReleaseDisplay();
+        }
+
+        private async void CheckForUpdates_Click(object sender, RoutedEventArgs e)
+        {
+            CheckForUpdatesButton.IsEnabled = false;
+            LatestVersionTextBlock.Text = "Checking GitHub Releases...";
+            try
+            {
+                UpdateCheckResult result = await _updateService
+                    .CheckForUpdatesAsync(manual: true);
+                LatestVersionTextBlock.Text = result.Message;
+                LastUpdateCheckTextBlock.Text = result.CheckedAt is { } checkedAt
+                    ? "Last checked: " + checkedAt.ToLocalTime().ToString("dd MMM yyyy HH:mm")
+                    : "Last checked: Never";
+                OpenReleaseNotesButton.IsEnabled =
+                    result.LatestRelease?.ReleaseNotesUrl is not null;
+            }
+            catch (OperationCanceledException)
+            {
+                LatestVersionTextBlock.Text = "Update check cancelled.";
+            }
+            finally
+            {
+                CheckForUpdatesButton.IsEnabled = true;
+            }
+        }
+
+        private void OpenReleaseNotes_Click(object sender, RoutedEventArgs e)
+        {
+            string target = _updateService.LatestRelease?.ReleaseNotesUrl?.AbsoluteUri
+                ?? UpdateService.ReleasesPageUrl;
+            Process.Start(new ProcessStartInfo(target) { UseShellExecute = true });
+        }
+
+        private void UpdateReleaseDisplay()
+        {
+            AppSettings settings = _settingsService.Load();
+            LatestVersionTextBlock.Text = string.IsNullOrWhiteSpace(settings.LatestVersionSeen)
+                ? "Latest available version: Not checked yet"
+                : "Latest available version: " + settings.LatestVersionSeen;
+            LastUpdateCheckTextBlock.Text = settings.LastSuccessfulUpdateCheckUtc is { } last
+                ? "Last checked: " + last.ToLocalTime().ToString("dd MMM yyyy HH:mm")
+                : "Last checked: Never";
+            OpenReleaseNotesButton.IsEnabled =
+                !string.IsNullOrWhiteSpace(settings.LatestVersionSeen);
         }
 
         private Task<RouterManager> GetRouterManagerAsync()
@@ -233,7 +288,7 @@ namespace AdGuardTray.Views
                 "Diagnostics copied.");
         }
 
-        private void ExportDiagnostics_Click(
+        private async void ExportDiagnostics_Click(
             object sender,
             RoutedEventArgs e)
         {
@@ -241,10 +296,8 @@ namespace AdGuardTray.Views
                 new SaveFileDialog
                 {
                     Filter = "ZIP archive (*.zip)|*.zip",
-                    FileName =
-                        "RouterPilot_Diagnostics_" +
-                        DateTime.Now.ToString("yyyy-MM-dd_HHmmss") +
-                        ".zip"
+                    FileName = "RouterPilot-Diagnostics-" +
+                        DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".zip"
                 };
 
             if (dialog.ShowDialog() != true)
@@ -252,62 +305,33 @@ namespace AdGuardTray.Views
                 return;
             }
 
+            _exportCancellation = new CancellationTokenSource();
+            ExportDiagnosticsButton.IsEnabled = false;
+            CancelDiagnosticsExportButton.Visibility = Visibility.Visible;
+            IncludeDeviceIdentifiersCheckBox.IsEnabled = false;
+            var progress = new Progress<DiagnosticExportProgress>(update =>
+            {
+                ExportStatusTextBlock.Text = $"{update.Status} ({update.Percentage}%)";
+            });
+
             try
             {
-                string tempFolder =
-                    Path.Combine(
-                        Path.GetTempPath(),
-                        "AdGuardTrayDiagnostics_" +
-                        Guid.NewGuid().ToString("N"));
-
-                Directory.CreateDirectory(
-                    tempFolder);
-
-                File.WriteAllText(
-                    Path.Combine(
-                        tempFolder,
-                        "diagnostics.txt"),
-                    DiagnosticsTextBox.Text,
-                    Encoding.UTF8);
-
-                File.WriteAllText(
-                    Path.Combine(
-                        tempFolder,
-                        "system.txt"),
-                    SystemTextBox.Text,
-                    Encoding.UTF8);
-
-                File.WriteAllText(
-                    Path.Combine(
-                        tempFolder,
-                        "support-log.txt"),
-                    _supportLog.ToString(),
-                    Encoding.UTF8);
-
-                File.WriteAllText(
-                    Path.Combine(
-                        tempFolder,
-                        "build.txt"),
-                    GetBuildInformation(),
-                    Encoding.UTF8);
-
-                if (File.Exists(dialog.FileName))
-                {
-                    File.Delete(
-                        dialog.FileName);
-                }
-
-                ZipFile.CreateFromDirectory(
-                    tempFolder,
-                    dialog.FileName);
-
-                Directory.Delete(
-                    tempFolder,
-                    true);
-
-                AppendLog(
-                    "Diagnostics exported to " +
-                    dialog.FileName);
+                await _diagnosticExportService.ExportAsync(
+                    new DiagnosticExportOptions
+                    {
+                        DestinationPath = dialog.FileName,
+                        IncludeDeviceIdentifiers =
+                            IncludeDeviceIdentifiersCheckBox.IsChecked == true,
+                        RuntimeState = _runtimeStateProvider?.Invoke() ?? new(),
+                        SupportLog = _supportLog.ToString()
+                    }, progress, _exportCancellation.Token);
+                ExportStatusTextBlock.Text = "Saved to " + dialog.FileName;
+                AppendLog("Diagnostics exported to " + dialog.FileName);
+            }
+            catch (OperationCanceledException)
+            {
+                ExportStatusTextBlock.Text = "Diagnostics export cancelled.";
+                AppendLog("Diagnostics export cancelled.");
             }
             catch (Exception ex)
             {
@@ -321,6 +345,19 @@ namespace AdGuardTray.Views
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }
+            finally
+            {
+                _exportCancellation.Dispose();
+                _exportCancellation = null;
+                ExportDiagnosticsButton.IsEnabled = true;
+                CancelDiagnosticsExportButton.Visibility = Visibility.Collapsed;
+                IncludeDeviceIdentifiersCheckBox.IsEnabled = true;
+            }
+        }
+
+        private void CancelDiagnosticsExport_Click(object sender, RoutedEventArgs e)
+        {
+            _exportCancellation?.Cancel();
         }
 
         private void RefreshSystem_Click(

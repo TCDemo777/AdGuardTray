@@ -175,6 +175,14 @@
                                           IsChecked="{Binding StartWithWindows}"/>
 
                                 <TextBlock Margin="0,18,0,7" Style="{StaticResource Settings.FieldLabel}"
+                                           Text="UPDATES"/>
+                                <CheckBox Content="Automatically check for updates (daily)"
+                                          IsChecked="{Binding AutomaticallyCheckForUpdates}"/>
+                                <CheckBox Margin="0,8,0,0"
+                                          Content="Include prerelease versions"
+                                          IsChecked="{Binding IncludePrereleaseUpdates}"/>
+
+                                <TextBlock Margin="0,18,0,7" Style="{StaticResource Settings.FieldLabel}"
                                            Text="APPEARANCE"/>
                                 <ComboBox Height="38"
                                           Background="{DynamicResource Brush.Surface}"

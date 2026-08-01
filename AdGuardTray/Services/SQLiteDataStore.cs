@@ -76,6 +76,31 @@ public sealed class SQLiteDataStore : IDataStore, IAsyncDisposable
         }
     }
 
+    public async Task<SqliteConnection> OpenReadOnlyConnectionAsync(
+        CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        await InitializeAsync(cancellationToken);
+
+        var builder = new SqliteConnectionStringBuilder
+        {
+            DataSource = DatabasePath,
+            Mode = SqliteOpenMode.ReadOnly,
+            Cache = SqliteCacheMode.Shared
+        };
+        var connection = new SqliteConnection(builder.ToString());
+        try
+        {
+            await connection.OpenAsync(cancellationToken);
+            return connection;
+        }
+        catch
+        {
+            await connection.DisposeAsync();
+            throw;
+        }
+    }
+
     public ValueTask DisposeAsync()
     {
         if (_disposed)

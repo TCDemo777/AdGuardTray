@@ -1,4 +1,5 @@
 using AdGuardTray.Models;
+using System.IO;
 using Microsoft.Data.Sqlite;
 
 namespace AdGuardTray.Services;
@@ -23,6 +24,95 @@ public sealed class HistoryRepository
 
         object? value = await command.ExecuteScalarAsync(cancellationToken);
         return value is null || value is DBNull ? 0 : Convert.ToInt32(value);
+    }
+
+    public async Task<DatabaseHealthReport> GetDatabaseHealthAsync(
+        CancellationToken cancellationToken = default)
+    {
+        await using var connection = await _dataStore
+            .OpenReadOnlyConnectionAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var tables = new List<DatabaseTableHealth>();
+        var tableNames = new List<string>();
+        await using (var command = connection.CreateCommand())
+        {
+            command.CommandText =
+                "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name;";
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken)
+                .ConfigureAwait(false);
+            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                tableNames.Add(reader.GetString(0));
+        }
+
+        var timestampColumns = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["DeviceHistory"] = "LastSeenUtc",
+            ["DeviceConnections"] = "TimestampUtc",
+            ["NetworkSnapshots"] = "TimestampUtc",
+            ["RouterHealthSnapshots"] = "TimestampUtc",
+            ["DnsSnapshots"] = "TimestampUtc"
+        };
+
+        foreach (string tableName in tableNames)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            string quotedTable = '"' + tableName.Replace("\"", "\"\"") + '"';
+            long rowCount;
+            await using (var countCommand = connection.CreateCommand())
+            {
+                countCommand.CommandText = $"SELECT COUNT(*) FROM {quotedTable};";
+                rowCount = Convert.ToInt64(await countCommand
+                    .ExecuteScalarAsync(cancellationToken).ConfigureAwait(false));
+            }
+
+            string? oldest = null;
+            string? newest = null;
+            if (timestampColumns.TryGetValue(tableName, out string? timestampColumn))
+            {
+                await using var rangeCommand = connection.CreateCommand();
+                rangeCommand.CommandText =
+                    $"SELECT MIN(\"{timestampColumn}\"), MAX(\"{timestampColumn}\") FROM {quotedTable};";
+                await using var reader = await rangeCommand.ExecuteReaderAsync(cancellationToken)
+                    .ConfigureAwait(false);
+                if (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                {
+                    oldest = reader.IsDBNull(0) ? null : reader.GetString(0);
+                    newest = reader.IsDBNull(1) ? null : reader.GetString(1);
+                }
+            }
+            tables.Add(new DatabaseTableHealth(tableName, rowCount, oldest, newest));
+        }
+
+        string integrity;
+        await using (var integrityCommand = connection.CreateCommand())
+        {
+            integrityCommand.CommandText = "PRAGMA integrity_check;";
+            integrity = Convert.ToString(await integrityCommand
+                .ExecuteScalarAsync(cancellationToken).ConfigureAwait(false)) ?? "Unavailable";
+        }
+
+        int schemaVersion = 0;
+        if (tables.Any(table => table.Name == "SchemaVersion"))
+        {
+            await using var versionCommand = connection.CreateCommand();
+            versionCommand.CommandText =
+                "SELECT Version FROM SchemaVersion WHERE Id = 1;";
+            object? value = await versionCommand.ExecuteScalarAsync(cancellationToken)
+                .ConfigureAwait(false);
+            schemaVersion = value is null or DBNull ? 0 : Convert.ToInt32(value);
+        }
+        long size = File.Exists(_dataStore.DatabasePath)
+            ? new FileInfo(_dataStore.DatabasePath).Length
+            : 0;
+        return new DatabaseHealthReport
+        {
+            DatabasePath = _dataStore.DatabasePath,
+            FileSizeBytes = size,
+            SchemaVersion = schemaVersion,
+            IntegrityCheck = integrity,
+            Tables = tables
+        };
     }
 
     public async Task AddEventAsync(

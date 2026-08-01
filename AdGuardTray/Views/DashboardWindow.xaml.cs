@@ -21,6 +21,7 @@ namespace AdGuardTray.Views
     {
         private const string DashboardRefreshTask = "DashboardRefresh";
         private const string TrafficRefreshTask = "TrafficRefresh";
+        private const string UpdateCheckTask = "UpdateCheck";
 
         private readonly DashboardViewModel _viewModel;
         private readonly SettingsService _settingsService;
@@ -32,6 +33,7 @@ namespace AdGuardTray.Views
         private readonly WanHistoryCollector _wanHistoryCollector;
         private readonly RouterHealthHistoryCollector _routerHealthHistoryCollector;
         private readonly WeeklySummaryService _weeklySummaryService;
+        private readonly UpdateService _updateService;
         private readonly RefreshCoordinator _refreshCoordinator;
         private readonly SemaphoreSlim _routerManagerUsageGate = new(1, 1);
         private bool _refreshInProgress;
@@ -39,6 +41,8 @@ namespace AdGuardTray.Views
         private readonly IRouterManagerProvider _routerManagerProvider;
         private bool _routerOnline = true;
         private bool _forceWeeklySummaryRefresh;
+        private int _diagnosticConnectedClientCount;
+        private int _diagnosticNetworkCount;
 
         private NetworkTrafficSnapshot? _previousTrafficSnapshot;
         private bool _trafficBaselineRequired = true;
@@ -91,6 +95,8 @@ namespace AdGuardTray.Views
                 .Services.GetRequiredService<RouterHealthHistoryCollector>();
             _weeklySummaryService = ((App)Application.Current)
                 .Services.GetRequiredService<WeeklySummaryService>();
+            _updateService = ((App)Application.Current).Services
+                .GetRequiredService<UpdateService>();
             _routerManagerProvider = ((App)Application.Current).Services
                 .GetRequiredService<IRouterManagerProvider>();
             NotificationButton.DataContext = _notificationService;
@@ -120,6 +126,12 @@ namespace AdGuardTray.Views
                 cancellationToken => RunOnUiThreadAsync(
                     () => RefreshNetworkTrafficAsync(cancellationToken)),
                 enabled: false);
+            _refreshCoordinator.Register(
+                UpdateCheckTask,
+                TimeSpan.FromDays(1),
+                cancellationToken => _updateService.CheckForUpdatesAsync(
+                    manual: false, cancellationToken),
+                enabled: false);
 
             ProtectionStateNotifier.StateChanged +=
                 ProtectionStateNotifier_StateChanged;
@@ -142,6 +154,9 @@ namespace AdGuardTray.Views
                     TrafficRefreshTask,
                     true);
             }
+
+            await _refreshCoordinator.RunNowAsync(UpdateCheckTask);
+            await _refreshCoordinator.SetEnabledAsync(UpdateCheckTask, true);
         }
 
         private async Task RefreshDashboard(
@@ -423,6 +438,8 @@ namespace AdGuardTray.Views
                                 client.MacAddress)))
                     .Where(mac => mac.Length == 12)
                     .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                _diagnosticConnectedClientCount = connectedMacAddresses.Count;
+                _diagnosticNetworkCount = wifiRadios.Count;
 
                 var insightContext = new InsightContext
                 {
@@ -702,6 +719,7 @@ namespace AdGuardTray.Views
                     snapshot.TransmittedBytes,
                     cancellationToken);
             }
+
             catch (OperationCanceledException)
                 when (cancellationToken.IsCancellationRequested)
             {
@@ -1193,8 +1211,35 @@ namespace AdGuardTray.Views
             object sender,
             RoutedEventArgs e)
         {
-            PageContent.Content = new AboutView();
+            PageContent.Content = new AboutView(CreateDiagnosticRuntimeState);
             SelectNavigationButton(AboutButton);
+        }
+
+        private DiagnosticRuntimeState CreateDiagnosticRuntimeState()
+        {
+            return new DiagnosticRuntimeState
+            {
+                RouterOnline = _viewModel.RouterConnected,
+                InternetOnline = _viewModel.InternetConnected,
+                RouterModel = _viewModel.RouterModel,
+                FirmwareVersion = _viewModel.FirmwareVersion,
+                AdGuardProtectionEnabled = _viewModel.AdGuardProtectionStatusKnown
+                    ? _viewModel.AdGuardProtectionEnabled
+                    : null,
+                CpuPercent = _viewModel.CpuPercentage is >= 0 and <= 100
+                    ? _viewModel.CpuPercentage : null,
+                MemoryPercent = _viewModel.MemoryPercentage is >= 0 and <= 100
+                    ? _viewModel.MemoryPercentage : null,
+                StoragePercent = _viewModel.StoragePercentage is >= 0 and <= 100
+                    ? _viewModel.StoragePercentage : null,
+                Temperature = _viewModel.Temperature,
+                DownloadRate = _viewModel.CurrentDownload,
+                UploadRate = _viewModel.CurrentUpload,
+                ConnectedClientCount = _diagnosticConnectedClientCount,
+                NetworkCount = _diagnosticNetworkCount,
+                NotificationUnreadCount = _notificationService.UnreadCount,
+                RefreshTasks = _refreshCoordinator.GetDiagnosticState()
+            };
         }
 
         private void SelectNavigationButton(
