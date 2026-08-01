@@ -1,7 +1,7 @@
 ﻿<Window x:Class="AdGuardTray.Views.SettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="AdGuard Tray Settings"
+        Title="RouterPilot Settings"
         Height="440"
         Width="450"
         ResizeMode="NoResize"

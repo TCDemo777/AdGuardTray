@@ -1,4 +1,14 @@
-# AdGuardTray Changelog
+# RouterPilot Changelog
+
+## [1.5.0] - 2026-08-01
+
+Version 1.5.0 introduces the RouterPilot product identity.
+
+### Changed
+- Updated user-facing application, dashboard, window, notification-area, About and diagnostics branding to RouterPilot.
+- Added the subtitle: Companion for GL.iNet Routers & AdGuard Home.
+- Preserved the `AdGuardTray.exe` executable name, settings paths, project structure and GitHub repository.
+- Updated package, assembly, file and informational versions to 1.5.0.
 
 ## [1.4.0] - 2026-08-01
 
@@ -53,9 +63,9 @@ Version 1.4.0 is a reliability, performance and multi-network compatibility rele
 - Merged configured client IP and MAC identifiers that share the same AdGuard Home client name, allowing the MAC address to appear on a single client record.
 
 ### Added
-- Added a notification-area context menu with Open Dashboard, Refresh Dashboard and Exit AdGuardTray actions.
+- Added a notification-area context menu with Open Dashboard, Refresh Dashboard and Exit RouterPilot actions.
 - Added double-click support on the notification-area icon to restore the dashboard.
-- Added a one-time notification explaining that AdGuardTray remains active after the dashboard is hidden.
+- Added a one-time notification explaining that RouterPilot remains active after the dashboard is hidden.
 
 ### Changed
 - Closing the dashboard with the X now hides it to the notification area instead of exiting.

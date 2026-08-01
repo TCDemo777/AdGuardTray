@@ -1037,7 +1037,7 @@ namespace AdGuardTray.Services
             var report =
                 new System.Text.StringBuilder();
 
-            report.AppendLine("AdGuardTray Client Diagnostics");
+            report.AppendLine("RouterPilot Client Diagnostics");
             report.AppendLine(
                 "Generated: " +
                 DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss zzz"));

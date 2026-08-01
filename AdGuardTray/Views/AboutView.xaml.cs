@@ -247,7 +247,7 @@ namespace AdGuardTray.Views
                 {
                     Filter = "ZIP archive (*.zip)|*.zip",
                     FileName =
-                        "AdGuardTray_Diagnostics_" +
+                        "RouterPilot_Diagnostics_" +
                         DateTime.Now.ToString("yyyy-MM-dd_HHmmss") +
                         ".zip"
                 };
@@ -347,7 +347,7 @@ namespace AdGuardTray.Views
             var builder =
                 new StringBuilder();
 
-            builder.AppendLine("AdGuardTray System Information");
+            builder.AppendLine("RouterPilot System Information");
             builder.AppendLine(
                 "Generated: " +
                 DateTimeOffset.Now.ToString(
@@ -418,7 +418,7 @@ namespace AdGuardTray.Views
                 Assembly.GetExecutingAssembly();
 
             return
-                "AdGuardTray v" + GetApplicationVersion() + "\n" +
+                "RouterPilot v" + GetApplicationVersion() + "\n" +
                 "Assembly version: " +
                 (assembly.GetName().Version?.ToString() ?? "unknown") +
                 "\nBuild location: " +
