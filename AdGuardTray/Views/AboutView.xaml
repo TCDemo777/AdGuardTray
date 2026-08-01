@@ -427,8 +427,7 @@
                                     </Grid.ColumnDefinitions>
 
                                     <StackPanel VerticalAlignment="Center">
-                                        <TextBlock FontSize="20"
-                                                   FontWeight="Bold"
+                                        <TextBlock Style="{DynamicResource Text.SectionTitle}"
                                                    Text="Support Diagnostics"/>
                                         <TextBlock Margin="0,5,0,0"
                                                    Foreground="{DynamicResource Brush.TextSecondary}"

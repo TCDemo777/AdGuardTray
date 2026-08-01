@@ -171,7 +171,7 @@
                                 <TextBlock Margin="0,5,0,18" Style="{DynamicResource Text.Secondary}"
                                            Text="Startup, appearance and dashboard refresh behaviour."/>
 
-                                <CheckBox Content="Start AdGuardTray with Windows"
+                                <CheckBox Content="Start RouterPilot with Windows"
                                           IsChecked="{Binding StartWithWindows}"/>
 
                                 <TextBlock Margin="0,18,0,7" Style="{StaticResource Settings.FieldLabel}"
@@ -237,7 +237,7 @@
                                 <Border Style="{StaticResource Settings.SectionNote}">
                                     <TextBlock Style="{DynamicResource Text.Secondary}"
                                                TextWrapping="Wrap"
-                                               Text="AdGuardTray reaches AdGuard Home through the configured router connection. No separate API credentials are required."/>
+                                               Text="RouterPilot reaches AdGuard Home through the configured router connection. No separate API credentials are required."/>
                                 </Border>
                             </StackPanel>
                         </Border>

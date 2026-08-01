@@ -25,11 +25,7 @@
             <Setter Property="BorderThickness" Value="0" />
         </Style>
 
-        <Style x:Key="Analytics.Badge" TargetType="Border">
-            <Setter Property="Padding" Value="9,4" />
-            <Setter Property="CornerRadius" Value="10" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-        </Style>
+        <Style x:Key="Analytics.Badge" TargetType="Border" BasedOn="{StaticResource Badge}" />
 
         <Style x:Key="Analytics.EmptyState"
                TargetType="StackPanel"
@@ -293,7 +289,9 @@
                         <lvc:CartesianChart
                             MinHeight="240"
                             Background="Transparent"
+                            LegendPosition="Top"
                             Series="{Binding QueryHistorySeries}"
+                            TooltipPosition="Top"
                             XAxes="{Binding QueryHistoryXAxes}"
                             YAxes="{Binding QueryHistoryYAxes}" />
                     </Border>
