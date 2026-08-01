@@ -6,6 +6,7 @@ using System.Windows.Threading;
 using AdGuardTray.Models;
 using AdGuardTray.Services;
 using AdGuardTray.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AdGuardTray.Views
 {
@@ -13,13 +14,17 @@ namespace AdGuardTray.Views
     {
         private readonly ClientsViewModel _viewModel;
         private readonly DispatcherTimer _refreshTimer;
+        private readonly RefreshCoordinator _refreshCoordinator;
 
         public ClientsView()
         {
             InitializeComponent();
 
-            _viewModel = new ClientsViewModel();
+            var app = (App)Application.Current;
+            _viewModel = new ClientsViewModel(
+                app.Services.GetRequiredService<NewDeviceNotificationTracker>());
             DataContext = _viewModel;
+            _refreshCoordinator = new RefreshCoordinator();
 
             _refreshTimer =
                 new DispatcherTimer
@@ -88,7 +93,8 @@ namespace AdGuardTray.Views
         {
             try
             {
-                await _viewModel.LoadClientsAsync();
+                await _refreshCoordinator.RunOnceAsync(
+                    _ => _viewModel.LoadClientsAsync());
             }
             catch (Exception ex)
             {

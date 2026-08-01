@@ -14,6 +14,7 @@ namespace AdGuardTray.ViewModels
     {
         private readonly SettingsService _settingsService;
         private readonly ClientProfileService _clientProfileService;
+        private readonly NewDeviceNotificationTracker _newDeviceNotificationTracker;
         private readonly Dictionary<string, ClientProfile> _clientProfiles;
         private DateTime _lastProfileSaveUtc = DateTime.MinValue;
         private readonly List<ClientInfo> _allClients = new();
@@ -89,8 +90,10 @@ namespace AdGuardTray.ViewModels
         public string SortDirectionText =>
             SortDescending ? "Descending" : "Ascending";
 
-        public ClientsViewModel()
+        public ClientsViewModel(
+            NewDeviceNotificationTracker newDeviceNotificationTracker)
         {
+            _newDeviceNotificationTracker = newDeviceNotificationTracker;
             _settingsService = new SettingsService();
             _clientProfileService = new ClientProfileService();
             _clientProfiles = _clientProfileService.Load();
@@ -194,6 +197,9 @@ namespace AdGuardTray.ViewModels
                     EnrichClient(client);
                     RecordActivitySnapshot(client);
                 }
+
+                await _newDeviceNotificationTracker.ProcessAsync(
+                    BuildConnectedClientList(clients, liveClients));
 
                 _allClients.Clear();
                 _allClients.AddRange(clients);
@@ -867,6 +873,35 @@ namespace AdGuardTray.ViewModels
             client.WifiNetwork = live.Ssid;
             client.SignalStrength = live.Signal;
             client.LiveInterface = live.Interface;
+        }
+
+        private static IEnumerable<ClientInfo> BuildConnectedClientList(
+            IEnumerable<ClientInfo> clients,
+            IEnumerable<WifiClientInfo> liveClients)
+        {
+            List<ClientInfo> knownClients = clients.ToList();
+
+            foreach (WifiClientInfo live in liveClients)
+            {
+                string liveMac = NormaliseMac(live.MacAddress);
+                if (liveMac.Length != 12)
+                    continue;
+
+                ClientInfo? client = knownClients.FirstOrDefault(item =>
+                    NormaliseMac(item.MacAddress).Equals(
+                        liveMac,
+                        StringComparison.OrdinalIgnoreCase));
+
+                yield return client ?? new ClientInfo
+                {
+                    Name = live.Name,
+                    RouterName = live.Name,
+                    MacAddress = live.MacAddress,
+                    IpAddress = live.IpAddress,
+                    WifiNetwork = live.Ssid,
+                    ConnectionType = live.Band
+                };
+            }
         }
 
 

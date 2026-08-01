@@ -28,6 +28,7 @@ namespace AdGuardTray
             var serviceCollection = new ServiceCollection();
             serviceCollection.AddSingleton(
                 _ => new NotificationService(Dispatcher));
+            serviceCollection.AddSingleton<NewDeviceNotificationTracker>();
             serviceCollection.AddSingleton<NotificationCentreViewModel>();
             _services = serviceCollection.BuildServiceProvider();
 
