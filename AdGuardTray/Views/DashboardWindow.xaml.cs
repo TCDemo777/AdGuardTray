@@ -20,12 +20,14 @@ namespace AdGuardTray.Views
         private readonly SettingsService _settingsService;
         private readonly NotificationService _notificationService;
         private readonly NotificationCentreViewModel _notificationCentreViewModel;
+        private readonly RefreshCoordinator _dashboardRefreshCoordinator;
         private readonly DispatcherTimer _refreshTimer;
         private readonly DispatcherTimer _trafficTimer;
         private bool _refreshInProgress;
         private bool _trafficRefreshInProgress;
         private RouterManager? _routerManager;
         private string? _routerSignature;
+        private bool _routerOnline = true;
 
         private NetworkTrafficSnapshot? _previousTrafficSnapshot;
         private double _peakDownloadMbps;
@@ -64,6 +66,8 @@ namespace AdGuardTray.Views
                 .Services.GetRequiredService<NotificationCentreViewModel>();
             NotificationButton.DataContext = _notificationService;
 
+            _dashboardRefreshCoordinator = new RefreshCoordinator();
+
             _settingsService =
                 new SettingsService();
 
@@ -82,7 +86,7 @@ namespace AdGuardTray.Views
 
             _refreshTimer.Tick += async (s, e) =>
             {
-                await RefreshDashboard();
+                await RunDashboardRefreshAsync();
             };
 
             _trafficTimer =
@@ -104,7 +108,7 @@ namespace AdGuardTray.Views
             object sender,
             RoutedEventArgs e)
         {
-            await RefreshDashboard();
+            await RunDashboardRefreshAsync();
 
             _refreshTimer.Start();
             _trafficTimer.Start();
@@ -118,6 +122,7 @@ namespace AdGuardTray.Views
             }
 
             _refreshInProgress = true;
+            bool routerCommunicationConfirmed = false;
 
             try
             {
@@ -139,8 +144,9 @@ namespace AdGuardTray.Views
                     string.IsNullOrWhiteSpace(
                         settings.Username))
                 {
-                    ShowConnectionError(
-                        "Router settings are incomplete.");
+                    await ShowConnectionErrorAsync(
+                        "Router settings are incomplete.",
+                        notifyConnectivityChange: false);
 
                     return;
                 }
@@ -156,6 +162,8 @@ namespace AdGuardTray.Views
 
                 RouterInfo info =
                     await router.GetRouterInfoAsync();
+
+                routerCommunicationConfirmed = true;
 
                 _viewModel.RouterConnected =
                     true;
@@ -194,7 +202,7 @@ namespace AdGuardTray.Views
                     "SSH_",
                     StringComparison.OrdinalIgnoreCase))
                 {
-                    ShowConnectionError(
+                    await ShowConnectionErrorAsync(
                         adGuard.ServiceStatus);
 
                     return;
@@ -334,6 +342,8 @@ namespace AdGuardTray.Views
                         ? "Connected - AdGuard statistics unavailable"
                         : "Connected";
 
+                await UpdateRouterConnectivityAsync(isOnline: true);
+
                 _viewModel.RefreshStatusIndicators();
 
                 _viewModel.LastRefresh =
@@ -343,18 +353,19 @@ namespace AdGuardTray.Views
             }
             catch (SshAuthenticationException)
             {
-                ShowConnectionError(
+                await ShowConnectionErrorAsync(
                     "SSH authentication failed.");
             }
             catch (SshConnectionException)
             {
-                ShowConnectionError(
+                await ShowConnectionErrorAsync(
                     "Unable to connect to router.");
             }
             catch (Exception ex)
             {
-                ShowConnectionError(
-                    ex.Message);
+                await ShowConnectionErrorAsync(
+                    ex.Message,
+                    notifyConnectivityChange: !routerCommunicationConfirmed);
             }
             finally
             {
@@ -506,7 +517,13 @@ namespace AdGuardTray.Views
 
         public Task RefreshNowAsync()
         {
-            return RefreshDashboard();
+            return RunDashboardRefreshAsync();
+        }
+
+        private async Task RunDashboardRefreshAsync()
+        {
+            await _dashboardRefreshCoordinator.RunOnceAsync(
+                _ => RefreshDashboard());
         }
 
         private void DashboardWindow_StateChanged(
@@ -558,9 +575,13 @@ namespace AdGuardTray.Views
             return $"{Math.Max(1, duration.Minutes)}m remaining";
         }
 
-        private void ShowConnectionError(
-            string message)
+        private async Task ShowConnectionErrorAsync(
+            string message,
+            bool notifyConnectivityChange = true)
         {
+            if (notifyConnectivityChange)
+                await UpdateRouterConnectivityAsync(isOnline: false);
+
             _viewModel.RouterConnected =
                 false;
 
@@ -646,11 +667,36 @@ namespace AdGuardTray.Views
                     "dd MMM yyyy HH:mm:ss");
         }
 
+        private async Task UpdateRouterConnectivityAsync(bool isOnline)
+        {
+            if (_routerOnline == isOnline)
+                return;
+
+            _routerOnline = isOnline;
+
+            await _notificationService.AddAsync(new AppNotification
+            {
+                Title = isOnline
+                    ? "Router Online"
+                    : "Router Offline",
+                Message = isOnline
+                    ? "Connection to the router has been restored."
+                    : "Unable to communicate with the configured router.",
+                Severity = isOnline
+                    ? NotificationSeverity.Success
+                    : NotificationSeverity.Error,
+                Category = NotificationCategory.Router,
+                DeduplicationKey = isOnline
+                    ? "RouterOnline"
+                    : "RouterOffline"
+            });
+        }
+
         private async void Refresh_Click(
             object sender,
             RoutedEventArgs e)
         {
-            await RefreshDashboard();
+            await RunDashboardRefreshAsync();
         }
 
         private void Overview_Click(
@@ -837,6 +883,7 @@ namespace AdGuardTray.Views
         {
             _refreshTimer.Stop();
             _trafficTimer.Stop();
+            _ = _dashboardRefreshCoordinator.DisposeAsync();
 
             ProtectionStateNotifier.StateChanged -=
                 ProtectionStateNotifier_StateChanged;
