@@ -10,35 +10,33 @@ Companion for GL.iNet Routers & AdGuard Home
 
 - Live router, AdGuard Home, network and storage status
 - AdGuard protection controls, filtering options and blocked-service management
+- Scheduled AdGuard blocked-service controls, including paired allowed-time windows
 - DNS analytics, query history, live logs and client details
 - Wi-Fi network and connected-client monitoring
 - GL.iNet main, Guest and IoT network awareness
-- Favourite clients and client intelligence
-- Live upload and download traffic graphs
-- Router diagnostics, ping, traceroute and DNS lookup tools
+- Favourite clients, persistent device history and connection activity
+- Live and historical WAN throughput, DNS, CPU and memory charts
+- Network Timeline, Router Insights, weekly summaries and deterministic network intelligence
+- Persistent Notification Centre with router, AdGuard and new-device events
+- Router diagnostics, safe diagnostic export, ping, traceroute and DNS lookup tools
+- Automatic GitHub release update checks
 - Secure password storage using Windows user-scoped encryption
 - Light, dark and system theme support
 - Notification-area integration with close-to-tray behaviour
 
-## What’s new in 1.5.1
+## What’s new in 1.6.0
 
-Version 1.5 series introduces the RouterPilot product identity while preserving the existing application architecture and compatibility.
+Version 1.6 adds local historical data, scheduled AdGuard service controls and richer network insights while preserving RouterPilot's local-first architecture.
 
-- Updated user-facing application, dashboard, window and notification-area branding
-- Updated About, diagnostics and support text for RouterPilot
-- Preserved the `AdGuardTray.exe` executable name, settings location and GitHub repository
-- Centralised router and AdGuard Home endpoint configuration
-- Removed hard-coded router addresses
-- Improved settings persistence and migration from earlier releases
-- Restored reliable close/minimise-to-tray behaviour
-- Reused HTTP and SSH connections to reduce latency and router load
-- Prevented overlapping dashboard refreshes
-- Parallelised independent AdGuard Home refresh operations
-- Split the large router manager into focused partial implementation files
-- Improved Wi-Fi client discovery across GL.iNet and OpenWrt data sources
-- Correctly maps GL.iNet IoT and Guest clients to their matching SSIDs
-- Improved handling of multiple SSIDs on the same radio
-- Updated About and diagnostic version reporting
+- Added a SQLite-backed historical data platform alongside existing JSON configuration
+- Added persistent device connection events and recent activity in Client Details
+- Added historical WAN usage and router CPU/memory analytics with retention and downsampling
+- Added weekly network summaries, Network Timeline, Router Insights and deterministic network intelligence
+- Added privacy-aware diagnostic ZIP export and an automatic GitHub release update checker
+- Added scheduled AdGuard blocked-service controls with daily, selected-day and one-time recurrence
+- Added paired allowed-time windows, safe read-modify-write updates and schedule notifications
+- Polished RouterPilot's dashboard, analytics, notifications, protection, settings and About experiences
+- Restored compatible GL.iNet Wi-Fi discovery while retaining Guest, IoT and virtual-interface mapping
 
 ## Requirements
 
