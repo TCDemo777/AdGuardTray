@@ -40,7 +40,7 @@ namespace AdGuardTray
             {
                 MessageBox.Show(
                     "The router settings are incomplete or the saved password could not be read.",
-                    "AdGuardTray Setup",
+                    "RouterPilot Setup",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
                 return;
@@ -157,7 +157,7 @@ namespace AdGuardTray
         {
             return new Window
             {
-                Title = "AdGuardTray Setup",
+                Title = "RouterPilot Setup",
                 Width = 920,
                 Height = 700,
                 MinWidth = 760,

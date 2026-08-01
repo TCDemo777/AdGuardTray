@@ -95,7 +95,11 @@
                                 <StackPanel Grid.Column="2">
                                     <TextBlock FontSize="30"
                                                FontWeight="Bold"
-                                               Text="AdGuardTray"/>
+                                               Text="RouterPilot"/>
+                                    <TextBlock Margin="0,3,0,0"
+                                               FontSize="14"
+                                               Foreground="{DynamicResource Brush.TextSecondary}"
+                                               Text="Companion for GL.iNet Routers &amp; AdGuard Home"/>
                                     <StackPanel Margin="0,3,0,0"
                                                 Orientation="Horizontal">
                                         <TextBlock x:Name="VersionTextBlock"
@@ -186,7 +190,7 @@
                                                FontSize="14"
                                                LineHeight="20"
                                                TextWrapping="Wrap"
-                                               Text="AdGuardTray is free and open source and is developed independently in my spare time."/>
+                                               Text="RouterPilot is free and open source and is developed independently in my spare time."/>
                                     <TextBlock Margin="0,7,0,0"
                                                Foreground="{DynamicResource Brush.TextSecondary}"
                                                LineHeight="20"
@@ -195,7 +199,7 @@
                                     <TextBlock Margin="0,9,0,0"
                                                FontStyle="Italic"
                                                Foreground="{DynamicResource Brush.TextSecondary}"
-                                               Text="Thank you for using AdGuardTray."/>
+                                               Text="Thank you for using RouterPilot."/>
                                 </StackPanel>
 
                                 <Button Grid.Column="1"
@@ -221,7 +225,7 @@
                                 <TextBlock Margin="0,4,0,0"
                                            Foreground="{DynamicResource Brush.TextSecondary}"
                                            TextWrapping="Wrap"
-                                           Text="AdGuardTray is an independent project. Product names and trademarks remain the property of their respective owners."/>
+                                           Text="RouterPilot is an independent project. Product names and trademarks remain the property of their respective owners."/>
 
                                 <TextBlock Margin="0,18,0,0"
                                            FontSize="15"
@@ -230,7 +234,7 @@
                                 <TextBlock Margin="0,5,0,0"
                                            LineHeight="19"
                                            TextWrapping="Wrap"
-                                           Text="AdGuardTray communicates with supported GL.iNet routers and their management interfaces to surface router health, network information and administration features."/>
+                                           Text="RouterPilot communicates with supported GL.iNet routers and their management interfaces to surface router health, network information and administration features."/>
                                 <TextBlock Margin="0,5,0,0">
                                     <Hyperlink NavigateUri="https://www.gl-inet.com/"
                                                RequestNavigate="GitHubLink_RequestNavigate">Visit GL.iNet</Hyperlink>
@@ -342,7 +346,7 @@
                                         CornerRadius="8">
                                     <TextBlock FontStyle="Italic"
                                                TextWrapping="Wrap"
-                                               Text="Special thanks to the GL.iNet and AdGuard teams and communities for providing the platforms, documentation and APIs that make independent tools such as AdGuardTray possible."/>
+                                               Text="Special thanks to the GL.iNet and AdGuard teams and communities for providing the platforms, documentation and APIs that make independent tools such as RouterPilot possible."/>
                                 </Border>
                             </StackPanel>
                         </Border>

@@ -25,7 +25,7 @@ namespace AdGuardTray.Tray
 
             Icon = new TaskbarIcon
             {
-                ToolTipText = "AdGuardTray",
+                ToolTipText = "RouterPilot",
                 IconSource = BitmapFrame.Create(
                     new Uri(
                         "pack://application:,,,/Assets/AdGuardTray.ico",
@@ -40,8 +40,8 @@ namespace AdGuardTray.Tray
         public void ShowStillRunningMessage()
         {
             Icon.ShowBalloonTip(
-                "AdGuardTray",
-                "AdGuardTray is still running in the notification area.",
+                "RouterPilot",
+                "RouterPilot is still running in the notification area.",
                 BalloonIcon.Info);
         }
 
@@ -64,7 +64,7 @@ namespace AdGuardTray.Tray
 
             var exitItem = new MenuItem
             {
-                Header = "Exit AdGuardTray"
+                Header = "Exit RouterPilot"
             };
             exitItem.Click += (_, _) => _exitApplication();
 
