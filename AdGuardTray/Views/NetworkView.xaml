@@ -149,15 +149,15 @@
                     </Border>
                 </Grid>
 
-                <!-- Wi-Fi networks and maintenance -->
+                <!-- Quick maintenance and Wi-Fi networks -->
                 <Grid Margin="0,0,0,16">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="2*"/>
-                        <ColumnDefinition Width="16"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="16"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-                    <Border Grid.Column="0" Style="{DynamicResource Card}">
+                    <Border Grid.Row="2" Style="{DynamicResource Card}">
                         <StackPanel>
                             <Grid Margin="0,0,0,14">
                                 <Grid.ColumnDefinitions>
@@ -262,7 +262,7 @@
                         </StackPanel>
                     </Border>
 
-                    <Border Grid.Column="2" Style="{DynamicResource Card}">
+                    <Border Grid.Row="0" Style="{DynamicResource Card}">
                         <StackPanel>
                             <TextBlock Style="{DynamicResource Text.SectionTitle}" Text="Quick maintenance"/>
                             <TextBlock Margin="0,5,0,14" Style="{DynamicResource Text.Secondary}"
@@ -314,7 +314,7 @@
                         </StackPanel>
                     </Border>
 
-                    <Border Grid.Column="2" Style="{DynamicResource Card}">
+                    <Border Grid.Column="4" Style="{DynamicResource Card}">
                         <StackPanel>
                             <TextBlock Style="{DynamicResource Text.SectionTitle}"
                                        Text="DNS"/>
@@ -344,7 +344,7 @@
                         </StackPanel>
                     </Border>
 
-                    <Border Grid.Column="4" Style="{DynamicResource Card}">
+                    <Border Grid.Column="2" Style="{DynamicResource Card}">
                         <StackPanel>
                             <TextBlock Style="{DynamicResource Text.SectionTitle}"
                                        Text="Router"/>
