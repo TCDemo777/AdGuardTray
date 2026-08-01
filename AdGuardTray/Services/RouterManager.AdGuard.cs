@@ -2399,9 +2399,16 @@ namespace AdGuardTray.Services
                     blockedQueries;
             }
 
+            stats.QueryHistoryTimeUnits =
+                GetStringProperty(
+                    root,
+                    "time_units",
+                    "hours");
+
             stats.QueryHistory =
                 ParseQueryHistory(
-                    root);
+                    root,
+                    stats.QueryHistoryTimeUnits);
 
             stats.TopClients =
                 ParseRankedItems(
@@ -2610,7 +2617,8 @@ namespace AdGuardTray.Services
 
         private static List<AdGuardTimePoint>
             ParseQueryHistory(
-                JsonElement root)
+                JsonElement root,
+                string timeUnits)
         {
             var history =
                 new List<AdGuardTimePoint>();
@@ -2632,19 +2640,18 @@ namespace AdGuardTray.Services
                 "blocked_filtering",
                 out JsonElement blockedArray);
 
-            string timeUnits =
-                GetStringProperty(
-                    root,
-                    "time_units",
-                    "hours");
-
             int pointCount =
                 queryArray.GetArrayLength();
+
+            int startIndex =
+                Math.Max(
+                    0,
+                    pointCount - 120);
 
             DateTime now =
                 DateTime.Now;
 
-            for (int index = 0;
+            for (int index = startIndex;
                  index < pointCount;
                  index++)
             {

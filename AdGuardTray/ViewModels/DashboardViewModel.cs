@@ -6,6 +6,7 @@ using System.Windows;
 using AdGuardTray.Models;
 using CommunityToolkit.Mvvm.ComponentModel;
 using LiveChartsCore;
+using LiveChartsCore.Kernel;
 using LiveChartsCore.SkiaSharpView;
 
 namespace AdGuardTray.ViewModels
@@ -14,6 +15,8 @@ namespace AdGuardTray.ViewModels
     {
         private const int TrafficHistoryCapacity = 60;
         private const int TrafficSampleIntervalSeconds = 2;
+        private const int QueryHistoryCapacity = 120;
+        private string _queryHistoryTimeUnits = "hours";
 
         //
         // Router
@@ -164,22 +167,17 @@ namespace AdGuardTray.ViewModels
         // AdGuard graph and rankings
         //
 
-        [ObservableProperty]
-        private double adGuardQueryGraphMaximum = 1;
-
         public ObservableCollection<AdGuardTimePoint>
             AdGuardQueryHistory
         {
             get;
         } = new();
 
-        public ISeries[] QueryHistorySeries
-        {
-            get;
-        } =
-        {
-            new LineSeries<double>()
-        };
+        public ISeries[] QueryHistorySeries { get; }
+
+        public Axis[] QueryHistoryXAxes { get; }
+
+        public Axis[] QueryHistoryYAxes { get; }
 
         public ObservableCollection<AdGuardRankedItem>
             TopClients
@@ -279,6 +277,45 @@ namespace AdGuardTray.ViewModels
 
         public DashboardViewModel()
         {
+            QueryHistorySeries = new ISeries[]
+            {
+                new LineSeries<AdGuardTimePoint>
+                {
+                    Name = "Queries",
+                    Values = AdGuardQueryHistory,
+                    Mapping = (point, index) =>
+                        new Coordinate(index, point.Queries),
+                    GeometrySize = 0,
+                    LineSmoothness = 0.35,
+                    XToolTipLabelFormatter = point =>
+                        point.Model is { } model
+                            ? $"Time: {model.FormatTimeLabel(_queryHistoryTimeUnits)}"
+                            : "Time: -",
+                    YToolTipLabelFormatter = point =>
+                        point.Model is { } model
+                            ? $"Queries: {model.Queries:N0}"
+                            : "Queries: 0"
+                }
+            };
+
+            QueryHistoryXAxes = new Axis[]
+            {
+                new Axis
+                {
+                    MinStep = 1,
+                    Labeler = FormatQueryHistoryAxisLabel
+                }
+            };
+
+            QueryHistoryYAxes = new Axis[]
+            {
+                new Axis
+                {
+                    Name = "Queries",
+                    MinLimit = 0
+                }
+            };
+
             NetworkTrafficSeries = new ISeries[]
             {
                 new LineSeries<double>
@@ -541,22 +578,28 @@ namespace AdGuardTray.ViewModels
         public void UpdateAdGuardStatistics(
             AdGuardStatistics statistics)
         {
-            ReplaceCollection(
-                AdGuardQueryHistory,
-                statistics.QueryHistory);
+            if (Application.Current?.Dispatcher is { } dispatcher &&
+                !dispatcher.CheckAccess())
+            {
+                dispatcher.Invoke(
+                    () => UpdateAdGuardStatistics(statistics));
+                return;
+            }
 
-            ((LineSeries<double>)QueryHistorySeries[0]).Values =
-                statistics.QueryHistory
-                    .Select(point => (double)point.Queries)
-                    .ToArray();
+            _queryHistoryTimeUnits =
+                string.IsNullOrWhiteSpace(
+                    statistics.QueryHistoryTimeUnits)
+                    ? "hours"
+                    : statistics.QueryHistoryTimeUnits;
 
-            AdGuardQueryGraphMaximum =
-                statistics.QueryHistory.Count == 0
-                    ? 1
-                    : Math.Max(
-                        1,
-                        statistics.QueryHistory.Max(
-                            point => point.Queries));
+            AdGuardQueryHistory.Clear();
+
+            foreach (AdGuardTimePoint point in
+                     statistics.QueryHistory
+                         .TakeLast(QueryHistoryCapacity))
+            {
+                AdGuardQueryHistory.Add(point);
+            }
 
             ReplaceCollection(
                 TopClients,
@@ -735,19 +778,33 @@ namespace AdGuardTray.ViewModels
 
         public void ClearAdGuardStatistics()
         {
+            if (Application.Current?.Dispatcher is { } dispatcher &&
+                !dispatcher.CheckAccess())
+            {
+                dispatcher.Invoke(ClearAdGuardStatistics);
+                return;
+            }
+
             AdGuardQueryHistory.Clear();
             TopClients.Clear();
             TopQueriedDomains.Clear();
             TopBlockedDomains.Clear();
 
-            ((LineSeries<double>)QueryHistorySeries[0]).Values =
-                Array.Empty<double>();
-
             AdGuardProtectionEnabled = false;
             AdGuardProtectionPaused = false;
             AdGuardProtectionStatusKnown = false;
             AdGuardProtectionRemaining = "";
-            AdGuardQueryGraphMaximum = 1;
+        }
+
+        private string FormatQueryHistoryAxisLabel(double pointIndex)
+        {
+            int index = (int)Math.Round(pointIndex);
+
+            return index >= 0 &&
+                   index < AdGuardQueryHistory.Count
+                ? AdGuardQueryHistory[index]
+                    .FormatTimeLabel(_queryHistoryTimeUnits)
+                : string.Empty;
         }
 
         private static void ReplaceCollection<T>(

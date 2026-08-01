@@ -294,7 +294,9 @@
                         <lvc:CartesianChart
                             MinHeight="240"
                             Background="Transparent"
-                            Series="{Binding QueryHistorySeries}" />
+                            Series="{Binding QueryHistorySeries}"
+                            XAxes="{Binding QueryHistoryXAxes}"
+                            YAxes="{Binding QueryHistoryYAxes}" />
                     </Border>
                 </Grid>
             </Border>

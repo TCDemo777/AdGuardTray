@@ -25,6 +25,7 @@ namespace AdGuardTray.Views
         private string? _routerSignature;
 
         private NetworkTrafficSnapshot? _previousTrafficSnapshot;
+        private bool _trafficBaselineRequired = true;
         private double _peakDownloadMbps;
         private double _peakUploadMbps;
         private double _downloadTotalMbps;
@@ -64,6 +65,9 @@ namespace AdGuardTray.Views
             StateChanged +=
                 DashboardWindow_StateChanged;
 
+            IsVisibleChanged +=
+                DashboardWindow_IsVisibleChanged;
+
             _refreshTimer =
                 new DispatcherTimer
                 {
@@ -98,7 +102,11 @@ namespace AdGuardTray.Views
             await RefreshDashboard();
 
             _refreshTimer.Start();
-            _trafficTimer.Start();
+
+            if (IsVisible)
+            {
+                _trafficTimer.Start();
+            }
         }
 
         private async Task RefreshDashboard()
@@ -355,7 +363,8 @@ namespace AdGuardTray.Views
 
         private async Task RefreshNetworkTrafficAsync()
         {
-            if (_trafficRefreshInProgress)
+            if (!IsVisible ||
+                _trafficRefreshInProgress)
             {
                 return;
             }
@@ -383,6 +392,11 @@ namespace AdGuardTray.Views
 
                 NetworkTrafficSnapshot snapshot =
                     await router.GetNetworkTrafficSnapshotAsync();
+
+                if (!IsVisible)
+                {
+                    return;
+                }
 
                 UpdateNetworkTraffic(snapshot);
             }
@@ -430,6 +444,7 @@ namespace AdGuardTray.Views
         private void ResetTrafficStatistics()
         {
             _previousTrafficSnapshot = null;
+            _trafficBaselineRequired = true;
             _peakDownloadMbps = 0;
             _peakUploadMbps = 0;
             _downloadTotalMbps = 0;
@@ -440,11 +455,20 @@ namespace AdGuardTray.Views
         private void UpdateNetworkTraffic(
             NetworkTrafficSnapshot snapshot)
         {
-            if (_previousTrafficSnapshot == null)
+            if (_trafficBaselineRequired ||
+                _previousTrafficSnapshot == null)
             {
                 _previousTrafficSnapshot = snapshot;
-                _viewModel.UpdateNetworkTraffic(
-                    0, 0, 0, 0, 0, 0, snapshot.InterfaceName);
+                _trafficBaselineRequired = false;
+                return;
+            }
+
+            if (snapshot.ReceivedBytes <
+                    _previousTrafficSnapshot.ReceivedBytes ||
+                snapshot.TransmittedBytes <
+                    _previousTrafficSnapshot.TransmittedBytes)
+            {
+                _previousTrafficSnapshot = snapshot;
                 return;
             }
 
@@ -456,22 +480,26 @@ namespace AdGuardTray.Views
                     .TotalSeconds);
 
             long receivedDelta =
-                Math.Max(
-                    0,
-                    snapshot.ReceivedBytes -
-                    _previousTrafficSnapshot.ReceivedBytes);
+                snapshot.ReceivedBytes -
+                _previousTrafficSnapshot.ReceivedBytes;
 
             long transmittedDelta =
-                Math.Max(
-                    0,
-                    snapshot.TransmittedBytes -
-                    _previousTrafficSnapshot.TransmittedBytes);
+                snapshot.TransmittedBytes -
+                _previousTrafficSnapshot.TransmittedBytes;
 
             double downloadMbps =
-                receivedDelta * 8d / elapsedSeconds / 1_000_000d;
+                Math.Max(
+                    0,
+                    receivedDelta * 8d /
+                    elapsedSeconds /
+                    1_000_000d);
 
             double uploadMbps =
-                transmittedDelta * 8d / elapsedSeconds / 1_000_000d;
+                Math.Max(
+                    0,
+                    transmittedDelta * 8d /
+                    elapsedSeconds /
+                    1_000_000d);
 
             _peakDownloadMbps =
                 Math.Max(_peakDownloadMbps, downloadMbps);
@@ -510,6 +538,27 @@ namespace AdGuardTray.Views
                 Dispatcher.BeginInvoke(
                     new Action(app.HideDashboard));
             }
+        }
+
+        private void DashboardWindow_IsVisibleChanged(
+            object sender,
+            DependencyPropertyChangedEventArgs e)
+        {
+            if (IsVisible)
+            {
+                _previousTrafficSnapshot = null;
+                _trafficBaselineRequired = true;
+
+                if (IsLoaded &&
+                    !_trafficTimer.IsEnabled)
+                {
+                    _trafficTimer.Start();
+                }
+
+                return;
+            }
+
+            _trafficTimer.Stop();
         }
 
         protected override void OnClosing(

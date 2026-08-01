@@ -13,6 +13,8 @@ namespace AdGuardTray.Models
         public List<AdGuardTimePoint> QueryHistory { get; set; } =
             new();
 
+        public string QueryHistoryTimeUnits { get; set; } = "hours";
+
         public List<AdGuardRankedItem> TopClients { get; set; } =
             new();
 
