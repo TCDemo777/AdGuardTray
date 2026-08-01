@@ -1,0 +1,190 @@
+<UserControl x:Class="AdGuardTray.Views.NotificationCentreView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{DynamicResource Brush.WindowBackground}"
+             Foreground="{DynamicResource Brush.TextPrimary}">
+    <Grid Margin="4">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="20"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel>
+                <TextBlock Style="{DynamicResource Text.PageTitle}"
+                           Text="Notification Centre"/>
+                <TextBlock Margin="0,5,0,0"
+                           Style="{DynamicResource Text.Secondary}"
+                           Text="Important RouterPilot router and network events."/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <ComboBox Width="130"
+                          Margin="0,0,10,0"
+                          ItemsSource="{Binding Filters}"
+                          SelectedItem="{Binding SelectedFilter}"/>
+                <Button Margin="0,0,8,0"
+                        Style="{DynamicResource Button.Secondary}"
+                        Command="{Binding MarkAllReadCommand}"
+                        Content="Mark all read"/>
+                <Button Style="{DynamicResource Button.Secondary}"
+                        Command="{Binding ClearAllCommand}"
+                        Content="Clear all"/>
+            </StackPanel>
+        </Grid>
+
+        <Grid Grid.Row="2">
+            <ListBox ItemsSource="{Binding NotificationsView}"
+                     BorderThickness="0"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                     VirtualizingPanel.IsVirtualizing="True"
+                     VirtualizingPanel.VirtualizationMode="Recycling">
+                <ListBox.ItemContainerStyle>
+                    <Style TargetType="ListBoxItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                        <Setter Property="Padding" Value="0"/>
+                        <Setter Property="Margin" Value="0,0,0,10"/>
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                    </Style>
+                </ListBox.ItemContainerStyle>
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Border Style="{DynamicResource Card.Compact}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="5"/>
+                                    <ColumnDefinition Width="16"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <Border CornerRadius="3">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Background" Value="{DynamicResource Brush.Primary}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Severity}" Value="Success">
+                                                    <Setter Property="Background" Value="{DynamicResource Brush.Success}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Severity}" Value="Warning">
+                                                    <Setter Property="Background" Value="{DynamicResource Brush.Warning}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Severity}" Value="Error">
+                                                    <Setter Property="Background" Value="{DynamicResource Brush.Danger}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                </Border>
+
+                                <StackPanel Grid.Column="2">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock FontSize="15"
+                                                   FontWeight="SemiBold"
+                                                   Text="{Binding Title}"/>
+                                        <Border Margin="8,0,0,0"
+                                                Padding="7,2"
+                                                Background="{DynamicResource Brush.PrimarySubtle}"
+                                                CornerRadius="8">
+                                            <TextBlock FontSize="10"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource Brush.Primary}"
+                                                       Text="UNREAD"/>
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsRead}" Value="True">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                        </Border>
+                                    </StackPanel>
+
+                                    <TextBlock Margin="0,6,0,0"
+                                               Style="{DynamicResource Text.Body}"
+                                               Text="{Binding Message}"/>
+
+                                    <StackPanel Margin="0,9,0,0" Orientation="Horizontal">
+                                        <TextBlock Style="{DynamicResource Text.Muted}"
+                                                   Text="{Binding TimestampDisplay}"/>
+                                        <TextBlock Margin="9,0" Style="{DynamicResource Text.Muted}" Text="•"/>
+                                        <TextBlock Style="{DynamicResource Text.Muted}" Text="{Binding Severity}"/>
+                                        <TextBlock Margin="9,0" Style="{DynamicResource Text.Muted}" Text="•"/>
+                                        <TextBlock Style="{DynamicResource Text.Muted}" Text="{Binding Category}"/>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="3" Margin="16,0,0,0">
+                                    <Button MinWidth="92"
+                                            Margin="0,0,0,7"
+                                            Command="{Binding DataContext.MarkReadCommand,
+                                                RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                            CommandParameter="{Binding}"
+                                            Content="Mark read">
+                                        <Button.Style>
+                                            <Style TargetType="Button" BasedOn="{StaticResource Button.Secondary}">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsRead}" Value="True">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                    <Button MinWidth="92"
+                                            Style="{DynamicResource Button.Secondary}"
+                                            Command="{Binding DataContext.RemoveCommand,
+                                                RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                            CommandParameter="{Binding}"
+                                            Content="Remove"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <Border Padding="32"
+                    Background="{DynamicResource Brush.Surface}"
+                    BorderBrush="{DynamicResource Brush.Border}"
+                    BorderThickness="1"
+                    CornerRadius="14">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding NotificationsView.IsEmpty}" Value="True">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock HorizontalAlignment="Center"
+                               FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                               FontSize="34"
+                               Foreground="{DynamicResource Brush.TextMuted}"
+                               Text="&#xE7ED;"/>
+                    <TextBlock Margin="0,14,0,0"
+                               HorizontalAlignment="Center"
+                               Style="{DynamicResource Text.SectionTitle}"
+                               Text="No notifications"/>
+                    <TextBlock Margin="0,5,0,0"
+                               HorizontalAlignment="Center"
+                               Style="{DynamicResource Text.Secondary}"
+                               Text="RouterPilot events will appear here."/>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

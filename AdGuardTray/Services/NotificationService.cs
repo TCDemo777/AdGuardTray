@@ -1,0 +1,260 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Text;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Threading;
+using AdGuardTray.Models;
+
+namespace AdGuardTray.Services;
+
+public sealed class NotificationService : INotifyPropertyChanged
+{
+    private const int MaximumNotifications = 500;
+    private const string WelcomeDeduplicationKey = "routerpilot-welcome";
+
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        WriteIndented = true,
+        PropertyNameCaseInsensitive = true
+    };
+
+    private readonly Dispatcher _dispatcher;
+    private readonly string _storeFile;
+    private readonly SemaphoreSlim _saveGate = new(1, 1);
+    private readonly object _deduplicationLock = new();
+    private readonly Dictionary<string, DateTimeOffset> _deduplicationTimes =
+        new(StringComparer.Ordinal);
+    private long _saveVersion;
+
+    public NotificationService(
+        Dispatcher dispatcher,
+        string? dataFolder = null,
+        TimeSpan? deduplicationQuietPeriod = null)
+    {
+        _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
+        string folder = dataFolder ?? Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "AdGuardTray");
+        _storeFile = Path.Combine(folder, "notifications.json");
+        DeduplicationQuietPeriod = deduplicationQuietPeriod ?? TimeSpan.FromMinutes(5);
+    }
+
+    public ObservableCollection<AppNotification> Notifications { get; } = new();
+
+    public TimeSpan DeduplicationQuietPeriod { get; set; }
+
+    public int UnreadCount => Notifications.Count(notification => !notification.IsRead);
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    public async Task InitializeAsync()
+    {
+        List<AppNotification> loaded = await LoadAsync().ConfigureAwait(false);
+
+        await _dispatcher.InvokeAsync(() =>
+        {
+            Notifications.Clear();
+            foreach (AppNotification notification in loaded
+                         .OrderByDescending(item => item.Timestamp)
+                         .Take(MaximumNotifications))
+            {
+                Notifications.Add(notification);
+                RememberDeduplication(notification);
+            }
+
+            OnPropertyChanged(nameof(UnreadCount));
+        });
+
+        if (loaded.Count == 0)
+        {
+            await AddAsync(new AppNotification
+            {
+                Title = "Welcome to RouterPilot",
+                Message = "Important router and network events will appear here.",
+                Severity = NotificationSeverity.Information,
+                Category = NotificationCategory.System,
+                DeduplicationKey = WelcomeDeduplicationKey
+            });
+        }
+    }
+
+    public async Task<bool> AddAsync(AppNotification notification)
+    {
+        ArgumentNullException.ThrowIfNull(notification);
+
+        if (!TryReserveDeduplication(notification))
+            return false;
+
+        await _dispatcher.InvokeAsync(() =>
+        {
+            Notifications.Insert(0, notification);
+            while (Notifications.Count > MaximumNotifications)
+                Notifications.RemoveAt(Notifications.Count - 1);
+
+            RememberDeduplication(notification);
+            OnPropertyChanged(nameof(UnreadCount));
+            QueueSave();
+        });
+
+        return true;
+    }
+
+    public Task MarkReadAsync(AppNotification? notification) =>
+        MutateAsync(() =>
+        {
+            if (notification is not null && Notifications.Contains(notification))
+                notification.IsRead = true;
+        });
+
+    public Task MarkAllReadAsync() => MutateAsync(() =>
+    {
+        foreach (AppNotification notification in Notifications)
+            notification.IsRead = true;
+    });
+
+    public Task RemoveAsync(AppNotification? notification) =>
+        MutateAsync(() =>
+        {
+            if (notification is not null)
+                Notifications.Remove(notification);
+        });
+
+    public Task ClearAllAsync() => MutateAsync(Notifications.Clear);
+
+    private async Task MutateAsync(Action mutation)
+    {
+        await _dispatcher.InvokeAsync(() =>
+        {
+            mutation();
+            OnPropertyChanged(nameof(UnreadCount));
+            QueueSave();
+        });
+    }
+
+    private bool TryReserveDeduplication(AppNotification notification)
+    {
+        if (string.IsNullOrWhiteSpace(notification.DeduplicationKey))
+            return true;
+
+        lock (_deduplicationLock)
+        {
+            if (_deduplicationTimes.TryGetValue(
+                    notification.DeduplicationKey,
+                    out DateTimeOffset lastSeen) &&
+                notification.Timestamp - lastSeen < DeduplicationQuietPeriod)
+            {
+                return false;
+            }
+
+            _deduplicationTimes[notification.DeduplicationKey] =
+                notification.Timestamp;
+            return true;
+        }
+    }
+
+    private void RememberDeduplication(AppNotification notification)
+    {
+        if (string.IsNullOrWhiteSpace(notification.DeduplicationKey))
+            return;
+
+        lock (_deduplicationLock)
+            _deduplicationTimes[notification.DeduplicationKey] = notification.Timestamp;
+    }
+
+    private async Task<List<AppNotification>> LoadAsync()
+    {
+        try
+        {
+            if (!File.Exists(_storeFile))
+                return new List<AppNotification>();
+
+            await using FileStream stream = File.OpenRead(_storeFile);
+            return await JsonSerializer.DeserializeAsync<List<AppNotification>>(
+                       stream,
+                       JsonOptions).ConfigureAwait(false)
+                   ?? new List<AppNotification>();
+        }
+        catch (Exception ex) when (ex is IOException
+                                       or UnauthorizedAccessException
+                                       or JsonException)
+        {
+            Debug.WriteLine($"Unable to load notification history: {ex}");
+            return new List<AppNotification>();
+        }
+    }
+
+    private void QueueSave()
+    {
+        long version = Interlocked.Increment(ref _saveVersion);
+        _ = SaveLatestAsync(version);
+    }
+
+    private async Task SaveLatestAsync(long version)
+    {
+        try
+        {
+            await Task.Delay(75).ConfigureAwait(false);
+            if (version != Interlocked.Read(ref _saveVersion))
+                return;
+
+            List<AppNotification> snapshot = await _dispatcher.InvokeAsync(
+                () => Notifications.ToList());
+
+            await _saveGate.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                if (version != Interlocked.Read(ref _saveVersion))
+                    return;
+
+                await WriteAtomicallyAsync(snapshot).ConfigureAwait(false);
+            }
+            finally
+            {
+                _saveGate.Release();
+            }
+        }
+        catch (Exception ex) when (ex is IOException
+                                       or UnauthorizedAccessException
+                                       or JsonException)
+        {
+            Debug.WriteLine($"Unable to save notification history: {ex}");
+        }
+    }
+
+    private async Task WriteAtomicallyAsync(List<AppNotification> snapshot)
+    {
+        string folder = Path.GetDirectoryName(_storeFile)!;
+        Directory.CreateDirectory(folder);
+        string temporaryFile = _storeFile + ".tmp";
+        string backupFile = _storeFile + ".bak";
+
+        await using (var stream = new FileStream(
+                         temporaryFile,
+                         FileMode.Create,
+                         FileAccess.Write,
+                         FileShare.None,
+                         4096,
+                         useAsync: true))
+        {
+            await JsonSerializer.SerializeAsync(stream, snapshot, JsonOptions)
+                .ConfigureAwait(false);
+            await stream.FlushAsync().ConfigureAwait(false);
+        }
+
+        if (File.Exists(_storeFile))
+            File.Replace(temporaryFile, _storeFile, backupFile, true);
+        else
+            File.Move(temporaryFile, _storeFile);
+    }
+
+    private void OnPropertyChanged([CallerMemberName] string? propertyName = null) =>
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+}

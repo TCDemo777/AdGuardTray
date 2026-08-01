@@ -155,6 +155,53 @@
                             Content="Logs"
                             Click="Logs_Click"/>
 
+                    <Button x:Name="NotificationButton"
+                            Height="48"
+                            Margin="10,2"
+                            Padding="16,0"
+                            HorizontalContentAlignment="Stretch"
+                            Background="Transparent"
+                            Foreground="#D7DCE2"
+                            BorderThickness="0"
+                            Click="Notification_Click">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock VerticalAlignment="Center"
+                                       FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                       FontSize="16"
+                                       Text="&#xE7ED;"/>
+                            <TextBlock Grid.Column="2"
+                                       VerticalAlignment="Center"
+                                       Text="Notifications"/>
+                            <Border Grid.Column="3"
+                                    MinWidth="22"
+                                    Padding="6,2"
+                                    Background="{DynamicResource Brush.Danger}"
+                                    CornerRadius="10">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding UnreadCount}" Value="0">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <TextBlock HorizontalAlignment="Center"
+                                           FontSize="10"
+                                           FontWeight="Bold"
+                                           Foreground="White"
+                                           Text="{Binding UnreadCount}"/>
+                            </Border>
+                        </Grid>
+                    </Button>
+
 
                     <Button x:Name="SearchButton"
                             Height="48"

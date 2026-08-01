@@ -4,6 +4,8 @@ using AdGuardTray.Models;
 using AdGuardTray.Services;
 using AdGuardTray.Tray;
 using AdGuardTray.Views;
+using AdGuardTray.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AdGuardTray
 {
@@ -12,12 +14,25 @@ namespace AdGuardTray
         private DashboardWindow? _dashboardWindow;
         private TrayManager? _trayManager;
         private bool _trayNoticeShown;
+        private ServiceProvider? _services;
+
+        public IServiceProvider Services => _services
+            ?? throw new InvalidOperationException("Application services are not available.");
 
         public bool IsExitRequested { get; private set; }
 
-        protected override void OnStartup(StartupEventArgs e)
+        protected override async void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
+
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddSingleton(
+                _ => new NotificationService(Dispatcher));
+            serviceCollection.AddSingleton<NotificationCentreViewModel>();
+            _services = serviceCollection.BuildServiceProvider();
+
+            await Services.GetRequiredService<NotificationService>()
+                .InitializeAsync();
 
             AppSettings savedSettings = new SettingsService().Load();
             ThemeService.Initialize(savedSettings.Theme);
@@ -124,6 +139,7 @@ namespace AdGuardTray
         protected override void OnExit(ExitEventArgs e)
         {
             _trayManager?.Dispose();
+            _services?.Dispose();
             base.OnExit(e);
         }
 

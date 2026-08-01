@@ -9,6 +9,7 @@ using System.Windows.Threading;
 using AdGuardTray.Models;
 using AdGuardTray.Services;
 using AdGuardTray.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
 using Renci.SshNet.Common;
 
 namespace AdGuardTray.Views
@@ -17,6 +18,8 @@ namespace AdGuardTray.Views
     {
         private readonly DashboardViewModel _viewModel;
         private readonly SettingsService _settingsService;
+        private readonly NotificationService _notificationService;
+        private readonly NotificationCentreViewModel _notificationCentreViewModel;
         private readonly DispatcherTimer _refreshTimer;
         private readonly DispatcherTimer _trafficTimer;
         private bool _refreshInProgress;
@@ -54,6 +57,12 @@ namespace AdGuardTray.Views
 
             DataContext =
                 _viewModel;
+
+            _notificationService = ((App)Application.Current)
+                .Services.GetRequiredService<NotificationService>();
+            _notificationCentreViewModel = ((App)Application.Current)
+                .Services.GetRequiredService<NotificationCentreViewModel>();
+            NotificationButton.DataContext = _notificationService;
 
             _settingsService =
                 new SettingsService();
@@ -721,6 +730,16 @@ namespace AdGuardTray.Views
                 SearchButton);
         }
 
+        private void Notification_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            PageContent.Content =
+                new NotificationCentreView(_notificationCentreViewModel);
+
+            SelectNavigationButton(NotificationButton);
+        }
+
         private void NavigationSettings_Click(
             object sender,
             RoutedEventArgs e)
@@ -751,6 +770,7 @@ namespace AdGuardTray.Views
                 NetworkButton,
                 ClientsButton,
                 LogsButton,
+                NotificationButton,
                 SearchButton,
                 NavigationSettingsButton,
                 AboutButton
