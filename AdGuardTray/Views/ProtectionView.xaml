@@ -276,7 +276,7 @@
 
                             <TextBlock Style="{StaticResource Protection.SectionLabel}"
                                        Text="PROTECTION ACTIONS"/>
-                            <WrapPanel>
+                            <WrapPanel IsEnabled="{Binding ControlsEnabled}">
                                 <Button Style="{DynamicResource Button.Primary}"
                                         MinWidth="104"
                                         Margin="0,0,8,8"

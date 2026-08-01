@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows.Data;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
@@ -14,11 +15,16 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace AdGuardTray.ViewModels
 {
-    public sealed class ProtectionViewModel : ObservableObject, IDisposable
+    public sealed class ProtectionViewModel : ObservableObject, IDisposable, IAsyncDisposable
     {
         private readonly IRouterManagerProvider _routerManagerProvider;
         private readonly AdGuardProtectionNotificationTracker _protectionNotificationTracker;
         private readonly DispatcherTimer _timer;
+        private readonly SemaphoreSlim _protectionStateGate = new(1, 1);
+        private readonly CancellationTokenSource _disposalCancellation = new();
+        private readonly object _disposeLock = new();
+        private Task? _disposeTask;
+        private bool _disposed;
         private bool _isBusy;
         private bool _isInitialising;
         private string _statusText = "Loading...";
@@ -167,7 +173,43 @@ namespace AdGuardTray.ViewModels
         }
 
         public void Stop() => _timer.Stop();
-        public void Dispose() => _timer.Stop();
+        public void Dispose()
+        {
+            lock (_disposeLock)
+            {
+                BeginDisposal();
+            }
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            lock (_disposeLock)
+            {
+                _disposeTask ??= DisposeCoreAsync();
+                return new ValueTask(_disposeTask);
+            }
+        }
+
+        private async Task DisposeCoreAsync()
+        {
+            BeginDisposal();
+            await _protectionStateGate.WaitAsync();
+            _protectionStateGate.Release();
+            _protectionStateGate.Dispose();
+            _disposalCancellation.Dispose();
+        }
+
+        private void BeginDisposal()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            _timer.Stop();
+            _disposalCancellation.Cancel();
+        }
 
         private async Task RefreshAllAsync()
         {
@@ -347,19 +389,36 @@ namespace AdGuardTray.ViewModels
             Func<RouterManager, Task<AdGuardProtectionStatus>> action,
             bool processNotification = false)
         {
-            if (IsBusy) return;
+            if (_disposed ||
+                !await _protectionStateGate.WaitAsync(0))
+            {
+                return;
+            }
 
-            IsBusy = true;
-            Message = busy;
+            bool ownsBusyState = false;
 
             try
             {
+                if (_disposed || IsBusy)
+                {
+                    return;
+                }
+
+                IsBusy = true;
+                ownsBusyState = true;
+                Message = busy;
+
+                CancellationToken cancellationToken =
+                    _disposalCancellation.Token;
+                cancellationToken.ThrowIfCancellationRequested();
+
                 RouterManager router =
-                    await _routerManagerProvider.GetRouterManagerAsync();
+                    await _routerManagerProvider.GetRouterManagerAsync(
+                        cancellationToken);
                 AdGuardProtectionStatus status =
                     await action(router);
 
-                ApplyStatus(status);
+                cancellationToken.ThrowIfCancellationRequested();
 
                 if (processNotification)
                 {
@@ -369,11 +428,18 @@ namespace AdGuardTray.ViewModels
                             ProtectionStateSource.ManualAction);
                 }
 
+                cancellationToken.ThrowIfCancellationRequested();
+                ApplyStatus(status);
+
                 // Notify the already-open Overview immediately rather than
                 // waiting for its scheduled refresh.
                 ProtectionStateNotifier.Publish(status);
 
                 Message = success;
+            }
+            catch (OperationCanceledException)
+                when (_disposalCancellation.IsCancellationRequested)
+            {
             }
             catch (Exception ex)
             {
@@ -383,7 +449,12 @@ namespace AdGuardTray.ViewModels
             }
             finally
             {
-                IsBusy = false;
+                if (ownsBusyState)
+                {
+                    IsBusy = false;
+                }
+
+                _protectionStateGate.Release();
             }
         }
 

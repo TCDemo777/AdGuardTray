@@ -586,20 +586,26 @@ namespace AdGuardTray.ViewModels
                 return;
             }
 
-            _queryHistoryTimeUnits =
+            string timeUnits =
                 string.IsNullOrWhiteSpace(
                     statistics.QueryHistoryTimeUnits)
                     ? "hours"
                     : statistics.QueryHistoryTimeUnits;
 
-            AdGuardQueryHistory.Clear();
+            List<AdGuardTimePoint> incomingHistory =
+                statistics.QueryHistory
+                    .TakeLast(QueryHistoryCapacity)
+                    .Select(point => new AdGuardTimePoint
+                    {
+                        Timestamp = NormalizeQueryHistoryTimestamp(
+                            point.Timestamp,
+                            timeUnits),
+                        Queries = point.Queries,
+                        Blocked = point.Blocked
+                    })
+                    .ToList();
 
-            foreach (AdGuardTimePoint point in
-                     statistics.QueryHistory
-                         .TakeLast(QueryHistoryCapacity))
-            {
-                AdGuardQueryHistory.Add(point);
-            }
+            UpdateQueryHistory(incomingHistory, timeUnits);
 
             ReplaceCollection(
                 TopClients,
@@ -805,6 +811,167 @@ namespace AdGuardTray.ViewModels
                 ? AdGuardQueryHistory[index]
                     .FormatTimeLabel(_queryHistoryTimeUnits)
                 : string.Empty;
+        }
+
+        private void UpdateQueryHistory(
+            IReadOnlyList<AdGuardTimePoint> incomingHistory,
+            string timeUnits)
+        {
+            if (!CanUpdateQueryHistoryIncrementally(
+                    incomingHistory,
+                    timeUnits,
+                    out int existingOverlapIndex))
+            {
+                RebuildQueryHistory(incomingHistory, timeUnits);
+                return;
+            }
+
+            for (int index = 0;
+                 index < existingOverlapIndex;
+                 index++)
+            {
+                AdGuardQueryHistory.RemoveAt(0);
+            }
+
+            int overlapCount = AdGuardQueryHistory.Count;
+
+            for (int index = 0; index < overlapCount; index++)
+            {
+                AdGuardTimePoint current = AdGuardQueryHistory[index];
+                AdGuardTimePoint incoming = incomingHistory[index];
+
+                if (current.Queries != incoming.Queries)
+                {
+                    AdGuardQueryHistory[index] = incoming;
+                }
+            }
+
+            for (int index = overlapCount;
+                 index < incomingHistory.Count;
+                 index++)
+            {
+                AdGuardQueryHistory.Add(incomingHistory[index]);
+            }
+
+            _queryHistoryTimeUnits = timeUnits;
+        }
+
+        private bool CanUpdateQueryHistoryIncrementally(
+            IReadOnlyList<AdGuardTimePoint> incomingHistory,
+            string timeUnits,
+            out int existingOverlapIndex)
+        {
+            existingOverlapIndex = -1;
+
+            if (!string.Equals(
+                    _queryHistoryTimeUnits,
+                    timeUnits,
+                    StringComparison.OrdinalIgnoreCase) ||
+                AdGuardQueryHistory.Count == 0 ||
+                incomingHistory.Count == 0 ||
+                !HasValidQueryHistoryChronology(AdGuardQueryHistory, timeUnits) ||
+                !HasValidQueryHistoryChronology(incomingHistory, timeUnits))
+            {
+                return false;
+            }
+
+            DateTime incomingStart = incomingHistory[0].Timestamp;
+            existingOverlapIndex = AdGuardQueryHistory
+                .Select((point, index) => (point, index))
+                .Where(item => item.point.Timestamp == incomingStart)
+                .Select(item => item.index)
+                .DefaultIfEmpty(-1)
+                .First();
+
+            if (existingOverlapIndex < 0)
+                return false;
+
+            int overlapCount =
+                AdGuardQueryHistory.Count - existingOverlapIndex;
+
+            if (overlapCount > incomingHistory.Count)
+                return false;
+
+            for (int index = 0; index < overlapCount; index++)
+            {
+                if (AdGuardQueryHistory[existingOverlapIndex + index].Timestamp !=
+                    incomingHistory[index].Timestamp)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private void RebuildQueryHistory(
+            IReadOnlyList<AdGuardTimePoint> incomingHistory,
+            string timeUnits)
+        {
+            AdGuardQueryHistory.Clear();
+
+            foreach (AdGuardTimePoint point in incomingHistory)
+                AdGuardQueryHistory.Add(point);
+
+            _queryHistoryTimeUnits = timeUnits;
+        }
+
+        private static bool HasValidQueryHistoryChronology(
+            IReadOnlyList<AdGuardTimePoint> history,
+            string timeUnits)
+        {
+            for (int index = 1; index < history.Count; index++)
+            {
+                if (history[index].Timestamp <= history[index - 1].Timestamp ||
+                    history[index].Timestamp != AddQueryHistoryBucket(
+                        history[index - 1].Timestamp,
+                        timeUnits))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static DateTime NormalizeQueryHistoryTimestamp(
+            DateTime timestamp,
+            string timeUnits)
+        {
+            return timeUnits.ToLowerInvariant() switch
+            {
+                "second" or "seconds" => new DateTime(
+                    timestamp.Year, timestamp.Month, timestamp.Day,
+                    timestamp.Hour, timestamp.Minute, timestamp.Second,
+                    timestamp.Kind),
+                "minute" or "minutes" => new DateTime(
+                    timestamp.Year, timestamp.Month, timestamp.Day,
+                    timestamp.Hour, timestamp.Minute, 0,
+                    timestamp.Kind),
+                "day" or "days" => new DateTime(
+                    timestamp.Year, timestamp.Month, timestamp.Day,
+                    0, 0, 0, timestamp.Kind),
+                "month" or "months" => new DateTime(
+                    timestamp.Year, timestamp.Month, 1,
+                    0, 0, 0, timestamp.Kind),
+                _ => new DateTime(
+                    timestamp.Year, timestamp.Month, timestamp.Day,
+                    timestamp.Hour, 0, 0, timestamp.Kind)
+            };
+        }
+
+        private static DateTime AddQueryHistoryBucket(
+            DateTime timestamp,
+            string timeUnits)
+        {
+            return timeUnits.ToLowerInvariant() switch
+            {
+                "second" or "seconds" => timestamp.AddSeconds(1),
+                "minute" or "minutes" => timestamp.AddMinutes(1),
+                "day" or "days" => timestamp.AddDays(1),
+                "month" or "months" => timestamp.AddMonths(1),
+                _ => timestamp.AddHours(1)
+            };
         }
 
         private static void ReplaceCollection<T>(
