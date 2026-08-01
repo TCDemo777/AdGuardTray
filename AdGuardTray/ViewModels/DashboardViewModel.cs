@@ -2,15 +2,22 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Windows;
 using AdGuardTray.Models;
 using CommunityToolkit.Mvvm.ComponentModel;
 using LiveChartsCore;
+using LiveChartsCore.Kernel;
 using LiveChartsCore.SkiaSharpView;
 
 namespace AdGuardTray.ViewModels
 {
     public partial class DashboardViewModel : ObservableObject
     {
+        private const int TrafficHistoryCapacity = 60;
+        private const int TrafficSampleIntervalSeconds = 2;
+        private const int QueryHistoryCapacity = 120;
+        private string _queryHistoryTimeUnits = "hours";
+
         //
         // Router
         //
@@ -160,22 +167,17 @@ namespace AdGuardTray.ViewModels
         // AdGuard graph and rankings
         //
 
-        [ObservableProperty]
-        private double adGuardQueryGraphMaximum = 1;
-
         public ObservableCollection<AdGuardTimePoint>
             AdGuardQueryHistory
         {
             get;
         } = new();
 
-        public ISeries[] QueryHistorySeries
-        {
-            get;
-        } =
-        {
-            new LineSeries<double>()
-        };
+        public ISeries[] QueryHistorySeries { get; }
+
+        public Axis[] QueryHistoryXAxes { get; }
+
+        public Axis[] QueryHistoryYAxes { get; }
 
         public ObservableCollection<AdGuardRankedItem>
             TopClients
@@ -267,21 +269,96 @@ namespace AdGuardTray.ViewModels
 
         public ObservableCollection<double> UploadHistory { get; } = new();
 
-        public ISeries[] NetworkTrafficSeries { get; } =
+        public ISeries[] NetworkTrafficSeries { get; }
+
+        public Axis[] NetworkTrafficXAxes { get; }
+
+        public Axis[] NetworkTrafficYAxes { get; }
+
+        public DashboardViewModel()
         {
-            new LineSeries<double>
+            QueryHistorySeries = new ISeries[]
             {
-                Name = "Download",
-                GeometrySize = 0,
-                LineSmoothness = 0.35
-            },
-            new LineSeries<double>
+                new LineSeries<AdGuardTimePoint>
+                {
+                    Name = "Queries",
+                    Values = AdGuardQueryHistory,
+                    Mapping = (point, index) =>
+                        new Coordinate(index, point.Queries),
+                    GeometrySize = 0,
+                    LineSmoothness = 0.35,
+                    XToolTipLabelFormatter = point =>
+                        point.Model is { } model
+                            ? $"Time: {model.FormatTimeLabel(_queryHistoryTimeUnits)}"
+                            : "Time: -",
+                    YToolTipLabelFormatter = point =>
+                        point.Model is { } model
+                            ? $"Queries: {model.Queries:N0}"
+                            : "Queries: 0"
+                }
+            };
+
+            QueryHistoryXAxes = new Axis[]
             {
-                Name = "Upload",
-                GeometrySize = 0,
-                LineSmoothness = 0.35
-            }
-        };
+                new Axis
+                {
+                    MinStep = 1,
+                    Labeler = FormatQueryHistoryAxisLabel
+                }
+            };
+
+            QueryHistoryYAxes = new Axis[]
+            {
+                new Axis
+                {
+                    Name = "Queries",
+                    MinLimit = 0
+                }
+            };
+
+            NetworkTrafficSeries = new ISeries[]
+            {
+                new LineSeries<double>
+                {
+                    Name = "Download",
+                    Values = DownloadHistory,
+                    GeometrySize = 0,
+                    LineSmoothness = 0.35,
+                    YToolTipLabelFormatter = point =>
+                        $"Download: {point.Model:0.00} Mbps"
+                },
+                new LineSeries<double>
+                {
+                    Name = "Upload",
+                    Values = UploadHistory,
+                    GeometrySize = 0,
+                    LineSmoothness = 0.35,
+                    YToolTipLabelFormatter = point =>
+                        $"Upload: {point.Model:0.00} Mbps"
+                }
+            };
+
+            NetworkTrafficXAxes = new Axis[]
+            {
+                new Axis
+                {
+                    MinLimit = 0,
+                    MaxLimit = TrafficHistoryCapacity,
+                    MinStep = 15,
+                    ForceStepToMin = true,
+                    Labeler = FormatTrafficTimeLabel
+                }
+            };
+
+            NetworkTrafficYAxes = new Axis[]
+            {
+                new Axis
+                {
+                    Name = "Mbps",
+                    MinLimit = 0
+                }
+            };
+        }
 
         public string DnsServer
         {
@@ -404,6 +481,21 @@ namespace AdGuardTray.ViewModels
             double averageUploadMbps,
             string interfaceName)
         {
+            if (Application.Current?.Dispatcher is { } dispatcher &&
+                !dispatcher.CheckAccess())
+            {
+                dispatcher.Invoke(
+                    () => UpdateNetworkTraffic(
+                        downloadMbps,
+                        uploadMbps,
+                        peakDownloadMbps,
+                        peakUploadMbps,
+                        averageDownloadMbps,
+                        averageUploadMbps,
+                        interfaceName));
+                return;
+            }
+
             WanInterface = string.IsNullOrWhiteSpace(interfaceName)
                 ? "-"
                 : interfaceName;
@@ -417,16 +509,17 @@ namespace AdGuardTray.ViewModels
 
             AddTrafficPoint(DownloadHistory, downloadMbps);
             AddTrafficPoint(UploadHistory, uploadMbps);
-
-            ((LineSeries<double>)NetworkTrafficSeries[0]).Values =
-                DownloadHistory.ToArray();
-
-            ((LineSeries<double>)NetworkTrafficSeries[1]).Values =
-                UploadHistory.ToArray();
         }
 
         public void ClearNetworkTraffic()
         {
+            if (Application.Current?.Dispatcher is { } dispatcher &&
+                !dispatcher.CheckAccess())
+            {
+                dispatcher.Invoke(ClearNetworkTraffic);
+                return;
+            }
+
             WanInterface = "-";
             CurrentDownload = "0 Mbps";
             CurrentUpload = "0 Mbps";
@@ -436,11 +529,6 @@ namespace AdGuardTray.ViewModels
             AverageUpload = "0 Mbps";
             DownloadHistory.Clear();
             UploadHistory.Clear();
-
-            ((LineSeries<double>)NetworkTrafficSeries[0]).Values =
-                Array.Empty<double>();
-            ((LineSeries<double>)NetworkTrafficSeries[1]).Values =
-                Array.Empty<double>();
         }
 
         private static void AddTrafficPoint(
@@ -449,10 +537,27 @@ namespace AdGuardTray.ViewModels
         {
             collection.Add(Math.Max(0, value));
 
-            while (collection.Count > 60)
+            while (collection.Count > TrafficHistoryCapacity)
             {
                 collection.RemoveAt(0);
             }
+        }
+
+        private static string FormatTrafficTimeLabel(double sampleIndex)
+        {
+            int secondsAgo = Math.Max(
+                0,
+                (int)Math.Round(
+                    (TrafficHistoryCapacity - sampleIndex) *
+                    TrafficSampleIntervalSeconds));
+
+            return secondsAgo switch
+            {
+                120 => "2m ago",
+                60 => "1m ago",
+                0 => "Now",
+                _ => $"{secondsAgo}s ago"
+            };
         }
 
         private static string FormatTrafficRate(double megabitsPerSecond)
@@ -473,22 +578,28 @@ namespace AdGuardTray.ViewModels
         public void UpdateAdGuardStatistics(
             AdGuardStatistics statistics)
         {
-            ReplaceCollection(
-                AdGuardQueryHistory,
-                statistics.QueryHistory);
+            if (Application.Current?.Dispatcher is { } dispatcher &&
+                !dispatcher.CheckAccess())
+            {
+                dispatcher.Invoke(
+                    () => UpdateAdGuardStatistics(statistics));
+                return;
+            }
 
-            ((LineSeries<double>)QueryHistorySeries[0]).Values =
-                statistics.QueryHistory
-                    .Select(point => (double)point.Queries)
-                    .ToArray();
+            _queryHistoryTimeUnits =
+                string.IsNullOrWhiteSpace(
+                    statistics.QueryHistoryTimeUnits)
+                    ? "hours"
+                    : statistics.QueryHistoryTimeUnits;
 
-            AdGuardQueryGraphMaximum =
-                statistics.QueryHistory.Count == 0
-                    ? 1
-                    : Math.Max(
-                        1,
-                        statistics.QueryHistory.Max(
-                            point => point.Queries));
+            AdGuardQueryHistory.Clear();
+
+            foreach (AdGuardTimePoint point in
+                     statistics.QueryHistory
+                         .TakeLast(QueryHistoryCapacity))
+            {
+                AdGuardQueryHistory.Add(point);
+            }
 
             ReplaceCollection(
                 TopClients,
@@ -667,19 +778,33 @@ namespace AdGuardTray.ViewModels
 
         public void ClearAdGuardStatistics()
         {
+            if (Application.Current?.Dispatcher is { } dispatcher &&
+                !dispatcher.CheckAccess())
+            {
+                dispatcher.Invoke(ClearAdGuardStatistics);
+                return;
+            }
+
             AdGuardQueryHistory.Clear();
             TopClients.Clear();
             TopQueriedDomains.Clear();
             TopBlockedDomains.Clear();
 
-            ((LineSeries<double>)QueryHistorySeries[0]).Values =
-                Array.Empty<double>();
-
             AdGuardProtectionEnabled = false;
             AdGuardProtectionPaused = false;
             AdGuardProtectionStatusKnown = false;
             AdGuardProtectionRemaining = "";
-            AdGuardQueryGraphMaximum = 1;
+        }
+
+        private string FormatQueryHistoryAxisLabel(double pointIndex)
+        {
+            int index = (int)Math.Round(pointIndex);
+
+            return index >= 0 &&
+                   index < AdGuardQueryHistory.Count
+                ? AdGuardQueryHistory[index]
+                    .FormatTimeLabel(_queryHistoryTimeUnits)
+                : string.Empty;
         }
 
         private static void ReplaceCollection<T>(

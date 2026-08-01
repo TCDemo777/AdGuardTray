@@ -1,10 +1,10 @@
-# AdGuardTray
+# RouterPilot
 
 [![Release](https://img.shields.io/github/v/release/TCDemo777/AdGuardTray)](https://github.com/TCDemo777/AdGuardTray/releases)
 [![Build](https://github.com/TCDemo777/AdGuardTray/actions/workflows/build.yml/badge.svg)](https://github.com/TCDemo777/AdGuardTray/actions)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-A Windows tray companion for monitoring and managing supported GL.iNet routers running AdGuard Home.
+Companion for GL.iNet Routers & AdGuard Home
 
 ## Features
 
@@ -20,10 +20,13 @@ A Windows tray companion for monitoring and managing supported GL.iNet routers r
 - Light, dark and system theme support
 - Notification-area integration with close-to-tray behaviour
 
-## What’s new in 1.4.0
+## What’s new in 1.5.0
 
-Version 1.4.0 focuses on reliability, performance and multi-network support.
+Version 1.5.0 introduces the RouterPilot product identity while preserving the existing application architecture and compatibility.
 
+- Updated user-facing application, dashboard, window and notification-area branding
+- Updated About, diagnostics and support text for RouterPilot
+- Preserved the `AdGuardTray.exe` executable name, settings location and GitHub repository
 - Centralised router and AdGuard Home endpoint configuration
 - Removed hard-coded router addresses
 - Improved settings persistence and migration from earlier releases
@@ -48,7 +51,7 @@ Version 1.4.0 focuses on reliability, performance and multi-network support.
 ## Getting started
 
 1. Download the latest release.
-2. Launch AdGuardTray.
+2. Launch RouterPilot.
 3. Enter the router IP address or hostname, SSH username and password.
 4. Keep **Remember password securely** enabled for automatic startup.
 5. Open the dashboard from the notification-area icon.
@@ -70,4 +73,4 @@ Report issues through the [GitHub issue tracker](https://github.com/TCDemo777/Ad
 
 ## Licence
 
-AdGuardTray is released under the MIT Licence. See `LICENSE` and `THIRD_PARTY_NOTICES.txt` for details.
+RouterPilot is released under the MIT Licence. See `LICENSE` and `THIRD_PARTY_NOTICES.txt` for details.

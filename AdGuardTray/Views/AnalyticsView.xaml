@@ -158,8 +158,11 @@
                         CornerRadius="10">
                         <lvc:CartesianChart
                             MinHeight="210"
+                            AnimationsSpeed="0:0:0.25"
                             Background="Transparent"
+                            LegendPosition="Top"
                             Series="{Binding NetworkTrafficSeries}"
+                            TooltipPosition="Top"
                             XAxes="{Binding NetworkTrafficXAxes}"
                             YAxes="{Binding NetworkTrafficYAxes}" />
                     </Border>
@@ -291,7 +294,9 @@
                         <lvc:CartesianChart
                             MinHeight="240"
                             Background="Transparent"
-                            Series="{Binding QueryHistorySeries}" />
+                            Series="{Binding QueryHistorySeries}"
+                            XAxes="{Binding QueryHistoryXAxes}"
+                            YAxes="{Binding QueryHistoryYAxes}" />
                     </Border>
                 </Grid>
             </Border>
