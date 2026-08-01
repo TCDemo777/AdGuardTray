@@ -798,7 +798,7 @@ namespace AdGuardTray.Services
                     "for iface in $(iw dev 2>/dev/null | awk '$1 == \"Interface\" {print $2}'); do " +
                     "station=$(iw dev \"$iface\" station get \"$target\" 2>/dev/null); " +
                     "if [ -n \"$station\" ]; then " +
-                    "ssid=$(iw dev "$iface" info 2>/dev/null | sed -n 's/^[[:space:]]*ssid //p' | head -n1); " +
+                    "ssid=$(iw dev \"$iface\" info 2>/dev/null | sed -n 's/^[[:space:]]*ssid //p' | head -n1); " +
                     "signal=$(printf '%s\\n' \"$station\" | awk '/signal:/ {print $2; exit}'); " +
                     "printf '%s|%s|%s\\n' \"$iface\" \"$ssid\" \"$signal\"; exit 0; fi; " +
                     "done";
