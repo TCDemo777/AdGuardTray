@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Windows.Threading;
 using AdGuardTray.Models;
 using AdGuardTray.Services;
 using AdGuardTray.ViewModels;
@@ -15,10 +14,12 @@ namespace AdGuardTray.Views
 {
     public partial class DashboardWindow : Window
     {
+        private const string DashboardRefreshTask = "DashboardRefresh";
+        private const string TrafficRefreshTask = "TrafficRefresh";
+
         private readonly DashboardViewModel _viewModel;
         private readonly SettingsService _settingsService;
-        private readonly DispatcherTimer _refreshTimer;
-        private readonly DispatcherTimer _trafficTimer;
+        private readonly RefreshCoordinator _refreshCoordinator;
         private bool _refreshInProgress;
         private bool _trafficRefreshInProgress;
         private RouterManager? _routerManager;
@@ -68,28 +69,17 @@ namespace AdGuardTray.Views
             IsVisibleChanged +=
                 DashboardWindow_IsVisibleChanged;
 
-            _refreshTimer =
-                new DispatcherTimer
-                {
-                    Interval =
-                        TimeSpan.FromSeconds(30)
-                };
-
-            _refreshTimer.Tick += async (s, e) =>
-            {
-                await RefreshDashboard();
-            };
-
-            _trafficTimer =
-                new DispatcherTimer
-                {
-                    Interval = TimeSpan.FromSeconds(2)
-                };
-
-            _trafficTimer.Tick += async (s, e) =>
-            {
-                await RefreshNetworkTrafficAsync();
-            };
+            _refreshCoordinator = new RefreshCoordinator();
+            _refreshCoordinator.Register(
+                DashboardRefreshTask,
+                TimeSpan.FromSeconds(30),
+                _ => RunOnUiThreadAsync(RefreshDashboard),
+                enabled: false);
+            _refreshCoordinator.Register(
+                TrafficRefreshTask,
+                TimeSpan.FromSeconds(2),
+                _ => RunOnUiThreadAsync(RefreshNetworkTrafficAsync),
+                enabled: false);
 
             ProtectionStateNotifier.StateChanged +=
                 ProtectionStateNotifier_StateChanged;
@@ -99,13 +89,18 @@ namespace AdGuardTray.Views
             object sender,
             RoutedEventArgs e)
         {
-            await RefreshDashboard();
+            await _refreshCoordinator.RunNowAsync(
+                DashboardRefreshTask);
 
-            _refreshTimer.Start();
+            _refreshCoordinator.SetEnabled(
+                DashboardRefreshTask,
+                true);
 
             if (IsVisible)
             {
-                _trafficTimer.Start();
+                _refreshCoordinator.SetEnabled(
+                    TrafficRefreshTask,
+                    true);
             }
         }
 
@@ -129,9 +124,10 @@ namespace AdGuardTray.Views
                         5,
                         3600);
 
-                _refreshTimer.Interval =
+                _refreshCoordinator.UpdateInterval(
+                    DashboardRefreshTask,
                     TimeSpan.FromSeconds(
-                        refreshSeconds);
+                        refreshSeconds));
 
                 if (string.IsNullOrWhiteSpace(
                         settings.RouterHost) ||
@@ -525,7 +521,8 @@ namespace AdGuardTray.Views
 
         public Task RefreshNowAsync()
         {
-            return RefreshDashboard();
+            return _refreshCoordinator
+                .RunNowAsync(DashboardRefreshTask);
         }
 
         private void DashboardWindow_StateChanged(
@@ -549,16 +546,19 @@ namespace AdGuardTray.Views
                 _previousTrafficSnapshot = null;
                 _trafficBaselineRequired = true;
 
-                if (IsLoaded &&
-                    !_trafficTimer.IsEnabled)
+                if (IsLoaded)
                 {
-                    _trafficTimer.Start();
+                    _refreshCoordinator.SetEnabled(
+                        TrafficRefreshTask,
+                        true);
                 }
 
                 return;
             }
 
-            _trafficTimer.Stop();
+            _refreshCoordinator.SetEnabled(
+                TrafficRefreshTask,
+                false);
         }
 
         protected override void OnClosing(
@@ -572,8 +572,7 @@ namespace AdGuardTray.Views
                 return;
             }
 
-            _refreshTimer.Stop();
-            _trafficTimer.Stop();
+            _refreshCoordinator.StopAll();
             base.OnClosing(e);
         }
 
@@ -690,7 +689,8 @@ namespace AdGuardTray.Views
             object sender,
             RoutedEventArgs e)
         {
-            await RefreshDashboard();
+            await _refreshCoordinator.RunNowAsync(
+                DashboardRefreshTask);
         }
 
         private void Overview_Click(
@@ -864,8 +864,8 @@ namespace AdGuardTray.Views
         protected override void OnClosed(
             EventArgs e)
         {
-            _refreshTimer.Stop();
-            _trafficTimer.Stop();
+            _refreshCoordinator.StopAll();
+            _ = _refreshCoordinator.DisposeAsync();
 
             ProtectionStateNotifier.StateChanged -=
                 ProtectionStateNotifier_StateChanged;
@@ -874,6 +874,19 @@ namespace AdGuardTray.Views
             _routerManager = null;
 
             base.OnClosed(e);
+        }
+
+        private Task RunOnUiThreadAsync(Func<Task> callback)
+        {
+            if (Dispatcher.CheckAccess())
+            {
+                return callback();
+            }
+
+            return Dispatcher
+                .InvokeAsync(callback)
+                .Task
+                .Unwrap();
         }
     }
 }
