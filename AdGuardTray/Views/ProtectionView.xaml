@@ -88,6 +88,33 @@
         </Style>
 
         <Style x:Key="Schedule.Badge" TargetType="Border" BasedOn="{StaticResource Badge}"/>
+
+        <DataTemplate x:Key="Schedule.ServiceSelector">
+            <Grid Height="230">
+                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="8"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="280"/></Grid.ColumnDefinitions>
+                    <TextBlock VerticalAlignment="Center" Style="{StaticResource Schedule.FieldLabel}" Text="SERVICES"/>
+                    <TextBlock Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center" Style="{DynamicResource Text.Muted}" Text="{Binding SelectedServicesSummary}"/>
+                    <TextBox Grid.Column="2" Style="{StaticResource Protection.Input}"
+                             Text="{Binding WindowServiceSearch, UpdateSourceTrigger=PropertyChanged}"
+                             ToolTip="Search all services by name, category or ID"/>
+                </Grid>
+                <Border Grid.Row="2" Padding="10" Background="{DynamicResource Brush.SurfaceMuted}"
+                        BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="8">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <ItemsControl ItemsSource="{Binding WindowServicesView}">
+                            <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemWidth="220"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate><DataTemplate>
+                                <CheckBox Width="210" Margin="0,0,10,8" Style="{StaticResource Protection.Option}" IsChecked="{Binding IsSelected}">
+                                    <StackPanel><TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis"/><TextBlock FontSize="11" Foreground="{DynamicResource Brush.TextMuted}" Text="{Binding Category}" TextTrimming="CharacterEllipsis"/></StackPanel>
+                                </CheckBox>
+                            </DataTemplate></ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Border>
+            </Grid>
+        </DataTemplate>
     </UserControl.Resources>
 
     <Grid Margin="24">
@@ -626,8 +653,8 @@
                         <Expander x:Name="ScheduleEditor" Margin="0,8,0,0" Header="Advanced single-action schedule">
                             <Grid Margin="0,12,0,0">
                                 <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/><RowDefinition Height="14"/>
-                                    <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/><RowDefinition Height="14"/><RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="14"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="18"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                 <StackPanel>
@@ -639,21 +666,12 @@
                                     <ComboBox Style="{StaticResource Protection.ComboBox}" ItemsSource="{Binding Actions}" SelectedItem="{Binding EditorAction}"/>
                                 </StackPanel>
                                 <StackPanel Grid.Row="2">
-                                    <TextBlock Style="{StaticResource Schedule.FieldLabel}" Text="SERVICES"/>
-                                    <Border Padding="10" Background="{DynamicResource Brush.SurfaceMuted}" CornerRadius="8">
-                                        <ItemsControl ItemsSource="{Binding AvailableServices}" MaxHeight="150">
-                                            <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                                            <ItemsControl.ItemTemplate><DataTemplate><CheckBox Margin="0,0,16,8" Style="{StaticResource Protection.Option}" Content="{Binding Name}" IsChecked="{Binding IsSelected}"/></DataTemplate></ItemsControl.ItemTemplate>
-                                        </ItemsControl>
-                                    </Border>
+                                    <TextBlock Style="{StaticResource Schedule.FieldLabel}" Text="TIMING"/>
+                                    <TextBox Style="{StaticResource Protection.Input}" Text="{Binding EditorTime}" ToolTip="Local time (HH:mm)"/>
                                 </StackPanel>
                                 <StackPanel Grid.Row="2" Grid.Column="2">
-                                    <TextBlock Style="{StaticResource Schedule.FieldLabel}" Text="TIMING AND RECURRENCE"/>
-                                    <Grid>
-                                        <Grid.ColumnDefinitions><ColumnDefinition Width="110"/><ColumnDefinition Width="10"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                        <TextBox Style="{StaticResource Protection.Input}" Text="{Binding EditorTime}" ToolTip="Local time (HH:mm)"/>
-                                        <ComboBox Grid.Column="2" Style="{StaticResource Protection.ComboBox}" ItemsSource="{Binding Recurrences}" SelectedItem="{Binding EditorRecurrence}"/>
-                                    </Grid>
+                                    <TextBlock Style="{StaticResource Schedule.FieldLabel}" Text="RECURRENCE"/>
+                                    <ComboBox Style="{StaticResource Protection.ComboBox}" ItemsSource="{Binding Recurrences}" SelectedItem="{Binding EditorRecurrence}"/>
                                     <WrapPanel Margin="0,10,0,0">
                                         <CheckBox Style="{StaticResource Protection.Option}" Margin="0,0,10,8" Content="Mon" IsChecked="{Binding Monday}"/>
                                         <CheckBox Style="{StaticResource Protection.Option}" Margin="0,0,10,8" Content="Tue" IsChecked="{Binding Tuesday}"/>
@@ -664,10 +682,12 @@
                                         <CheckBox Style="{StaticResource Protection.Option}" Margin="0,0,10,8" Content="Sun" IsChecked="{Binding Sunday}"/>
                                     </WrapPanel>
                                     <DatePicker Width="180" HorizontalAlignment="Left" SelectedDate="{Binding EditorOneTimeDate}" ToolTip="Date for a one-time schedule"/>
+                                    <CheckBox Margin="0,8,0,0" Style="{StaticResource Protection.Option}" Content="Enabled" IsChecked="{Binding EditorIsEnabled}"/>
                                 </StackPanel>
-                                <TextBlock Grid.Row="3" Grid.ColumnSpan="3" Margin="0,10,0,8"
+                                <ContentControl Grid.Row="4" Grid.ColumnSpan="3" Content="{Binding}" ContentTemplate="{StaticResource Schedule.ServiceSelector}"/>
+                                <TextBlock Grid.Row="5" Grid.ColumnSpan="3" Margin="0,10,0,8"
                                            Foreground="{DynamicResource Brush.Warning}" Text="{Binding Status}"/>
-                                <StackPanel Grid.Row="4" Grid.ColumnSpan="3" HorizontalAlignment="Right" Orientation="Horizontal">
+                                <StackPanel Grid.Row="6" Grid.ColumnSpan="3" HorizontalAlignment="Right" Orientation="Horizontal">
                                     <Button MinWidth="90" Height="36" Margin="0,0,8,0" Style="{DynamicResource Button.Secondary}"
                                             Content="Cancel" Command="{Binding NewScheduleCommand}" Click="CancelSchedule_Click"/>
                                     <Button MinWidth="120" Height="36" Style="{DynamicResource Button.Primary}" Content="Save schedule" Command="{Binding SaveCommand}"/>
@@ -677,28 +697,15 @@
 
                         <Expander x:Name="AllowedWindowEditor" Margin="0,10,0,0" Header="Allowed-time window editor">
                             <Grid Margin="0,12,0,0">
-                                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="14"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="14"/><RowDefinition Height="Auto"/><RowDefinition Height="14"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="18"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                 <StackPanel>
                                     <TextBlock Style="{StaticResource Schedule.FieldLabel}" Text="WINDOW NAME"/>
                                     <TextBox Style="{StaticResource Protection.Input}" Text="{Binding WindowName, UpdateSourceTrigger=PropertyChanged}"/>
                                 </StackPanel>
                                 <StackPanel Grid.Column="2">
-                                    <TextBlock Style="{StaticResource Schedule.FieldLabel}" Text="SERVICES"/>
-                                    <TextBox Margin="0,0,0,8" Style="{StaticResource Protection.Input}"
-                                             Text="{Binding WindowServiceSearch, UpdateSourceTrigger=PropertyChanged}"
-                                             ToolTip="Search all services by name, category or ID"/>
-                                    <Border Padding="10" Background="{DynamicResource Brush.SurfaceMuted}" CornerRadius="8">
-                                        <ScrollViewer MaxHeight="180" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                                            <ItemsControl ItemsSource="{Binding WindowServicesView}">
-                                                <ItemsControl.ItemTemplate><DataTemplate>
-                                                    <CheckBox Margin="0,0,0,8" Style="{StaticResource Protection.Option}" IsChecked="{Binding IsSelected}">
-                                                        <StackPanel><TextBlock Text="{Binding Name}"/><TextBlock FontSize="11" Foreground="{DynamicResource Brush.TextMuted}" Text="{Binding Category}"/></StackPanel>
-                                                    </CheckBox>
-                                                </DataTemplate></ItemsControl.ItemTemplate>
-                                            </ItemsControl>
-                                        </ScrollViewer>
-                                    </Border>
+                                    <TextBlock Style="{StaticResource Schedule.FieldLabel}" Text="SELECTED SERVICES"/>
+                                    <TextBlock MinHeight="36" VerticalAlignment="Center" Style="{DynamicResource Text.Secondary}" Text="{Binding SelectedServicesSummary}" TextWrapping="Wrap"/>
                                 </StackPanel>
                                 <StackPanel Grid.Row="2">
                                     <TextBlock Style="{StaticResource Schedule.FieldLabel}" Text="TIMING"/>
@@ -714,10 +721,11 @@
                                         <CheckBox Style="{StaticResource Protection.Option}" Margin="0,0,10,8" Content="Mon" IsChecked="{Binding WindowMonday}"/><CheckBox Style="{StaticResource Protection.Option}" Margin="0,0,10,8" Content="Tue" IsChecked="{Binding WindowTuesday}"/><CheckBox Style="{StaticResource Protection.Option}" Margin="0,0,10,8" Content="Wed" IsChecked="{Binding WindowWednesday}"/><CheckBox Style="{StaticResource Protection.Option}" Margin="0,0,10,8" Content="Thu" IsChecked="{Binding WindowThursday}"/><CheckBox Style="{StaticResource Protection.Option}" Margin="0,0,10,8" Content="Fri" IsChecked="{Binding WindowFriday}"/><CheckBox Style="{StaticResource Protection.Option}" Margin="0,0,10,8" Content="Sat" IsChecked="{Binding WindowSaturday}"/><CheckBox Style="{StaticResource Protection.Option}" Margin="0,0,10,8" Content="Sun" IsChecked="{Binding WindowSunday}"/>
                                     </WrapPanel>
                                     <DatePicker Width="180" HorizontalAlignment="Left" SelectedDate="{Binding WindowOneTimeDate}" ToolTip="Date for a one-time window"/>
+                                    <CheckBox Margin="0,8,0,0" Style="{StaticResource Protection.Option}" Content="Enabled" IsChecked="{Binding WindowIsEnabled}"/>
                                 </StackPanel>
-                                <TextBlock Grid.Row="3" Grid.ColumnSpan="3" Margin="0,10,0,8" Foreground="{DynamicResource Brush.Warning}" Text="{Binding Status}"/>
-                                <StackPanel Grid.Row="4" Grid.ColumnSpan="3" HorizontalAlignment="Right" Orientation="Horizontal">
-                                    <CheckBox Margin="0,0,18,0" VerticalAlignment="Center" Style="{StaticResource Protection.Option}" Content="Enabled" IsChecked="{Binding WindowIsEnabled}"/>
+                                <ContentControl Grid.Row="4" Grid.ColumnSpan="3" Content="{Binding}" ContentTemplate="{StaticResource Schedule.ServiceSelector}"/>
+                                <TextBlock Grid.Row="5" Grid.ColumnSpan="3" Margin="0,10,0,8" Foreground="{DynamicResource Brush.Warning}" Text="{Binding Status}"/>
+                                <StackPanel Grid.Row="6" Grid.ColumnSpan="3" HorizontalAlignment="Right" Orientation="Horizontal">
                                     <Button MinWidth="90" Height="36" Margin="0,0,8,0" Style="{DynamicResource Button.Secondary}" Content="Cancel" Click="CancelWindow_Click"/>
                                     <Button MinWidth="120" Height="36" Style="{DynamicResource Button.Primary}" Content="Save window" Command="{Binding SaveWindowCommand}"/>
                                 </StackPanel>

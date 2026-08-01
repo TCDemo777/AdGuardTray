@@ -37,6 +37,11 @@ namespace AdGuardTray.Services
             ObjectDisposedException.ThrowIf(_disposed, this);
             ArgumentException.ThrowIfNullOrWhiteSpace(command);
 
+            // BusyBox ash treats CR as part of shell tokens.  Normalize raw
+            // multiline C# commands before sending them to OpenWrt.
+            command = command.Replace("\r\n", "\n", StringComparison.Ordinal)
+                .Replace('\r', '\n');
+
             await _commandGate.WaitAsync(cancellationToken)
                 .ConfigureAwait(false);
 

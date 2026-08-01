@@ -30,6 +30,7 @@ public sealed partial class AdGuardServiceScheduleViewModel : ObservableObject
     [ObservableProperty] private AdGuardServiceScheduleRecurrence editorRecurrence = AdGuardServiceScheduleRecurrence.Daily;
     [ObservableProperty] private DateTime? editorOneTimeDate = DateTime.Today;
     [ObservableProperty] private ScheduleDays editorDays = ScheduleDays.Weekdays;
+    [ObservableProperty] private bool editorIsEnabled = true;
     [ObservableProperty] private string windowName = string.Empty;
     [ObservableProperty] private string windowAllowTime = "16:00";
     [ObservableProperty] private string windowBlockTime = "19:30";
@@ -66,6 +67,14 @@ public sealed partial class AdGuardServiceScheduleViewModel : ObservableObject
     public bool IsSelectedDays => EditorRecurrence == AdGuardServiceScheduleRecurrence.SelectedDays;
     public bool IsWindowOnce => WindowRecurrence == AdGuardServiceScheduleRecurrence.Once;
     public bool IsWindowSelectedDays => WindowRecurrence == AdGuardServiceScheduleRecurrence.SelectedDays;
+    public string SelectedServicesSummary
+    {
+        get
+        {
+            string[] names = AvailableServices.Where(option => option.IsSelected).Select(option => option.Name).ToArray();
+            return names.Length == 0 ? "No services selected" : $"{names.Length} selected: {string.Join(", ", names)}";
+        }
+    }
     public bool Monday { get => Has(EditorDays, ScheduleDays.Monday); set => SetEditorDay(ScheduleDays.Monday, value); }
     public bool Tuesday { get => Has(EditorDays, ScheduleDays.Tuesday); set => SetEditorDay(ScheduleDays.Tuesday, value); }
     public bool Wednesday { get => Has(EditorDays, ScheduleDays.Wednesday); set => SetEditorDay(ScheduleDays.Wednesday, value); }
@@ -91,8 +100,14 @@ public sealed partial class AdGuardServiceScheduleViewModel : ObservableObject
     {
         HashSet<string> selected = AvailableServices.Where(x => x.IsSelected).Select(x => x.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
         AvailableServices.Clear();
-        foreach (BlockedServiceItem item in services.OrderBy(x => x.Name)) AvailableServices.Add(new() { Id = item.Id, Name = item.Name, Category = item.Category, IconSvg = item.IconSvg, IsSelected = selected.Contains(item.Id) });
+        foreach (BlockedServiceItem item in services.OrderBy(x => x.Name))
+        {
+            var option = new ScheduleServiceOption { Id = item.Id, Name = item.Name, Category = item.Category, IconSvg = item.IconSvg, IsSelected = selected.Contains(item.Id) };
+            option.PropertyChanged += ServiceOption_PropertyChanged;
+            AvailableServices.Add(option);
+        }
         WindowServicesView.Refresh();
+        OnPropertyChanged(nameof(SelectedServicesSummary));
         foreach (AdGuardServiceSchedule schedule in Schedules) schedule.ServiceDisplay = DisplayServices(schedule.ServiceIds);
         foreach (AdGuardServiceWindow window in Windows) window.ServiceDisplay = DisplayServices(window.ServiceIds);
     }
@@ -146,7 +161,7 @@ public sealed partial class AdGuardServiceScheduleViewModel : ObservableObject
     private void Edit(AdGuardServiceSchedule schedule)
     {
         SelectedSchedule = schedule; EditorName = schedule.Name; EditorTime = schedule.LocalTime.ToString("HH:mm");
-        EditorAction = schedule.Action; EditorRecurrence = schedule.Recurrence; EditorDays = schedule.SelectedDays;
+        EditorAction = schedule.Action; EditorRecurrence = schedule.Recurrence; EditorDays = schedule.SelectedDays; EditorIsEnabled = schedule.IsEnabled;
         EditorOneTimeDate = schedule.OneTimeDate?.ToDateTime(TimeOnly.MinValue); SelectServices(schedule.ServiceIds); Status = string.Empty;
         Debug.Assert(AvailableServices.Count(option => option.IsSelected) == schedule.ServiceIds.Distinct(StringComparer.OrdinalIgnoreCase).Count(id => AvailableServices.Any(option => option.Id.Equals(id, StringComparison.OrdinalIgnoreCase))));
     }
@@ -155,7 +170,7 @@ public sealed partial class AdGuardServiceScheduleViewModel : ObservableObject
     private void NewSchedule()
     {
         SelectedSchedule = null; EditorName = string.Empty; EditorTime = "16:00"; EditorAction = AdGuardServiceScheduleAction.Allow;
-        EditorRecurrence = AdGuardServiceScheduleRecurrence.Daily; EditorDays = ScheduleDays.Weekdays; SelectServices([]); Status = string.Empty;
+        EditorRecurrence = AdGuardServiceScheduleRecurrence.Daily; EditorDays = ScheduleDays.Weekdays; EditorIsEnabled = true; SelectServices([]); Status = string.Empty;
     }
 
     [RelayCommand]
@@ -169,7 +184,7 @@ public sealed partial class AdGuardServiceScheduleViewModel : ObservableObject
         if (EditorRecurrence == AdGuardServiceScheduleRecurrence.SelectedDays && EditorDays == ScheduleDays.None) { Status = "Choose at least one day."; return; }
         AdGuardServiceSchedule item = SelectedSchedule ?? new();
         item.Name = EditorName.Trim(); item.LocalTime = time; item.Action = EditorAction; item.Recurrence = EditorRecurrence;
-        item.SelectedDays = EditorDays; item.OneTimeDate = EditorOneTimeDate is null ? null : DateOnly.FromDateTime(EditorOneTimeDate.Value); item.ServiceIds = ids; item.ServiceDisplay = DisplayServices(ids);
+        item.SelectedDays = EditorDays; item.OneTimeDate = EditorOneTimeDate is null ? null : DateOnly.FromDateTime(EditorOneTimeDate.Value); item.IsEnabled = EditorIsEnabled; item.ServiceIds = ids; item.ServiceDisplay = DisplayServices(ids);
         await _service.SaveScheduleAsync(item); SelectedSchedule = item; Status = "Advanced schedule saved.";
     }
 
@@ -193,7 +208,8 @@ public sealed partial class AdGuardServiceScheduleViewModel : ObservableObject
     }
 
     private List<string> SelectedServiceIds() => AvailableServices.Where(x => x.IsSelected).Select(x => x.Id).ToList();
-    private void SelectServices(IEnumerable<string> ids) { HashSet<string> set = ids.ToHashSet(StringComparer.OrdinalIgnoreCase); foreach (ScheduleServiceOption option in AvailableServices) option.IsSelected = set.Contains(option.Id); }
+    private void SelectServices(IEnumerable<string> ids) { HashSet<string> set = ids.ToHashSet(StringComparer.OrdinalIgnoreCase); foreach (ScheduleServiceOption option in AvailableServices) option.IsSelected = set.Contains(option.Id); OnPropertyChanged(nameof(SelectedServicesSummary)); }
+    private void ServiceOption_PropertyChanged(object? sender, PropertyChangedEventArgs e) { if (e.PropertyName == nameof(ScheduleServiceOption.IsSelected)) OnPropertyChanged(nameof(SelectedServicesSummary)); }
     private string DisplayServices(IEnumerable<string> ids) => string.Join(", ", ids.Select(id => AvailableServices.FirstOrDefault(x => x.Id.Equals(id, StringComparison.OrdinalIgnoreCase))?.Name ?? id));
     private bool FilterWindowService(object item)
     {

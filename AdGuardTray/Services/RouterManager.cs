@@ -348,7 +348,7 @@ namespace AdGuardTray.Services
                             ;;
                     esac
 
-                    for h in $(ubus list 'hostapd.*' 2>/dev/null); do
+                    for h in $(ubus list 2>/dev/null | awk '/^hostapd\./ { print }'); do
                         status=$(ubus call "$h" get_status 2>/dev/null)
                         hssid=$(printf '%s' "$status" | jsonfilter -e '@.ssid' 2>/dev/null)
                         hfreq=$(printf '%s' "$status" | jsonfilter -e '@.freq' 2>/dev/null)
@@ -378,7 +378,7 @@ namespace AdGuardTray.Services
 
                 hostapd_count=0
                 if [ "$found" -eq 0 ]; then
-                    for object in $(ubus list 'hostapd.*' 2>/dev/null); do
+                    for object in $(ubus list 2>/dev/null | awk '/^hostapd\./ { print }'); do
                         hostapd_count=$((hostapd_count + 1))
                         iface=${object#hostapd.}
                         status=$(ubus call "$object" get_status 2>/dev/null)
@@ -484,7 +484,7 @@ namespace AdGuardTray.Services
         {
             string command = """
                 . /usr/share/libubox/jshn.sh 2>/dev/null || exit 0
-                for object in $(ubus list 'hostapd.*' 2>/dev/null); do
+                for object in $(ubus list 2>/dev/null | awk '/^hostapd\./ { print }'); do
                     iface=${object#hostapd.}
                     ssid=$(iw dev "$iface" info 2>/dev/null | sed -n 's/^[[:space:]]*ssid //p' | head -n1)
                     status=$(ubus call "$object" get_status 2>/dev/null)
