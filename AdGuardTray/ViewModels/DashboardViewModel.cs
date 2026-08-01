@@ -26,6 +26,14 @@ namespace AdGuardTray.ViewModels
 
         public ObservableCollection<Insight> Insights { get; } = new();
 
+        public ObservableCollection<WeeklySummaryHighlight>
+            WeeklySummaryHighlights { get; } = new();
+
+        [ObservableProperty]
+        private WeeklySummary? weeklySummary;
+
+        public bool HasWeeklySummaryData => WeeklySummary?.HasEnoughData == true;
+
         public bool HasInsights => Insights.Count > 0;
 
         public IAsyncRelayCommand<Insight> ExecuteInsightActionCommand { get; }
@@ -841,6 +849,24 @@ namespace AdGuardTray.ViewModels
                 Insights.Add(insight);
 
             OnPropertyChanged(nameof(HasInsights));
+        }
+
+        public void UpdateWeeklySummary(WeeklySummary summary)
+        {
+            ArgumentNullException.ThrowIfNull(summary);
+            if (Application.Current?.Dispatcher is { } dispatcher &&
+                !dispatcher.CheckAccess())
+            {
+                dispatcher.Invoke(() => UpdateWeeklySummary(summary));
+                return;
+            }
+
+            WeeklySummary = summary;
+            WeeklySummaryHighlights.Clear();
+            foreach (WeeklySummaryHighlight highlight in summary.Highlights.Take(5))
+                WeeklySummaryHighlights.Add(highlight);
+
+            OnPropertyChanged(nameof(HasWeeklySummaryData));
         }
 
         public string DnsServer

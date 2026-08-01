@@ -42,6 +42,12 @@ namespace AdGuardTray
                 _ => new NotificationService(Dispatcher));
             serviceCollection.AddSingleton<AdGuardProtectionNotificationTracker>();
             serviceCollection.AddSingleton<DeviceHistoryService>();
+            serviceCollection.AddSingleton(provider =>
+                new WeeklySummaryService(
+                    provider.GetRequiredService<HistoryRepository>(),
+                    provider.GetRequiredService<DeviceHistoryService>(),
+                    provider.GetRequiredService<NotificationService>(),
+                    Dispatcher));
             serviceCollection.AddSingleton<NewDeviceNotificationTracker>();
             serviceCollection.AddSingleton<IInsightRule, RouterUptimeRule>();
             serviceCollection.AddSingleton<IInsightRule, InternetDisconnectRule>();

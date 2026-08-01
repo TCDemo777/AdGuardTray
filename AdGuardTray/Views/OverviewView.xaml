@@ -272,6 +272,176 @@
                 </Grid>
             </Border>
 
+            <!-- Weekly history summary -->
+            <Border Margin="0,0,0,18" Style="{StaticResource Card}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="16" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="14" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Orientation="Horizontal">
+                            <Border
+                                Width="38"
+                                Height="38"
+                                Margin="0,0,12,0"
+                                Background="{DynamicResource Brush.PrimarySubtle}"
+                                CornerRadius="10">
+                                <TextBlock
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                    FontSize="18"
+                                    Foreground="{DynamicResource Brush.Primary}"
+                                    Text="&#xE787;" />
+                            </Border>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock
+                                    Style="{StaticResource Overview.CardHeading}"
+                                    Text="Weekly Summary" />
+                                <TextBlock
+                                    Style="{StaticResource Text.Secondary}"
+                                    Text="A seven-day view of network and router activity" />
+                            </StackPanel>
+                        </StackPanel>
+                        <TextBlock
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            Style="{StaticResource Text.Secondary}"
+                            Text="{Binding WeeklySummary.PeriodDisplay}" />
+                    </Grid>
+
+                    <TextBlock
+                        Grid.Row="2"
+                        HorizontalAlignment="Center"
+                        Margin="0,18"
+                        Text="RouterPilot is still collecting enough history to create a weekly summary.">
+                        <TextBlock.Style>
+                            <Style
+                                TargetType="TextBlock"
+                                BasedOn="{StaticResource Text.EmptyStateMessage}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasWeeklySummaryData}" Value="False">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+
+                    <Grid Grid.Row="2">
+                        <Grid.Style>
+                            <Style TargetType="Grid">
+                                <Setter Property="Visibility" Value="Visible" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasWeeklySummaryData}" Value="False">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Grid.Style>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="12" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="12" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="12" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="12" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource Text.CardCaption}" Text="AVERAGE DOWNLOAD" />
+                            <TextBlock Margin="0,5,0,0" FontSize="17" FontWeight="SemiBold"
+                                       Text="{Binding WeeklySummary.AverageDownloadDisplay}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Style="{StaticResource Text.CardCaption}" Text="PEAK DOWNLOAD" />
+                            <TextBlock Margin="0,5,0,0" FontSize="17" FontWeight="SemiBold"
+                                       Text="{Binding WeeklySummary.PeakDownloadDisplay}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="4">
+                            <TextBlock Style="{StaticResource Text.CardCaption}" Text="AVERAGE CPU" />
+                            <TextBlock Margin="0,5,0,0" FontSize="17" FontWeight="SemiBold"
+                                       Text="{Binding WeeklySummary.AverageCpuDisplay}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="6">
+                            <TextBlock Style="{StaticResource Text.CardCaption}" Text="PEAK MEMORY" />
+                            <TextBlock Margin="0,5,0,0" FontSize="17" FontWeight="SemiBold"
+                                       Text="{Binding WeeklySummary.PeakMemoryDisplay}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="8">
+                            <TextBlock Style="{StaticResource Text.CardCaption}" Text="NEW DEVICES" />
+                            <TextBlock Margin="0,5,0,0" FontSize="17" FontWeight="SemiBold"
+                                       Text="{Binding WeeklySummary.NewDevicesCount, StringFormat={}{0:N0}}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <ItemsControl
+                        Grid.Row="4"
+                        ItemsSource="{Binding WeeklySummaryHighlights}">
+                        <ItemsControl.Style>
+                            <Style TargetType="ItemsControl">
+                                <Setter Property="Visibility" Value="Visible" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasWeeklySummaryData}" Value="False">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ItemsControl.Style>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,0,0,9">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="4" />
+                                        <ColumnDefinition Width="10" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border CornerRadius="2">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Background" Value="{DynamicResource Brush.Primary}" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Severity}" Value="Warning">
+                                                        <Setter Property="Background" Value="{DynamicResource Brush.Warning}" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Severity}" Value="Critical">
+                                                        <Setter Property="Background" Value="{DynamicResource Brush.Danger}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                    </Border>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock FontWeight="SemiBold" Text="{Binding Title}" />
+                                        <TextBlock Margin="0,2,0,0"
+                                                   Style="{StaticResource Text.Secondary}"
+                                                   Text="{Binding Description}" />
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="3"
+                                               Margin="16,0,0,0"
+                                               Style="{StaticResource Text.Muted}"
+                                               Text="{Binding Category}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
+            </Border>
+
             <!-- Main details -->
             <TextBlock
                 Margin="0,4,0,12"

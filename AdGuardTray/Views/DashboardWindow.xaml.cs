@@ -31,12 +31,14 @@ namespace AdGuardTray.Views
         private readonly DeviceHistoryService _deviceHistoryService;
         private readonly WanHistoryCollector _wanHistoryCollector;
         private readonly RouterHealthHistoryCollector _routerHealthHistoryCollector;
+        private readonly WeeklySummaryService _weeklySummaryService;
         private readonly RefreshCoordinator _refreshCoordinator;
         private readonly SemaphoreSlim _routerManagerUsageGate = new(1, 1);
         private bool _refreshInProgress;
         private bool _trafficRefreshInProgress;
         private readonly IRouterManagerProvider _routerManagerProvider;
         private bool _routerOnline = true;
+        private bool _forceWeeklySummaryRefresh;
 
         private NetworkTrafficSnapshot? _previousTrafficSnapshot;
         private bool _trafficBaselineRequired = true;
@@ -87,6 +89,8 @@ namespace AdGuardTray.Views
                 .Services.GetRequiredService<WanHistoryCollector>();
             _routerHealthHistoryCollector = ((App)Application.Current)
                 .Services.GetRequiredService<RouterHealthHistoryCollector>();
+            _weeklySummaryService = ((App)Application.Current)
+                .Services.GetRequiredService<WeeklySummaryService>();
             _routerManagerProvider = ((App)Application.Current).Services
                 .GetRequiredService<IRouterManagerProvider>();
             NotificationButton.DataContext = _notificationService;
@@ -473,6 +477,28 @@ namespace AdGuardTray.Views
                     // dashboard refresh.
                 }
 
+                bool forceWeeklySummary = _forceWeeklySummaryRefresh;
+                _forceWeeklySummaryRefresh = false;
+                try
+                {
+                    WeeklySummary weeklySummary =
+                        await _weeklySummaryService.GetSummaryAsync(
+                            forceWeeklySummary,
+                            cancellationToken);
+                    cancellationToken.ThrowIfCancellationRequested();
+                    _viewModel.UpdateWeeklySummary(weeklySummary);
+                }
+                catch (OperationCanceledException)
+                    when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch
+                {
+                    // A partial or unavailable summary must not invalidate
+                    // an otherwise successful dashboard refresh.
+                }
+
                 _viewModel.LastRefresh =
                     "Last refresh: " +
                     DateTime.Now.ToString(
@@ -691,6 +717,7 @@ namespace AdGuardTray.Views
 
         public Task RefreshNowAsync()
         {
+            _forceWeeklySummaryRefresh = true;
             return _refreshCoordinator
                 .RunNowAsync(DashboardRefreshTask);
         }
@@ -892,8 +919,7 @@ namespace AdGuardTray.Views
             object sender,
             RoutedEventArgs e)
         {
-            await _refreshCoordinator.RunNowAsync(
-                DashboardRefreshTask);
+            await RefreshNowAsync();
         }
 
         private void Overview_Click(
