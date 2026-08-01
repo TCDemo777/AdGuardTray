@@ -25,6 +25,7 @@ namespace AdGuardTray.Views
         public AboutView()
         {
             InitializeComponent();
+            VersionTextBlock.Text = "Version " + GetApplicationVersion();
             LoadChangelog();
             LoadSystemInformation();
             AppendLog("Support page opened.");
@@ -354,7 +355,7 @@ namespace AdGuardTray.Views
 
             builder.AppendLine("Application");
             builder.AppendLine("-----------");
-            builder.AppendLine("Version: 1.3");
+            builder.AppendLine("Version: " + GetApplicationVersion());
             builder.AppendLine(
                 "Assembly: " +
                 (Assembly.GetExecutingAssembly()
@@ -416,13 +417,36 @@ namespace AdGuardTray.Views
                 Assembly.GetExecutingAssembly();
 
             return
-                "AdGuardTray v1.3\n" +
+                "AdGuardTray v" + GetApplicationVersion() + "\n" +
                 "Assembly version: " +
                 (assembly.GetName().Version?.ToString() ?? "unknown") +
                 "\nBuild location: " +
                 AppContext.BaseDirectory +
                 "\nGenerated: " +
                 DateTimeOffset.Now.ToString("O");
+        }
+
+
+        private static string GetApplicationVersion()
+        {
+            Assembly assembly = Assembly.GetExecutingAssembly();
+
+            string? informationalVersion = assembly
+                .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+                .InformationalVersion;
+
+            if (!string.IsNullOrWhiteSpace(informationalVersion))
+            {
+                int metadataIndex = informationalVersion.IndexOf('+');
+                return metadataIndex >= 0
+                    ? informationalVersion[..metadataIndex]
+                    : informationalVersion;
+            }
+
+            Version? version = assembly.GetName().Version;
+            return version is null
+                ? "unknown"
+                : $"{version.Major}.{version.Minor}.{version.Build}";
         }
 
         private static string FormatBytes(long bytes)

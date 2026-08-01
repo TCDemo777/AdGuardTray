@@ -1,58 +1,69 @@
 # AdGuardTray
 
-[![GitHub Sponsors](https://img.shields.io/github/sponsors/TCDemo777?style=for-the-badge&logo=githubsponsors)](https://github.com/sponsors/TCDemo777)
+A Windows tray companion for monitoring and managing supported GL.iNet routers running AdGuard Home.
 
-AdGuardTray is a Windows desktop companion for monitoring and managing supported
-GL.iNet routers running AdGuard Home.
+## Features
 
-It provides an at-a-glance dashboard, analytics, client activity, DNS query
-logs, protection controls, blocked-service management, network information and
-built-in diagnostics.
+- Live router, AdGuard Home, network and storage status
+- AdGuard protection controls, filtering options and blocked-service management
+- DNS analytics, query history, live logs and client details
+- Wi-Fi network and connected-client monitoring
+- GL.iNet main, Guest and IoT network awareness
+- Favourite clients and client intelligence
+- Live upload and download traffic graphs
+- Router diagnostics, ping, traceroute and DNS lookup tools
+- Secure password storage using Windows user-scoped encryption
+- Light, dark and system theme support
+- Notification-area integration with close-to-tray behaviour
 
-## Support Development
+## What’s new in 1.4.0
 
-AdGuardTray is free and open source and is developed independently in my spare time.
+Version 1.4.0 focuses on reliability, performance and multi-network support.
 
-If the application has helped you manage your GL.iNet router or saved you time,
-you can support future development through GitHub Sponsors:
-
-**[Support AdGuardTray development](https://github.com/sponsors/TCDemo777)**
-
-Every contribution helps fund development time, testing hardware, compatibility
-testing and future features. AdGuardTray will remain free and open source.
-
-## Main features
-
-- Router and AdGuard Home status dashboard
-- DNS analytics and ranked clients/domains
-- Client activity, sorting and client details
-- Live DNS query log with filtering
-- AdGuard Home protection controls
-- Blocked-services management
-- Network and storage-health information
-- Diagnostics, system information and support-log export
-- Windows notification-area integration
+- Centralised router and AdGuard Home endpoint configuration
+- Removed hard-coded router addresses
+- Improved settings persistence and migration from earlier releases
+- Restored reliable close/minimise-to-tray behaviour
+- Reused HTTP and SSH connections to reduce latency and router load
+- Prevented overlapping dashboard refreshes
+- Parallelised independent AdGuard Home refresh operations
+- Split the large router manager into focused partial implementation files
+- Improved Wi-Fi client discovery across GL.iNet and OpenWrt data sources
+- Correctly maps GL.iNet IoT and Guest clients to their matching SSIDs
+- Improved handling of multiple SSIDs on the same radio
+- Updated About and diagnostic version reporting
 
 ## Requirements
 
 - Windows 10 or Windows 11
-- .NET 9 Desktop Runtime
-- A supported GL.iNet router with AdGuard Home
-- Router administrator credentials
+- A supported GL.iNet router reachable over the local network
+- SSH access enabled on the router
+- AdGuard Home installed and available on the router
+- .NET 9 Desktop Runtime when using a framework-dependent build
 
-## Documentation and support
+## Getting started
 
-- [Documentation](https://github.com/TCDemo777/AdGuardTray#readme)
-- [Report an issue](https://github.com/TCDemo777/AdGuardTray/issues/new)
-- [Changelog](AdGuardTray/CHANGELOG.md)
-- [Licence](AdGuardTray/LICENSE)
-- [Third-party notices](AdGuardTray/THIRD_PARTY_NOTICES.txt)
+1. Download the latest release.
+2. Launch AdGuardTray.
+3. Enter the router IP address or hostname, SSH username and password.
+4. Keep **Remember password securely** enabled for automatic startup.
+5. Open the dashboard from the notification-area icon.
+
+User settings are stored under `%LocalAppData%\AdGuardTray`. Passwords are protected for the current Windows user.
+
+## Building from source
+
+```powershell
+dotnet restore .\AdGuardTray\AdGuardTray.csproj
+dotnet build .\AdGuardTray\AdGuardTray.csproj -c Release
+```
+
+## Support and diagnostics
+
+The About page includes system information, redacted diagnostics, support logs and export tools. Please remove any information you do not want to share before attaching diagnostics to an issue.
+
+Report issues through the [GitHub issue tracker](https://github.com/TCDemo777/AdGuardTray/issues).
 
 ## Licence
 
-AdGuardTray is released under the MIT Licence.
-
-AdGuardTray is an independent project and is not affiliated with, endorsed by,
-or sponsored by GL Technologies (Hong Kong) Limited or AdGuard Software
-Limited. Product names and trademarks remain the property of their respective
-owners.
+AdGuardTray is released under the MIT Licence. See `LICENSE` and `THIRD_PARTY_NOTICES.txt` for details.

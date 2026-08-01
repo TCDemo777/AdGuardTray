@@ -96,9 +96,10 @@
                                     <TextBlock FontSize="30"
                                                FontWeight="Bold"
                                                Text="AdGuardTray"/>
-                                    <TextBlock Margin="0,3,0,0"
+                                    <TextBlock x:Name="VersionTextBlock"
+                                               Margin="0,3,0,0"
                                                Foreground="{DynamicResource Brush.TextSecondary}"
-                                               Text="Version 1.3.0"/>
+                                               Text="Version"/>
                                     <TextBlock Margin="0,11,0,0"
                                                FontSize="14"
                                                LineHeight="20"

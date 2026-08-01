@@ -23,18 +23,46 @@
 - Restored close-to-tray and minimise-to-tray behaviour.
 - Fixed misleading incomplete-settings errors after saving a valid router host and password.
 
-## [1.4.0] - 2026-07-30
+## [1.4.0] - 2026-08-01
 
 ### Added
-- Analytics v2 dashboard with responsive leaderboard-style rankings.
-- Proportional activity bars for top clients, requested domains, and blocked domains.
-- Full-name tooltips and clearer request totals for ranked items.
-- Client Details v2 with compact summary cards, copy buttons for IP and MAC addresses, top-five domain leaderboards, and clearer allowed/blocked request badges.
+- Central router and AdGuard Home endpoint configuration with configurable schemes and ports.
+- Settings migration from the legacy router-address property.
+- GL.iNet IoT and Guest Wi-Fi client mapping, including role-aware handling of labels such as `2.4G_Iot`.
+- Additional wireless client discovery using GL.iNet inventory, OpenWrt hostapd data, live station tables and DHCP leases.
+- GitHub Actions workflow for Windows restore, build and publish validation.
+- Dynamic About-page and diagnostics version reporting from assembly metadata.
 
 ### Changed
-- Replaced cramped ranking charts and bottom chips with readable top-five lists.
-- Improved analytics spacing, card sizing, typography, and long-name handling.
-- Restyled the Client Details window to match Analytics v2, including responsive cards, progress bars, tooltips, and empty states.
+- Reused pooled HTTP connections for AdGuard Home control, clients, statistics and query-log requests.
+- Reused a reconnecting SSH session instead of opening a new connection for every command.
+- Split `RouterManager` into router/network, AdGuard Home and operations partial implementation files while retaining its public API.
+- Reused one dashboard `RouterManager` instance and replaced it automatically when connection settings change.
+- Parallelised independent AdGuard Home dashboard requests.
+- Prevented overlapping full dashboard and live-traffic refreshes.
+- Improved multi-SSID client matching by preserving network role and runtime-interface information.
+- Updated project documentation and release metadata for version 1.4.0.
+
+### Fixed
+- Router address not being retained after saving settings.
+- Router address being cleared during settings migration.
+- Startup validation reading a different router property from the settings UI.
+- Connection failures caused by inconsistent settings and endpoint models.
+- Hard-coded router and AdGuard Home addresses throughout the application.
+- Dashboard X and minimise actions exiting or bypassing notification-area lifecycle management.
+- First-run setup creating an unmanaged dashboard without the tray manager.
+- Repeated HTTP client creation and unnecessary TCP connection setup.
+- Repeated SSH connection setup during dashboard and traffic refreshes.
+- Wi-Fi clients being assigned to the first SSID on a band when firmware omitted an SSID.
+- GL-MT6000 2.4 GHz IoT clients being attached to the main 2.4 GHz network instead of the IoT SSID.
+- C# shell-command escaping errors in wireless station diagnostics.
+
+### Existing 1.4 interface improvements
+- Analytics v2 dashboard with responsive leaderboard-style rankings.
+- Proportional activity bars for top clients, requested domains and blocked domains.
+- Full-name tooltips and clearer request totals for ranked items.
+- Client Details v2 with compact summary cards, copy buttons, top-five domain leaderboards and clearer request badges.
+- Improved analytics spacing, typography, long-name handling and responsive layouts.
 
 ## v1.3.1 — Client details and tray usability
 
