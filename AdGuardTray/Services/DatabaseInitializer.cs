@@ -4,7 +4,7 @@ namespace AdGuardTray.Services;
 
 public sealed class DatabaseInitializer
 {
-    public const int CurrentSchemaVersion = 3;
+    public const int CurrentSchemaVersion = 4;
 
     public async Task InitializeAsync(
         SqliteConnection connection,
@@ -63,6 +63,20 @@ public sealed class DatabaseInitializer
                 transaction,
                 cancellationToken);
             version = 3;
+            await SetSchemaVersionAsync(
+                connection,
+                transaction,
+                version,
+                cancellationToken);
+        }
+
+        if (version < 4)
+        {
+            await UpgradeToVersionFourAsync(
+                connection,
+                transaction,
+                cancellationToken);
+            version = 4;
             await SetSchemaVersionAsync(
                 connection,
                 transaction,
@@ -255,6 +269,27 @@ public sealed class DatabaseInitializer
             ALTER TABLE NetworkSnapshots ADD COLUMN SampleCount INTEGER NULL;
             CREATE UNIQUE INDEX IF NOT EXISTS UX_NetworkSnapshots_TimestampUtc
                 ON NetworkSnapshots (TimestampUtc);
+            """;
+
+        await ExecuteAsync(connection, transaction, migration, cancellationToken);
+    }
+
+    private static async Task UpgradeToVersionFourAsync(
+        SqliteConnection connection,
+        SqliteTransaction transaction,
+        CancellationToken cancellationToken)
+    {
+        const string migration = """
+            ALTER TABLE RouterHealthSnapshots ADD COLUMN AverageCpuUsagePercent REAL NULL;
+            ALTER TABLE RouterHealthSnapshots ADD COLUMN PeakCpuUsagePercent REAL NULL;
+            ALTER TABLE RouterHealthSnapshots ADD COLUMN AverageMemoryUsagePercent REAL NULL;
+            ALTER TABLE RouterHealthSnapshots ADD COLUMN PeakMemoryUsagePercent REAL NULL;
+            ALTER TABLE RouterHealthSnapshots ADD COLUMN MemoryUsedBytes INTEGER NULL;
+            ALTER TABLE RouterHealthSnapshots ADD COLUMN MemoryTotalBytes INTEGER NULL;
+            ALTER TABLE RouterHealthSnapshots ADD COLUMN TemperatureCelsius REAL NULL;
+            ALTER TABLE RouterHealthSnapshots ADD COLUMN SampleCount INTEGER NULL;
+            CREATE UNIQUE INDEX IF NOT EXISTS UX_RouterHealthSnapshots_TimestampUtc
+                ON RouterHealthSnapshots (TimestampUtc);
             """;
 
         await ExecuteAsync(connection, transaction, migration, cancellationToken);

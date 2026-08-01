@@ -17,8 +17,11 @@ namespace AdGuardTray.Views
         {
             if (DataContext is DashboardViewModel viewModel)
             {
-                await viewModel.LoadWanHistoryAsync(
-                    viewModel.SelectedWanHistoryRange);
+                await System.Threading.Tasks.Task.WhenAll(
+                    viewModel.LoadWanHistoryAsync(
+                        viewModel.SelectedWanHistoryRange),
+                    viewModel.LoadRouterHealthHistoryAsync(
+                        viewModel.SelectedRouterHealthHistoryRange));
             }
         }
     }

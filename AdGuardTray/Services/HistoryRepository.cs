@@ -208,6 +208,122 @@ public sealed class HistoryRepository
         return await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
+    public async Task AddOrUpdateRouterHealthMinuteAsync(
+        RouterHealthMinuteSnapshot snapshot,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+
+        await using var connection =
+            await _dataStore.OpenConnectionAsync(cancellationToken);
+        await using SqliteCommand command = connection.CreateCommand();
+        command.CommandText = """
+            INSERT INTO RouterHealthSnapshots
+                (TimestampUtc, CpuUsagePercent, MemoryUsagePercent,
+                 StorageUsagePercent, AverageCpuUsagePercent,
+                 PeakCpuUsagePercent, AverageMemoryUsagePercent,
+                 PeakMemoryUsagePercent, MemoryUsedBytes,
+                 MemoryTotalBytes, TemperatureCelsius, SampleCount)
+            VALUES
+                ($timestampUtc, $averageCpu, $averageMemory,
+                 $storage, $averageCpu, $peakCpu, $averageMemory,
+                 $peakMemory, $memoryUsed, $memoryTotal,
+                 $temperature, $sampleCount)
+            ON CONFLICT(TimestampUtc) DO UPDATE SET
+                CpuUsagePercent = excluded.CpuUsagePercent,
+                MemoryUsagePercent = excluded.MemoryUsagePercent,
+                StorageUsagePercent = excluded.StorageUsagePercent,
+                AverageCpuUsagePercent = excluded.AverageCpuUsagePercent,
+                PeakCpuUsagePercent = excluded.PeakCpuUsagePercent,
+                AverageMemoryUsagePercent = excluded.AverageMemoryUsagePercent,
+                PeakMemoryUsagePercent = excluded.PeakMemoryUsagePercent,
+                MemoryUsedBytes = excluded.MemoryUsedBytes,
+                MemoryTotalBytes = excluded.MemoryTotalBytes,
+                TemperatureCelsius = excluded.TemperatureCelsius,
+                SampleCount = excluded.SampleCount;
+            """;
+        command.Parameters.AddWithValue(
+            "$timestampUtc",
+            snapshot.TimestampUtc.ToUniversalTime().ToString("O"));
+        AddNullable(command, "$averageCpu", snapshot.AverageCpuUsagePercent);
+        AddNullable(command, "$peakCpu", snapshot.PeakCpuUsagePercent);
+        AddNullable(command, "$averageMemory", snapshot.AverageMemoryUsagePercent);
+        AddNullable(command, "$peakMemory", snapshot.PeakMemoryUsagePercent);
+        AddNullable(command, "$memoryUsed", snapshot.MemoryUsedBytes);
+        AddNullable(command, "$memoryTotal", snapshot.MemoryTotalBytes);
+        AddNullable(command, "$temperature", snapshot.TemperatureCelsius);
+        AddNullable(command, "$storage", snapshot.StorageUsagePercent);
+        command.Parameters.AddWithValue("$sampleCount", snapshot.SampleCount);
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<RouterHealthMinuteSnapshot>>
+        GetRouterHealthHistoryAsync(
+            DateTimeOffset fromUtc,
+            DateTimeOffset toUtc,
+            CancellationToken cancellationToken = default)
+    {
+        if (toUtc < fromUtc)
+            throw new ArgumentOutOfRangeException(nameof(toUtc));
+
+        await using var connection =
+            await _dataStore.OpenConnectionAsync(cancellationToken);
+        await using SqliteCommand command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT Id, TimestampUtc,
+                   COALESCE(AverageCpuUsagePercent, CpuUsagePercent),
+                   COALESCE(PeakCpuUsagePercent, CpuUsagePercent),
+                   COALESCE(AverageMemoryUsagePercent, MemoryUsagePercent),
+                   COALESCE(PeakMemoryUsagePercent, MemoryUsagePercent),
+                   MemoryUsedBytes, MemoryTotalBytes,
+                   TemperatureCelsius, StorageUsagePercent,
+                   COALESCE(SampleCount, 1)
+            FROM RouterHealthSnapshots
+            WHERE TimestampUtc >= $fromUtc AND TimestampUtc <= $toUtc
+            ORDER BY TimestampUtc ASC, Id ASC;
+            """;
+        command.Parameters.AddWithValue("$fromUtc", fromUtc.ToUniversalTime().ToString("O"));
+        command.Parameters.AddWithValue("$toUtc", toUtc.ToUniversalTime().ToString("O"));
+
+        var snapshots = new List<RouterHealthMinuteSnapshot>();
+        await using SqliteDataReader reader =
+            await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            snapshots.Add(new RouterHealthMinuteSnapshot
+            {
+                Id = reader.GetInt64(0),
+                TimestampUtc = DateTimeOffset.Parse(reader.GetString(1)),
+                AverageCpuUsagePercent = GetNullableDouble(reader, 2),
+                PeakCpuUsagePercent = GetNullableDouble(reader, 3),
+                AverageMemoryUsagePercent = GetNullableDouble(reader, 4),
+                PeakMemoryUsagePercent = GetNullableDouble(reader, 5),
+                MemoryUsedBytes = GetNullableInt64(reader, 6),
+                MemoryTotalBytes = GetNullableInt64(reader, 7),
+                TemperatureCelsius = GetNullableDouble(reader, 8),
+                StorageUsagePercent = GetNullableDouble(reader, 9),
+                SampleCount = reader.GetInt32(10)
+            });
+        }
+
+        return snapshots;
+    }
+
+    public async Task<int> DeleteRouterHealthBeforeAsync(
+        DateTimeOffset cutoffUtc,
+        CancellationToken cancellationToken = default)
+    {
+        await using var connection =
+            await _dataStore.OpenConnectionAsync(cancellationToken);
+        await using SqliteCommand command = connection.CreateCommand();
+        command.CommandText =
+            "DELETE FROM RouterHealthSnapshots WHERE TimestampUtc < $cutoffUtc;";
+        command.Parameters.AddWithValue(
+            "$cutoffUtc",
+            cutoffUtc.ToUniversalTime().ToString("O"));
+        return await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
     private static void AddEventParameters(
         SqliteCommand command,
         DeviceConnectionEvent connectionEvent,
@@ -254,4 +370,21 @@ public sealed class HistoryRepository
 
     private static string GetString(SqliteDataReader reader, int ordinal) =>
         reader.IsDBNull(ordinal) ? string.Empty : reader.GetString(ordinal);
+
+    private static void AddNullable<T>(
+        SqliteCommand command,
+        string name,
+        T? value)
+        where T : struct =>
+        command.Parameters.AddWithValue(name, value.HasValue ? value.Value : DBNull.Value);
+
+    private static double? GetNullableDouble(
+        SqliteDataReader reader,
+        int ordinal) =>
+        reader.IsDBNull(ordinal) ? null : reader.GetDouble(ordinal);
+
+    private static long? GetNullableInt64(
+        SqliteDataReader reader,
+        int ordinal) =>
+        reader.IsDBNull(ordinal) ? null : reader.GetInt64(ordinal);
 }

@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -28,6 +30,7 @@ namespace AdGuardTray.Views
         private readonly InsightEngine _insightEngine;
         private readonly DeviceHistoryService _deviceHistoryService;
         private readonly WanHistoryCollector _wanHistoryCollector;
+        private readonly RouterHealthHistoryCollector _routerHealthHistoryCollector;
         private readonly RefreshCoordinator _refreshCoordinator;
         private readonly SemaphoreSlim _routerManagerUsageGate = new(1, 1);
         private bool _refreshInProgress;
@@ -82,6 +85,8 @@ namespace AdGuardTray.Views
                 .Services.GetRequiredService<DeviceHistoryService>();
             _wanHistoryCollector = ((App)Application.Current)
                 .Services.GetRequiredService<WanHistoryCollector>();
+            _routerHealthHistoryCollector = ((App)Application.Current)
+                .Services.GetRequiredService<RouterHealthHistoryCollector>();
             _routerManagerProvider = ((App)Application.Current).Services
                 .GetRequiredService<IRouterManagerProvider>();
             NotificationButton.DataContext = _notificationService;
@@ -444,6 +449,29 @@ namespace AdGuardTray.Views
                         cancellationToken);
                 cancellationToken.ThrowIfCancellationRequested();
                 _viewModel.UpdateInsights(insights);
+
+                try
+                {
+                    await _routerHealthHistoryCollector.RecordSnapshotAsync(
+                        DateTimeOffset.UtcNow,
+                        ParsePercentage(info.CpuUsage),
+                        ParsePercentage(info.MemoryUsage),
+                        ParseByteSize(info.MemoryUsed),
+                        memoryTotalBytes: null,
+                        ParseTemperature(info.Temperature),
+                        ParseStoragePercentage(info.StorageUsage),
+                        cancellationToken);
+                }
+                catch (OperationCanceledException)
+                    when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch
+                {
+                    // Historical persistence must not invalidate a completed
+                    // dashboard refresh.
+                }
 
                 _viewModel.LastRefresh =
                     "Last refresh: " +
@@ -998,6 +1026,95 @@ namespace AdGuardTray.Views
                     break;
             }
         }
+
+        private static double? ParsePercentage(string? value)
+        {
+            if (IsPlaceholder(value))
+                return null;
+
+            Match match = Regex.Match(value!, @"\d+(?:[\.,]\d+)?");
+            if (!match.Success || !TryParseNumber(match.Value, out double percent))
+                return null;
+
+            return percent is >= 0 and <= 100 ? percent : null;
+        }
+
+        private static double? ParseTemperature(string? value)
+        {
+            if (IsPlaceholder(value))
+                return null;
+
+            Match match = Regex.Match(value!, @"-?\d+(?:[\.,]\d+)?");
+            return match.Success && TryParseNumber(match.Value, out double temperature)
+                ? temperature
+                : null;
+        }
+
+        private static double? ParseStoragePercentage(string? value)
+        {
+            if (IsPlaceholder(value))
+                return null;
+
+            string[] lines = value!
+                .Replace("\r", string.Empty)
+                .Split(
+                    '\n',
+                    StringSplitOptions.RemoveEmptyEntries |
+                    StringSplitOptions.TrimEntries);
+            string? candidate = lines.FirstOrDefault(line =>
+                line.Contains("/overlay", StringComparison.OrdinalIgnoreCase) ||
+                line.EndsWith(" /", StringComparison.OrdinalIgnoreCase))
+                ?? lines.LastOrDefault();
+            if (string.IsNullOrWhiteSpace(candidate))
+                return null;
+
+            Match match = Regex.Match(candidate, @"(\d+(?:[\.,]\d+)?)%");
+            if (!match.Success ||
+                !TryParseNumber(match.Groups[1].Value, out double percent))
+            {
+                return null;
+            }
+
+            return percent is >= 0 and <= 100 ? percent : null;
+        }
+
+        private static long? ParseByteSize(string? value)
+        {
+            if (IsPlaceholder(value))
+                return null;
+
+            Match match = Regex.Match(
+                value!,
+                @"(?i)(\d+(?:[\.,]\d+)?)\s*(B|KB|MB|GB|TB)");
+            if (!match.Success ||
+                !TryParseNumber(match.Groups[1].Value, out double amount))
+            {
+                return null;
+            }
+
+            double multiplier = match.Groups[2].Value.ToUpperInvariant() switch
+            {
+                "KB" => 1024d,
+                "MB" => 1024d * 1024d,
+                "GB" => 1024d * 1024d * 1024d,
+                "TB" => 1024d * 1024d * 1024d * 1024d,
+                _ => 1d
+            };
+            double bytes = amount * multiplier;
+            return bytes is >= 0 and <= long.MaxValue ? (long)bytes : null;
+        }
+
+        private static bool TryParseNumber(string value, out double result) =>
+            double.TryParse(
+                value.Replace(',', '.'),
+                NumberStyles.Float,
+                CultureInfo.InvariantCulture,
+                out result);
+
+        private static bool IsPlaceholder(string? value) =>
+            string.IsNullOrWhiteSpace(value) ||
+            value.Trim() == "-" ||
+            value.Contains("Unknown", StringComparison.OrdinalIgnoreCase);
 
         private async Task RebootRouterFromInsightAsync()
         {

@@ -319,6 +319,171 @@
                 </Grid>
             </Border>
 
+            <!-- Historical router health -->
+            <Border
+                MinHeight="390"
+                Margin="0,0,0,20"
+                Style="{StaticResource Card}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="14" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock
+                                Style="{StaticResource Text.SectionTitle}"
+                                Text="Historical Router Health" />
+                            <TextBlock
+                                Margin="0,4,0,0"
+                                Style="{StaticResource Text.Muted}"
+                                Text="CPU and memory usage collected during dashboard refreshes" />
+                        </StackPanel>
+
+                        <StackPanel
+                            Grid.Column="1"
+                            Margin="20,0,0,0"
+                            Orientation="Horizontal"
+                            VerticalAlignment="Center">
+                            <Button
+                                Margin="0,0,8,0"
+                                Command="{Binding LoadRouterHealthHistoryCommand}"
+                                CommandParameter="1 hour"
+                                Content="1 hour"
+                                Style="{StaticResource Button.Secondary}" />
+                            <Button
+                                Margin="0,0,8,0"
+                                Command="{Binding LoadRouterHealthHistoryCommand}"
+                                CommandParameter="24 hours"
+                                Content="24 hours"
+                                Style="{StaticResource Button.Secondary}" />
+                            <Button
+                                Margin="0,0,8,0"
+                                Command="{Binding LoadRouterHealthHistoryCommand}"
+                                CommandParameter="7 days"
+                                Content="7 days"
+                                Style="{StaticResource Button.Secondary}" />
+                            <Button
+                                Command="{Binding LoadRouterHealthHistoryCommand}"
+                                CommandParameter="30 days"
+                                Content="30 days"
+                                Style="{StaticResource Button.Secondary}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <Grid Grid.Row="2" MinHeight="285">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="16" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <Border
+                            Padding="8"
+                            Background="{DynamicResource Brush.SurfaceMuted}"
+                            CornerRadius="10">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+                                <TextBlock
+                                    Margin="6,4,6,8"
+                                    Style="{StaticResource Text.CardCaption}"
+                                    Text="CPU USAGE" />
+                                <lvc:CartesianChart
+                                    Grid.Row="1"
+                                    AnimationsSpeed="0:0:0.25"
+                                    Background="Transparent"
+                                    LegendPosition="Hidden"
+                                    Series="{Binding HistoricalCpuSeries}"
+                                    TooltipPosition="Top"
+                                    XAxes="{Binding HistoricalCpuXAxes}"
+                                    YAxes="{Binding HistoricalCpuYAxes}" />
+                            </Grid>
+                        </Border>
+
+                        <Border
+                            Grid.Column="2"
+                            Padding="8"
+                            Background="{DynamicResource Brush.SurfaceMuted}"
+                            CornerRadius="10">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+                                <TextBlock
+                                    Margin="6,4,6,8"
+                                    Style="{StaticResource Text.CardCaption}"
+                                    Text="MEMORY USAGE" />
+                                <lvc:CartesianChart
+                                    Grid.Row="1"
+                                    AnimationsSpeed="0:0:0.25"
+                                    Background="Transparent"
+                                    LegendPosition="Hidden"
+                                    Series="{Binding HistoricalMemorySeries}"
+                                    TooltipPosition="Top"
+                                    XAxes="{Binding HistoricalMemoryXAxes}"
+                                    YAxes="{Binding HistoricalMemoryYAxes}" />
+                            </Grid>
+                        </Border>
+
+                        <Border
+                            Grid.ColumnSpan="3"
+                            Background="{DynamicResource Brush.SurfaceMuted}"
+                            CornerRadius="10">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding HasHistoricalRouterHealthData}" Value="False" />
+                                                <Condition Binding="{Binding IsRouterHealthHistoryLoading}" Value="False" />
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </MultiDataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <TextBlock
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Style="{StaticResource Text.EmptyStateMessage}"
+                                Text="Historical router health data will appear as RouterPilot collects samples." />
+                        </Border>
+
+                        <Border
+                            Grid.ColumnSpan="3"
+                            Background="{DynamicResource Brush.SurfaceMuted}"
+                            CornerRadius="10">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsRouterHealthHistoryLoading}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <TextBlock
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Style="{StaticResource Text.Secondary}"
+                                Text="Loading historical router health data…" />
+                        </Border>
+                    </Grid>
+                </Grid>
+            </Border>
+
             <!-- Summary -->
             <TextBlock
                 Margin="0,0,0,12"

@@ -22,6 +22,7 @@ namespace AdGuardTray.ViewModels
         private string _queryHistoryTimeUnits = "hours";
         private readonly HistoryRepository? _historyRepository;
         private string _wanHistoryRange = "24 hours";
+        private string _routerHealthRange = "24 hours";
 
         public ObservableCollection<Insight> Insights { get; } = new();
 
@@ -309,6 +310,36 @@ namespace AdGuardTray.ViewModels
         public bool HasHistoricalWanData =>
             HistoricalDownloadHistory.Count > 0;
 
+        public ObservableCollection<RouterHealthChartPoint>
+            HistoricalCpuHistory { get; } = new();
+
+        public ObservableCollection<RouterHealthChartPoint>
+            HistoricalMemoryHistory { get; } = new();
+
+        public ISeries[] HistoricalCpuSeries { get; }
+
+        public ISeries[] HistoricalMemorySeries { get; }
+
+        public Axis[] HistoricalCpuXAxes { get; }
+
+        public Axis[] HistoricalMemoryXAxes { get; }
+
+        public Axis[] HistoricalCpuYAxes { get; }
+
+        public Axis[] HistoricalMemoryYAxes { get; }
+
+        public IAsyncRelayCommand<string> LoadRouterHealthHistoryCommand { get; }
+
+        [ObservableProperty]
+        private bool isRouterHealthHistoryLoading;
+
+        [ObservableProperty]
+        private string selectedRouterHealthHistoryRange = "24 hours";
+
+        public bool HasHistoricalRouterHealthData =>
+            HistoricalCpuHistory.Count > 0 ||
+            HistoricalMemoryHistory.Count > 0;
+
         public DashboardViewModel(
             Func<Insight, Task>? insightActionHandler = null,
             HistoryRepository? historyRepository = null)
@@ -316,6 +347,8 @@ namespace AdGuardTray.ViewModels
             _historyRepository = historyRepository;
             LoadWanHistoryCommand = new AsyncRelayCommand<string>(
                 LoadWanHistoryAsync);
+            LoadRouterHealthHistoryCommand = new AsyncRelayCommand<string>(
+                LoadRouterHealthHistoryAsync);
             ExecuteInsightActionCommand = new AsyncRelayCommand<Insight>(
                 insight => insightActionHandler is null || insight is null
                     ? Task.CompletedTask
@@ -461,7 +494,73 @@ namespace AdGuardTray.ViewModels
                     MinLimit = 0
                 }
             };
+
+            HistoricalCpuSeries = new ISeries[]
+            {
+                new LineSeries<RouterHealthChartPoint>
+                {
+                    Name = "CPU average",
+                    Values = HistoricalCpuHistory,
+                    Mapping = (point, _) => new Coordinate(
+                        point.TimestampUtc.UtcTicks,
+                        point.AveragePercent),
+                    GeometrySize = 0,
+                    LineSmoothness = 0.25,
+                    XToolTipLabelFormatter = point =>
+                        point.Model is { } model
+                            ? model.TimestampUtc.ToLocalTime().ToString("g")
+                            : "Time: -",
+                    YToolTipLabelFormatter = point =>
+                        point.Model is { } model
+                            ? $"CPU: {model.AveragePercent:0.0}% avg · {model.PeakPercent:0.0}% peak"
+                            : "CPU: 0.0%"
+                }
+            };
+
+            HistoricalMemorySeries = new ISeries[]
+            {
+                new LineSeries<RouterHealthChartPoint>
+                {
+                    Name = "Memory average",
+                    Values = HistoricalMemoryHistory,
+                    Mapping = (point, _) => new Coordinate(
+                        point.TimestampUtc.UtcTicks,
+                        point.AveragePercent),
+                    GeometrySize = 0,
+                    LineSmoothness = 0.25,
+                    XToolTipLabelFormatter = point =>
+                        point.Model is { } model
+                            ? model.TimestampUtc.ToLocalTime().ToString("g")
+                            : "Time: -",
+                    YToolTipLabelFormatter = point =>
+                        point.Model is { } model
+                            ? $"Memory: {model.AveragePercent:0.0}% avg · {model.PeakPercent:0.0}% peak"
+                            : "Memory: 0.0%"
+                }
+            };
+
+            HistoricalCpuXAxes = new Axis[]
+            {
+                new Axis { Labeler = FormatRouterHealthTimeLabel }
+            };
+            HistoricalMemoryXAxes = new Axis[]
+            {
+                new Axis { Labeler = FormatRouterHealthTimeLabel }
+            };
+            HistoricalCpuYAxes = CreatePercentageAxes();
+            HistoricalMemoryYAxes = CreatePercentageAxes();
         }
+
+        private static Axis[] CreatePercentageAxes() =>
+            new Axis[]
+            {
+                new Axis
+                {
+                    Name = "%",
+                    MinLimit = 0,
+                    MaxLimit = 100
+                }
+            };
 
         public async Task LoadWanHistoryAsync(string? range)
         {
@@ -528,6 +627,69 @@ namespace AdGuardTray.ViewModels
             }
         }
 
+        public async Task LoadRouterHealthHistoryAsync(string? range)
+        {
+            if (_historyRepository is null || IsRouterHealthHistoryLoading)
+                return;
+
+            string normalizedRange = NormalizeWanHistoryRange(range);
+            SelectedRouterHealthHistoryRange = normalizedRange;
+            _routerHealthRange = normalizedRange;
+            IsRouterHealthHistoryLoading = true;
+
+            try
+            {
+                (TimeSpan duration, TimeSpan bucketSize) =
+                    GetHistoryRangeSettings(normalizedRange);
+                DateTimeOffset toUtc = DateTimeOffset.UtcNow;
+                IReadOnlyList<RouterHealthMinuteSnapshot> points =
+                    await Task.Run(async () =>
+                    {
+                        IReadOnlyList<RouterHealthMinuteSnapshot> snapshots =
+                            await _historyRepository.GetRouterHealthHistoryAsync(
+                                    toUtc - duration,
+                                    toUtc)
+                                .ConfigureAwait(false);
+                        return DownsampleRouterHealthHistory(
+                            snapshots,
+                            bucketSize);
+                    });
+
+                HistoricalCpuHistory.Clear();
+                HistoricalMemoryHistory.Clear();
+                foreach (RouterHealthMinuteSnapshot point in points)
+                {
+                    if (point.AverageCpuUsagePercent.HasValue)
+                    {
+                        HistoricalCpuHistory.Add(new RouterHealthChartPoint
+                        {
+                            TimestampUtc = point.TimestampUtc,
+                            AveragePercent = point.AverageCpuUsagePercent.Value,
+                            PeakPercent = point.PeakCpuUsagePercent ??
+                                point.AverageCpuUsagePercent.Value
+                        });
+                    }
+
+                    if (point.AverageMemoryUsagePercent.HasValue)
+                    {
+                        HistoricalMemoryHistory.Add(new RouterHealthChartPoint
+                        {
+                            TimestampUtc = point.TimestampUtc,
+                            AveragePercent = point.AverageMemoryUsagePercent.Value,
+                            PeakPercent = point.PeakMemoryUsagePercent ??
+                                point.AverageMemoryUsagePercent.Value
+                        });
+                    }
+                }
+
+                OnPropertyChanged(nameof(HasHistoricalRouterHealthData));
+            }
+            finally
+            {
+                IsRouterHealthHistoryLoading = false;
+            }
+        }
+
         private static IReadOnlyList<WanMinuteSnapshot> DownsampleWanHistory(
             IEnumerable<WanMinuteSnapshot> snapshots,
             TimeSpan bucketSize)
@@ -558,19 +720,105 @@ namespace AdGuardTray.ViewModels
                 .ToArray();
         }
 
+        private static IReadOnlyList<RouterHealthMinuteSnapshot>
+            DownsampleRouterHealthHistory(
+                IEnumerable<RouterHealthMinuteSnapshot> snapshots,
+                TimeSpan bucketSize)
+        {
+            long bucketTicks = bucketSize.Ticks;
+            return snapshots
+                .GroupBy(snapshot =>
+                    snapshot.TimestampUtc.UtcTicks / bucketTicks * bucketTicks)
+                .OrderBy(group => group.Key)
+                .Select(group =>
+                {
+                    RouterHealthMinuteSnapshot[] items = group.ToArray();
+                    RouterHealthMinuteSnapshot[] cpuItems = items
+                        .Where(item => item.AverageCpuUsagePercent.HasValue)
+                        .ToArray();
+                    RouterHealthMinuteSnapshot[] memoryItems = items
+                        .Where(item => item.AverageMemoryUsagePercent.HasValue)
+                        .ToArray();
+                    return new RouterHealthMinuteSnapshot
+                    {
+                        TimestampUtc = new DateTimeOffset(group.Key, TimeSpan.Zero),
+                        AverageCpuUsagePercent = WeightedAverage(
+                            cpuItems,
+                            item => item.AverageCpuUsagePercent),
+                        PeakCpuUsagePercent = NullablePeak(
+                            cpuItems,
+                            item => item.PeakCpuUsagePercent),
+                        AverageMemoryUsagePercent = WeightedAverage(
+                            memoryItems,
+                            item => item.AverageMemoryUsagePercent),
+                        PeakMemoryUsagePercent = NullablePeak(
+                            memoryItems,
+                            item => item.PeakMemoryUsagePercent),
+                        MemoryUsedBytes = items.Last().MemoryUsedBytes,
+                        MemoryTotalBytes = items.Last().MemoryTotalBytes,
+                        TemperatureCelsius = items.Last().TemperatureCelsius,
+                        StorageUsagePercent = items.Last().StorageUsagePercent,
+                        SampleCount = items.Sum(item => Math.Max(1, item.SampleCount))
+                    };
+                })
+                .Take(300)
+                .ToArray();
+        }
+
+        private static double? WeightedAverage(
+            IEnumerable<RouterHealthMinuteSnapshot> items,
+            Func<RouterHealthMinuteSnapshot, double?> selector)
+        {
+            RouterHealthMinuteSnapshot[] array = items.ToArray();
+            int samples = array.Sum(item => Math.Max(1, item.SampleCount));
+            return samples == 0
+                ? null
+                : array.Sum(item =>
+                    selector(item)!.Value * Math.Max(1, item.SampleCount)) / samples;
+        }
+
+        private static double? NullablePeak(
+            IEnumerable<RouterHealthMinuteSnapshot> items,
+            Func<RouterHealthMinuteSnapshot, double?> selector)
+        {
+            double[] values = items
+                .Select(selector)
+                .Where(value => value.HasValue)
+                .Select(value => value!.Value)
+                .ToArray();
+            return values.Length == 0 ? null : values.Max();
+        }
+
+        private static (TimeSpan Duration, TimeSpan BucketSize)
+            GetHistoryRangeSettings(string range) => range switch
+            {
+                "1 hour" => (TimeSpan.FromHours(1), TimeSpan.FromMinutes(1)),
+                "7 days" => (TimeSpan.FromDays(7), TimeSpan.FromHours(1)),
+                "30 days" => (TimeSpan.FromDays(30), TimeSpan.FromHours(6)),
+                _ => (TimeSpan.FromHours(24), TimeSpan.FromMinutes(5))
+            };
+
         private static string NormalizeWanHistoryRange(string? range) =>
             range is "1 hour" or "24 hours" or "7 days" or "30 days"
                 ? range
                 : "24 hours";
 
         private string FormatHistoricalWanTimeLabel(double ticks)
+            => FormatHistoryTimeLabel(ticks, _wanHistoryRange);
+
+        private string FormatRouterHealthTimeLabel(double ticks)
+            => FormatHistoryTimeLabel(ticks, _routerHealthRange);
+
+        private static string FormatHistoryTimeLabel(
+            double ticks,
+            string range)
         {
             if (ticks < DateTime.MinValue.Ticks || ticks > DateTime.MaxValue.Ticks)
                 return string.Empty;
 
             DateTime local = new DateTime((long)ticks, DateTimeKind.Utc)
                 .ToLocalTime();
-            return _wanHistoryRange switch
+            return range switch
             {
                 "1 hour" => local.ToString("HH:mm"),
                 "24 hours" => local.ToString("HH:mm"),
