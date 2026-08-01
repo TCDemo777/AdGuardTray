@@ -6,39 +6,44 @@
 
 Companion for GL.iNet Routers & AdGuard Home
 
+RouterPilot is the user-facing application name. The repository, solution,
+internal project, executable and local settings folder retain the
+`AdGuardTray` name for compatibility.
+
 ## Features
 
-- Live router, AdGuard Home, network and storage status
-- AdGuard protection controls, filtering options and blocked-service management
-- DNS analytics, query history, live logs and client details
-- Wi-Fi network and connected-client monitoring
-- GL.iNet main, Guest and IoT network awareness
-- Favourite clients and client intelligence
-- Live upload and download traffic graphs
+- Router health dashboard
+- AdGuard Home protection controls and analytics
+- Client monitoring and detailed client information
+- Global search
+- Favourite clients
+- Multi-SSID, Guest and IoT network mapping
+- Live WAN throughput and DNS charts
+- Persistent Notification Centre
+- Router online and offline notifications
+- AdGuard protection-change notifications
+- New-device notifications
+- Persistent device history
+- Router Insights with contextual actions
+- Coordinated refresh scheduling and improved resource lifecycle management
 - Router diagnostics, ping, traceroute and DNS lookup tools
-- Secure password storage using Windows user-scoped encryption
+- Secure router settings and password storage using Windows user-scoped encryption
 - Light, dark and system theme support
-- Notification-area integration with close-to-tray behaviour
+- Minimise and close to the Windows notification area
 
-## What’s new in 1.5.0
+## What’s new in 1.5.1
 
-Version 1.5.0 introduces the RouterPilot product identity while preserving the existing application architecture and compatibility.
+Version 1.5.1 brings the RouterPilot identity together with richer monitoring,
+notifications and reliability improvements.
 
-- Updated user-facing application, dashboard, window and notification-area branding
-- Updated About, diagnostics and support text for RouterPilot
-- Preserved the `AdGuardTray.exe` executable name, settings location and GitHub repository
-- Centralised router and AdGuard Home endpoint configuration
-- Removed hard-coded router addresses
-- Improved settings persistence and migration from earlier releases
-- Restored reliable close/minimise-to-tray behaviour
-- Reused HTTP and SSH connections to reduce latency and router load
-- Prevented overlapping dashboard refreshes
-- Parallelised independent AdGuard Home refresh operations
-- Split the large router manager into focused partial implementation files
-- Improved Wi-Fi client discovery across GL.iNet and OpenWrt data sources
-- Correctly maps GL.iNet IoT and Guest clients to their matching SSIDs
-- Improved handling of multiple SSIDs on the same radio
-- Updated About and diagnostic version reporting
+- Rebranded the user-facing application as RouterPilot while preserving internal compatibility
+- Added a persistent Notification Centre
+- Added router connectivity and AdGuard protection-state notifications
+- Added new-device detection and persistent device history
+- Added rule-based Router Insights with contextual actions
+- Improved WAN and DNS graph updates and refresh performance
+- Improved refresh, resource, persistence and application-shutdown stability
+- Polished spacing, styling and empty states across the interface
 
 ## Requirements
 
@@ -50,7 +55,7 @@ Version 1.5.0 introduces the RouterPilot product identity while preserving the e
 
 ## Getting started
 
-1. Download the latest release.
+1. Download the latest Windows x64 ZIP or MSI from [GitHub Releases](https://github.com/TCDemo777/AdGuardTray/releases). The current installer is `RouterPilot-1.5.1-x64.msi`.
 2. Launch RouterPilot.
 3. Enter the router IP address or hostname, SSH username and password.
 4. Keep **Remember password securely** enabled for automatic startup.

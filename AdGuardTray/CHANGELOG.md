@@ -1,14 +1,37 @@
 # RouterPilot Changelog
 
-## [1.5.0] - 2026-08-01
+## [1.5.1] - 2026-08-01
 
-Version 1.5.0 introduces the RouterPilot product identity.
+### Added
+- Persistent Notification Centre with unread state, filtering, local JSON storage and an unread navigation badge.
+- Router online and offline state-change notifications.
+- AdGuard Home protection enabled and disabled notifications for manual and external changes.
+- New-device notifications based on connected clients and persisted device history.
+- Persistent device observations including first seen, last seen, connection counts, previous addresses and known networks.
+- Rule-based Router Insights with contextual actions for router health, AdGuard protection, clients, notifications and analytics.
 
 ### Changed
-- Updated user-facing application, dashboard, window, notification-area, About and diagnostics branding to RouterPilot.
+- Rebranded the user-facing application, dashboard, windows, notification area, About page and diagnostics as RouterPilot.
 - Added the subtitle: Companion for GL.iNet Routers & AdGuard Home.
-- Preserved the `AdGuardTray.exe` executable name, settings paths, project structure and GitHub repository.
-- Updated package, assembly, file and informational versions to 1.5.0.
+- Improved live WAN throughput and DNS history charts with stable collections, clearer axes, tooltips and incremental updates.
+- Centralised refresh scheduling and router-session ownership, with cancellation-safe task lifecycle management.
+- Improved interface spacing, typography, cards, buttons, status colours and empty states.
+- Updated package, assembly, file, informational and MSI versions to 1.5.1.
+
+### Fixed
+- Prevented overlapping refresh and protection-state operations.
+- Prevented negative WAN samples after restoring the dashboard from the notification area.
+- Fixed notification persistence races and ensured pending history is flushed during shutdown.
+- Fixed refresh-loop cancellation, replacement and disposal races.
+- Fixed RouterManager and dashboard shutdown ordering so active refresh work completes before disposal.
+- Fixed static Clients view event subscriptions leaking across view reloads.
+- Fixed notification style inheritance and dashboard navigation layout regressions.
+
+### Internal
+- Preserved the `AdGuardTray.exe` executable name, `%LocalAppData%\AdGuardTray` settings folder, project structure and GitHub repository.
+- Encapsulated notification collections and isolated Notification Centre filtering.
+- Added application-scoped providers and services for router sessions, notifications, device history and insights.
+- Retained atomic local JSON persistence without storing credentials, tokens or sensitive diagnostics.
 
 ## [1.4.0] - 2026-08-01
 
