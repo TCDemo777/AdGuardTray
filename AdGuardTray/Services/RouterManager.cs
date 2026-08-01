@@ -713,6 +713,12 @@ namespace AdGuardTray.Services
         {
             string ssid = GetFlexibleString(client, "ssid", "wifi_name", "network");
             string runtimeInterface = GetFlexibleString(client, "ifname", "device", "wlan");
+            string connectionLabel = GetFlexibleString(
+                client,
+                "iface",
+                "interface",
+                "connection",
+                "type");
 
             if (ssid.Length > 0)
             {
@@ -734,10 +740,37 @@ namespace AdGuardTray.Services
                 }
             }
 
-            // Firmware commonly reports only "2.4G" or "5G".  In that case
+            // GL.iNet labels virtual networks in gl-clients as values such as
+            // "2.4G_Iot", "5G_Iot", "2.4G_Guest" and "5G_Guest".  These
+            // records often omit the SSID and runtime interface, so preserve
+            // the role suffix before using the ordinary same-band fallback.
+            bool isIot = connectionLabel.Contains(
+                "iot",
+                StringComparison.OrdinalIgnoreCase);
+            bool isGuest = connectionLabel.Contains(
+                "guest",
+                StringComparison.OrdinalIgnoreCase);
+
+            if (isIot || isGuest)
+            {
+                string role = isIot ? "iot" : "guest";
+
+                WifiRadioInfo? byRole = networks.FirstOrDefault(n =>
+                    n.Band == band &&
+                    !n.Status.Equals("Disabled", StringComparison.OrdinalIgnoreCase) &&
+                    n.Ssid.Contains(role, StringComparison.OrdinalIgnoreCase));
+
+                if (byRole != null)
+                {
+                    return byRole;
+                }
+            }
+
+            // Firmware sometimes reports only "2.4G" or "5G".  In that case
             // use the primary enabled AP for that band.
             return networks.FirstOrDefault(n =>
-                n.Band == band && !n.Status.Equals("Disabled", StringComparison.OrdinalIgnoreCase));
+                n.Band == band &&
+                !n.Status.Equals("Disabled", StringComparison.OrdinalIgnoreCase));
         }
 
         public async Task<WifiClientInfo?> GetWifiClientDetailsAsync(
