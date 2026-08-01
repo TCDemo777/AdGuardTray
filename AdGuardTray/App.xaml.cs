@@ -57,6 +57,7 @@ namespace AdGuardTray
             serviceCollection.AddSingleton<BehaviourRule, RouterBehaviourRule>();
             serviceCollection.AddSingleton<BehaviourRule, RouterTrendRule>();
             serviceCollection.AddSingleton<IntelligenceService>();
+            serviceCollection.AddSingleton<NetworkMapService>();
             serviceCollection.AddSingleton<AdGuardProtectionNotificationTracker>();
             serviceCollection.AddSingleton<DeviceHistoryService>();
             serviceCollection.AddSingleton(provider =>
@@ -81,6 +82,7 @@ namespace AdGuardTray
             serviceCollection.AddTransient<GlobalSearchViewModel>();
             serviceCollection.AddTransient<SettingsViewModel>();
             serviceCollection.AddTransient<TimelineViewModel>();
+            serviceCollection.AddTransient<NetworkMapViewModel>();
             _services = serviceCollection.BuildServiceProvider();
 
             await Services.GetRequiredService<IDataStore>()

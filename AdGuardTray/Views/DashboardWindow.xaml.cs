@@ -36,6 +36,7 @@ namespace AdGuardTray.Views
         private readonly UpdateService _updateService;
         private readonly TimelineService _timelineService;
         private readonly IntelligenceService _intelligenceService;
+        private readonly NetworkMapService _networkMapService;
         private readonly RefreshCoordinator _refreshCoordinator;
         private readonly SemaphoreSlim _routerManagerUsageGate = new(1, 1);
         private bool _refreshInProgress;
@@ -103,6 +104,8 @@ namespace AdGuardTray.Views
                 .GetRequiredService<TimelineService>();
             _intelligenceService = ((App)Application.Current).Services
                 .GetRequiredService<IntelligenceService>();
+            _networkMapService = ((App)Application.Current).Services
+                .GetRequiredService<NetworkMapService>();
             _routerManagerProvider = ((App)Application.Current).Services
                 .GetRequiredService<IRouterManagerProvider>();
             NotificationButton.DataContext = _notificationService;
@@ -483,6 +486,16 @@ namespace AdGuardTray.Views
                         cancellationToken: cancellationToken);
                 cancellationToken.ThrowIfCancellationRequested();
                 _viewModel.UpdateIntelligenceObservations(observations);
+                IReadOnlyDictionary<string, DeviceBehaviourProfile> behaviourProfiles =
+                    await _intelligenceService.GetDeviceProfilesAsync(cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+                _networkMapService.UpdateTopology(
+                    _viewModel.InternetConnected,
+                    _viewModel.RouterConnected,
+                    _viewModel.RouterModel,
+                    deviceHistory,
+                    wifiRadios,
+                    behaviourProfiles);
 
                 try
                 {
@@ -989,6 +1002,12 @@ namespace AdGuardTray.Views
                 NetworkButton);
         }
 
+        private void NetworkMap_Click(object sender, RoutedEventArgs e)
+        {
+            PageContent.Content = new NetworkMapView();
+            SelectNavigationButton(NetworkMapButton);
+        }
+
         private void Clients_Click(
             object sender,
             RoutedEventArgs e)
@@ -1270,6 +1289,7 @@ namespace AdGuardTray.Views
                 ProtectionButton,
                 AnalyticsButton,
                 NetworkButton,
+                NetworkMapButton,
                 ClientsButton,
                 LogsButton,
                 NotificationButton,

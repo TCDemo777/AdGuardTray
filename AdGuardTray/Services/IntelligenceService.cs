@@ -82,4 +82,13 @@ public sealed class IntelligenceService
         string normalized = DeviceHistoryService.NormalizeMacAddress(macAddress);
         return _cachedAnalysis?.DeviceProfiles.GetValueOrDefault(normalized);
     }
+
+    public async Task<IReadOnlyDictionary<string, DeviceBehaviourProfile>>
+        GetDeviceProfilesAsync(CancellationToken cancellationToken = default)
+    {
+        await AnalyzeAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
+        return _cachedAnalysis?.DeviceProfiles.ToDictionary(
+            pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase)
+            ?? new Dictionary<string, DeviceBehaviourProfile>();
+    }
 }

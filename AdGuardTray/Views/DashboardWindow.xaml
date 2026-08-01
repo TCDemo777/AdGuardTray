@@ -126,6 +126,12 @@
                             Content="Network"
                             Click="Network_Click"/>
 
+                    <Button x:Name="NetworkMapButton"
+                            Style="{StaticResource SidebarNavigationButton}"
+                            Background="Transparent"
+                            Content="Network Map"
+                            Click="NetworkMap_Click"/>
+
                     <Button x:Name="ClientsButton"
                             Style="{StaticResource SidebarNavigationButton}"
                             Background="Transparent"

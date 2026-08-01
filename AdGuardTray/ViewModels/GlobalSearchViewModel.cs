@@ -14,6 +14,7 @@ namespace AdGuardTray.ViewModels
     {
         private readonly IRouterManagerProvider _routerManagerProvider;
         private readonly TimelineService _timelineService;
+        private readonly NetworkMapService _networkMapService;
         private readonly List<ClientInfo> _clients = new();
         private readonly List<QueryLogEntry> _logs = new();
         private readonly List<TimelineEvent> _timelineEvents = new();
@@ -32,10 +33,12 @@ namespace AdGuardTray.ViewModels
 
         public GlobalSearchViewModel(
             IRouterManagerProvider routerManagerProvider,
-            TimelineService timelineService)
+            TimelineService timelineService,
+            NetworkMapService networkMapService)
         {
             _routerManagerProvider = routerManagerProvider;
             _timelineService = timelineService;
+            _networkMapService = networkMapService;
         }
 
         [RelayCommand]
@@ -193,8 +196,25 @@ namespace AdGuardTray.ViewModels
                     BadgeColour = "#5B5FC7"
                 });
 
+            IEnumerable<GlobalSearchResult> networkMap = _networkMapService.Topology.Networks
+                .SelectMany(group => group.Children.Select(device => new { Group = group, Device = device }))
+                .Where(item => Contains(item.Device.Name, search) ||
+                    Contains(item.Device.IpAddress, search) ||
+                    Contains(item.Device.Manufacturer, search) ||
+                    Contains(item.Device.DeviceType, search) || Contains(item.Group.Name, search))
+                .Take(25)
+                .Select(item => new GlobalSearchResult
+                {
+                    Category = "Network Map",
+                    Title = item.Device.Name,
+                    Subtitle = $"{item.Group.Name} · {item.Device.IpAddress}",
+                    Detail = $"{item.Device.Manufacturer} · {item.Device.DeviceType}",
+                    BadgeText = "Online",
+                    BadgeColour = "#16803C"
+                });
+
             foreach (GlobalSearchResult result in
-                     clients.Concat(domains).Concat(timeline)
+                     clients.Concat(domains).Concat(timeline).Concat(networkMap)
                             .OrderBy(result => result.Category)
                             .ThenBy(result => result.Title))
             {
