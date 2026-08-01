@@ -151,15 +151,23 @@ public sealed class SettingsService
 
     private static void Migrate(AppSettings settings)
     {
+        // Migrate settings written by older releases, which used RouterIp.
         if (string.IsNullOrWhiteSpace(settings.RouterHost) &&
-            !string.IsNullOrWhiteSpace(settings.RouterHost))
+            !string.IsNullOrWhiteSpace(settings.RouterIp))
+        {
+            settings.RouterHost =
+                RouterConnectionOptions.NormaliseHost(
+                    settings.RouterIp);
+        }
+        else
         {
             settings.RouterHost =
                 RouterConnectionOptions.NormaliseHost(
                     settings.RouterHost);
         }
 
-        settings.RouterHost = null;
+        // RouterIp remains only as a deserialization migration bridge.
+        settings.RouterIp = null;
         settings.RouterPort =
             settings.RouterPort is >= 1 and <= 65535
                 ? settings.RouterPort

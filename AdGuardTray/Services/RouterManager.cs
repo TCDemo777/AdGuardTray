@@ -9,10 +9,11 @@ using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 using AdGuardTray.Models;
+using AdGuardTray.Configuration;
 
 namespace AdGuardTray.Services
 {
-    public class RouterManager
+    public class RouterManager : IDisposable
     {
         private readonly GLInetSshService _ssh;
         private readonly GLInetSessionService _sessionService;
@@ -22,6 +23,8 @@ namespace AdGuardTray.Services
         private readonly CookieContainer _adGuardCookies;
         private readonly HttpClient _adGuardClient;
         private readonly Uri _adGuardBaseUri;
+        private readonly object _adGuardCookieLock = new();
+        private bool _disposed;
 
         private readonly SemaphoreSlim _tokenLock =
             new SemaphoreSlim(1, 1);
@@ -977,45 +980,92 @@ namespace AdGuardTray.Services
                 HttpMethod method,
                 string endpoint,
                 string token,
-                string? json = null)
+                string? json = null,
+                CancellationToken cancellationToken = default)
         {
-            _adGuardCookies.SetCookies(
-                _adGuardBaseUri,
-                $"Admin-Token={token}; Path=/");
+            AdGuardHttpResponse response =
+                await SendAdGuardRequestAsync(
+                    method,
+                    "control/" + endpoint.TrimStart('/'),
+                    token,
+                    json,
+                    timeout: TimeSpan.FromSeconds(10),
+                    noCache: false,
+                    cancellationToken: cancellationToken);
 
-            string safeEndpoint = endpoint.TrimStart('/');
+            return new AdGuardControlResponse(
+                response.StatusCode,
+                response.Content);
+        }
+
+        private async Task<AdGuardHttpResponse>
+            SendAdGuardRequestAsync(
+                HttpMethod method,
+                string relativeUrl,
+                string token,
+                string? json,
+                TimeSpan timeout,
+                bool noCache,
+                CancellationToken cancellationToken)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            ArgumentException.ThrowIfNullOrWhiteSpace(token);
+
+            lock (_adGuardCookieLock)
+            {
+                _adGuardCookies.SetCookies(
+                    _adGuardBaseUri,
+                    $"Admin-Token={token}; Path=/");
+            }
+
             Uri url = new Uri(
                 _adGuardBaseUri,
-                "control/" + safeEndpoint);
+                relativeUrl.TrimStart('/'));
 
-            using var request =
-                new HttpRequestMessage(method, url);
+            using var request = new HttpRequestMessage(method, url);
 
             if (json is not null)
             {
                 request.Content = new ByteArrayContent(
                     System.Text.Encoding.UTF8.GetBytes(json));
-
                 request.Content.Headers.TryAddWithoutValidation(
                     "Content-Type",
                     "application/json");
             }
 
-            Debug.WriteLine(
-                $"Calling AdGuard {method}: {url}");
+            if (noCache)
+            {
+                request.Headers.CacheControl =
+                    new System.Net.Http.Headers.CacheControlHeaderValue
+                    {
+                        NoCache = true,
+                        NoStore = true,
+                        MustRevalidate = true
+                    };
+                request.Headers.Pragma.ParseAdd("no-cache");
+            }
+
+            Debug.WriteLine($"Calling AdGuard {method}: {url}");
+
+            using var timeoutCts =
+                CancellationTokenSource.CreateLinkedTokenSource(
+                    cancellationToken);
+            timeoutCts.CancelAfter(timeout);
 
             using HttpResponseMessage response =
-                await _adGuardClient.SendAsync(request);
+                await _adGuardClient.SendAsync(
+                    request,
+                    HttpCompletionOption.ResponseHeadersRead,
+                    timeoutCts.Token);
 
-            string content =
-                await response.Content.ReadAsStringAsync();
+            string content = await response.Content
+                .ReadAsStringAsync(timeoutCts.Token);
 
             Debug.WriteLine(
-                "AdGuard control status: " +
-                $"{(int)response.StatusCode} " +
+                $"AdGuard status: {(int)response.StatusCode} " +
                 response.StatusCode);
 
-            return new AdGuardControlResponse(
+            return new AdGuardHttpResponse(
                 response.StatusCode,
                 content);
         }
@@ -2176,190 +2226,68 @@ namespace AdGuardTray.Services
 
         private async Task<AdGuardClientsResponse>
             RequestAdGuardClientsAsync(
-                string token)
+                string token,
+                CancellationToken cancellationToken = default)
         {
-            var cookieContainer =
-                new CookieContainer();
-
-            var adGuardBaseUri =
-                new Uri(
-                    $"http://{_routerIp}:3000");
-
-            cookieContainer.Add(
-                adGuardBaseUri,
-                new Cookie(
-                    "Admin-Token",
+            AdGuardHttpResponse response =
+                await SendAdGuardRequestAsync(
+                    HttpMethod.Get,
+                    "control/clients",
                     token,
-                    "/"));
-
-            using var handler =
-                new HttpClientHandler
-                {
-                    CookieContainer =
-                        cookieContainer,
-
-                    UseCookies =
-                        true,
-
-                    AutomaticDecompression =
-                        DecompressionMethods.GZip |
-                        DecompressionMethods.Deflate
-                };
-
-            using var client =
-                new HttpClient(handler)
-                {
-                    Timeout =
-                        TimeSpan.FromSeconds(10)
-                };
-
-            client.DefaultRequestHeaders
-                .Accept
-                .ParseAdd(
-                    "application/json");
-
-            string url =
-                $"http://{_routerIp}:3000/control/clients";
-
-            Debug.WriteLine(
-                "Calling AdGuard clients: " +
-                url);
-
-            using HttpResponseMessage response =
-                await client.GetAsync(
-                    url);
-
-            string content =
-                await response.Content
-                    .ReadAsStringAsync();
-
-            Debug.WriteLine(
-                "AdGuard clients status: " +
-                $"{(int)response.StatusCode} " +
-                response.StatusCode);
+                    json: null,
+                    timeout: TimeSpan.FromSeconds(10),
+                    noCache: false,
+                    cancellationToken: cancellationToken);
 
             return new AdGuardClientsResponse(
                 response.StatusCode,
-                content);
+                response.Content);
         }
 
         private async Task<AdGuardQueryLogResponse>
             RequestAdGuardQueryLogAsync(
                 string token,
-                int limit = 5000)
+                int limit = 5000,
+                CancellationToken cancellationToken = default)
         {
-            var cookieContainer =
-                new CookieContainer();
-
-            var adGuardBaseUri =
-                new Uri(
-                    $"http://{_routerIp}:3000");
-
-            cookieContainer.Add(
-                adGuardBaseUri,
-                new Cookie(
-                    "Admin-Token",
-                    token,
-                    "/"));
-
-            using var handler =
-                new HttpClientHandler
-                {
-                    CookieContainer = cookieContainer,
-                    UseCookies = true,
-                    AutomaticDecompression =
-                        DecompressionMethods.GZip |
-                        DecompressionMethods.Deflate
-                };
-
-            using var client =
-                new HttpClient(handler)
-                {
-                    Timeout = TimeSpan.FromSeconds(15)
-                };
-
-            client.DefaultRequestHeaders.Accept.ParseAdd(
-                "application/json");
-
-            client.DefaultRequestHeaders.CacheControl =
-                new System.Net.Http.Headers.CacheControlHeaderValue
-                {
-                    NoCache = true,
-                    NoStore = true,
-                    MustRevalidate = true
-                };
-
-            client.DefaultRequestHeaders.Pragma.ParseAdd(
-                "no-cache");
-
-            int safeLimit =
-                Math.Clamp(limit, 1, 5000);
-
+            int safeLimit = Math.Clamp(limit, 1, 5000);
             long cacheBuster =
                 DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            string futureCursor = Uri.EscapeDataString(
+                DateTimeOffset.UtcNow.AddMinutes(1).ToString("O"));
 
-            string futureCursor =
-                Uri.EscapeDataString(
-                    DateTimeOffset.UtcNow
-                        .AddMinutes(1)
-                        .ToString("O"));
-
-            string[] urls =
+            string[] relativeUrls =
             {
-                $"http://{_routerIp}:3000/control/querylog" +
+                "control/querylog" +
                 $"?search=&response_status=&older_than=&limit={safeLimit}" +
                 $"&_={cacheBuster}",
-
-                $"http://{_routerIp}:3000/control/querylog" +
+                "control/querylog" +
                 $"?search=&response_status=&older_than={futureCursor}" +
                 $"&limit={safeLimit}&_={cacheBuster + 1}",
-
-                $"http://{_routerIp}:3000/control/querylog" +
+                "control/querylog" +
                 $"?limit={safeLimit}&_={cacheBuster + 2}"
             };
 
             AdGuardQueryLogResponse? lastResponse = null;
 
-            foreach (string url in urls)
+            foreach (string relativeUrl in relativeUrls)
             {
-                Debug.WriteLine(
-                    "Calling AdGuard query log: " + url);
-
-                using var request =
-                    new HttpRequestMessage(
+                AdGuardHttpResponse response =
+                    await SendAdGuardRequestAsync(
                         HttpMethod.Get,
-                        url);
+                        relativeUrl,
+                        token,
+                        json: null,
+                        timeout: TimeSpan.FromSeconds(15),
+                        noCache: true,
+                        cancellationToken: cancellationToken);
 
-                request.Headers.CacheControl =
-                    new System.Net.Http.Headers.CacheControlHeaderValue
-                    {
-                        NoCache = true,
-                        NoStore = true,
-                        MustRevalidate = true
-                    };
+                lastResponse = new AdGuardQueryLogResponse(
+                    response.StatusCode,
+                    response.Content);
 
-                request.Headers.Pragma.ParseAdd(
-                    "no-cache");
-
-                using HttpResponseMessage response =
-                    await client.SendAsync(
-                        request,
-                        HttpCompletionOption.ResponseHeadersRead);
-
-                string content =
-                    await response.Content.ReadAsStringAsync();
-
-                lastResponse =
-                    new AdGuardQueryLogResponse(
-                        response.StatusCode,
-                        content);
-
-                Debug.WriteLine(
-                    "AdGuard query log status: " +
-                    $"{(int)response.StatusCode} {response.StatusCode}");
-
-                if (response.IsSuccessStatusCode &&
-                    QueryLogResponseHasEntries(content))
+                if (response.IsSuccess &&
+                    QueryLogResponseHasEntries(response.Content))
                 {
                     return lastResponse;
                 }
@@ -3201,71 +3129,22 @@ namespace AdGuardTray.Services
 
         private async Task<AdGuardStatsResponse>
             RequestAdGuardStatisticsAsync(
-                string token)
+                string token,
+                CancellationToken cancellationToken = default)
         {
-            var cookieContainer =
-                new CookieContainer();
-
-            var adGuardBaseUri =
-                new Uri(
-                    $"http://{_routerIp}:3000");
-
-            cookieContainer.Add(
-                adGuardBaseUri,
-                new Cookie(
-                    "Admin-Token",
+            AdGuardHttpResponse response =
+                await SendAdGuardRequestAsync(
+                    HttpMethod.Get,
+                    "control/stats",
                     token,
-                    "/"));
-
-            using var handler =
-                new HttpClientHandler
-                {
-                    CookieContainer =
-                        cookieContainer,
-
-                    UseCookies =
-                        true,
-
-                    AutomaticDecompression =
-                        DecompressionMethods.GZip |
-                        DecompressionMethods.Deflate
-                };
-
-            using var client =
-                new HttpClient(handler)
-                {
-                    Timeout =
-                        TimeSpan.FromSeconds(10)
-                };
-
-            client.DefaultRequestHeaders
-                .Accept
-                .ParseAdd(
-                    "application/json");
-
-            string url =
-                $"http://{_routerIp}:3000/control/stats";
-
-            Debug.WriteLine(
-                "Calling AdGuard stats: " +
-                url);
-
-            using HttpResponseMessage response =
-                await client.GetAsync(
-                    url);
-
-            string content =
-                await response.Content
-                    .ReadAsStringAsync();
-
-            Debug.WriteLine(
-                "AdGuard status: " +
-                $"{(int)response.StatusCode} " +
-                response.StatusCode);
+                    json: null,
+                    timeout: TimeSpan.FromSeconds(10),
+                    noCache: false,
+                    cancellationToken: cancellationToken);
 
             return new AdGuardStatsResponse(
                 response.StatusCode,
-                content);
+                response.Content);
         }
 
         private static AdGuardStatistics
@@ -4116,5 +3995,37 @@ namespace AdGuardTray.Services
                 StatusCode ==
                     HttpStatusCode.Forbidden;
         }
+
+        public void Dispose()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            _adGuardClient.Dispose();
+            _tokenLock.Dispose();
+
+            if (_sessionService is IDisposable sessionDisposable)
+            {
+                sessionDisposable.Dispose();
+            }
+
+            if (_ssh is IDisposable sshDisposable)
+            {
+                sshDisposable.Dispose();
+            }
+        }
+
+        private sealed record AdGuardHttpResponse(
+            HttpStatusCode StatusCode,
+            string Content)
+        {
+            public bool IsSuccess =>
+                (int)StatusCode is >= 200 and <= 299;
+        }
+
     }
+
 }
