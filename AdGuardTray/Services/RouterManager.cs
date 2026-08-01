@@ -268,7 +268,188 @@ namespace AdGuardTray.Services
                 }
             }
 
+            // Some GL.iNet/MediaTek builds omit the SSID or AP interface from
+            // gl-clients.  In that case the band-only fallback can attach every
+            // device to the first AP on that band.  Use the kernel station table
+            // as a second source of truth and enrich it with DHCP lease data.
+            await EnrichWifiClientsFromStationDumpAsync(networks);
+
             return networks;
+        }
+
+        private async Task EnrichWifiClientsFromStationDumpAsync(
+            List<WifiRadioInfo> networks)
+        {
+            string command = """
+                for iface in $(iw dev 2>/dev/null | awk '$1 == "Interface" { print $2 }'); do
+                    ssid=$(iw dev "$iface" info 2>/dev/null | sed -n 's/^[[:space:]]*ssid //p' | head -n1)
+                    iw dev "$iface" station dump 2>/dev/null | awk -v iface="$iface" -v ssid="$ssid" '
+                        /^Station / {
+                            if (mac != "") print "W|" iface "|" ssid "|" mac "|" signal;
+                            mac=$2; signal=""
+                        }
+                        /^[[:space:]]*signal:/ { signal=$2 }
+                        END { if (mac != "") print "W|" iface "|" ssid "|" mac "|" signal }'
+                done
+                """;
+
+            string stationOutput = await _ssh.RunCommandAsync(command);
+            if (string.IsNullOrWhiteSpace(stationOutput))
+            {
+                return;
+            }
+
+            string leaseOutput = await _ssh.RunCommandAsync(
+                "cat /tmp/dhcp.leases 2>/dev/null || true");
+
+            var leases = ParseDhcpLeases(leaseOutput);
+
+            foreach (string line in stationOutput.Split(
+                new[] { '\r', '\n' },
+                StringSplitOptions.RemoveEmptyEntries))
+            {
+                string[] parts = line.Split('|');
+                if (parts.Length < 5 || parts[0] != "W")
+                {
+                    continue;
+                }
+
+                string runtimeInterface = parts[1].Trim();
+                string ssid = parts[2].Trim();
+                string mac = parts[3].Trim();
+                string signal = parts[4].Trim();
+
+                if (mac.Length == 0)
+                {
+                    continue;
+                }
+
+                WifiRadioInfo? network = FindStationNetwork(
+                    networks,
+                    runtimeInterface,
+                    ssid);
+
+                if (network is null)
+                {
+                    continue;
+                }
+
+                network.Status = "Online";
+
+                WifiClientInfo? existing = networks
+                    .SelectMany(item => item.Clients)
+                    .FirstOrDefault(client =>
+                        NormaliseMacAddress(client.MacAddress) ==
+                        NormaliseMacAddress(mac));
+
+                if (existing is not null)
+                {
+                    // Correct a client that was assigned by the ambiguous
+                    // band-only GL.iNet fallback.
+                    foreach (WifiRadioInfo item in networks)
+                    {
+                        item.Clients.Remove(existing);
+                    }
+
+                    existing.Ssid = network.Ssid;
+                    existing.Band = network.Band;
+                    existing.Interface = runtimeInterface.Length > 0
+                        ? runtimeInterface
+                        : network.Interface;
+                    if (signal.Length > 0)
+                    {
+                        existing.Signal = FormatSignal(signal);
+                    }
+                    network.Clients.Add(existing);
+                    continue;
+                }
+
+                leases.TryGetValue(
+                    NormaliseMacAddress(mac),
+                    out (string Ip, string Name) lease);
+
+                network.Clients.Add(new WifiClientInfo
+                {
+                    Name = string.IsNullOrWhiteSpace(lease.Name) || lease.Name == "*"
+                        ? "Unknown device"
+                        : lease.Name,
+                    IpAddress = string.IsNullOrWhiteSpace(lease.Ip)
+                        ? "-"
+                        : lease.Ip,
+                    MacAddress = mac,
+                    Signal = FormatSignal(signal),
+                    Band = network.Band,
+                    Interface = runtimeInterface.Length > 0
+                        ? runtimeInterface
+                        : network.Interface,
+                    Ssid = network.Ssid
+                });
+            }
+        }
+
+        private static WifiRadioInfo? FindStationNetwork(
+            List<WifiRadioInfo> networks,
+            string runtimeInterface,
+            string ssid)
+        {
+            if (!string.IsNullOrWhiteSpace(ssid))
+            {
+                WifiRadioInfo? bySsid = networks.FirstOrDefault(network =>
+                    network.Ssid.Equals(
+                        ssid,
+                        StringComparison.OrdinalIgnoreCase));
+                if (bySsid is not null)
+                {
+                    return bySsid;
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(runtimeInterface))
+            {
+                WifiRadioInfo? byInterface = networks.FirstOrDefault(network =>
+                    network.Interface.Equals(
+                        runtimeInterface,
+                        StringComparison.OrdinalIgnoreCase) ||
+                    network.Radio.Equals(
+                        runtimeInterface,
+                        StringComparison.OrdinalIgnoreCase));
+                if (byInterface is not null)
+                {
+                    return byInterface;
+                }
+            }
+
+            return null;
+        }
+
+        private static Dictionary<string, (string Ip, string Name)>
+            ParseDhcpLeases(string output)
+        {
+            var result = new Dictionary<string, (string Ip, string Name)>(
+                StringComparer.OrdinalIgnoreCase);
+
+            foreach (string line in output.Split(
+                new[] { '\r', '\n' },
+                StringSplitOptions.RemoveEmptyEntries))
+            {
+                string[] fields = line.Split(
+                    new[] { ' ', '\t' },
+                    StringSplitOptions.RemoveEmptyEntries);
+                if (fields.Length < 4)
+                {
+                    continue;
+                }
+
+                string mac = NormaliseMacAddress(fields[1]);
+                if (mac.Length != 12)
+                {
+                    continue;
+                }
+
+                result[mac] = (fields[2], fields[3]);
+            }
+
+            return result;
         }
 
         public async Task<List<WifiClientInfo>> GetGlClientInventoryAsync()
@@ -617,7 +798,7 @@ namespace AdGuardTray.Services
                     "for iface in $(iw dev 2>/dev/null | awk '$1 == \"Interface\" {print $2}'); do " +
                     "station=$(iw dev \"$iface\" station get \"$target\" 2>/dev/null); " +
                     "if [ -n \"$station\" ]; then " +
-                    "ssid=$(iw dev \"$iface\" info 2>/dev/null | sed -n 's/^[[:space:]]*ssid //p' | head -n1); " +
+                    "ssid=$(iw dev "$iface" info 2>/dev/null | sed -n 's/^[[:space:]]*ssid //p' | head -n1); " +
                     "signal=$(printf '%s\\n' \"$station\" | awk '/signal:/ {print $2; exit}'); " +
                     "printf '%s|%s|%s\\n' \"$iface\" \"$ssid\" \"$signal\"; exit 0; fi; " +
                     "done";
