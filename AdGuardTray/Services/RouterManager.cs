@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -19,6 +19,9 @@ namespace AdGuardTray.Services
         private readonly string _routerIp;
         private readonly RouterInfoService _routerInfo;
         private readonly NetworkService _network;
+        private readonly CookieContainer _adGuardCookies;
+        private readonly HttpClient _adGuardClient;
+        private readonly Uri _adGuardBaseUri;
 
         private readonly SemaphoreSlim _tokenLock =
             new SemaphoreSlim(1, 1);
@@ -74,6 +77,33 @@ namespace AdGuardTray.Services
             _network =
                 new NetworkService(
                     _ssh);
+
+            _adGuardBaseUri = new UriBuilder(
+                Uri.UriSchemeHttp,
+                _routerIp,
+                3000,
+                "/").Uri;
+
+            _adGuardCookies = new CookieContainer();
+
+            var adGuardHandler = new HttpClientHandler
+            {
+                CookieContainer = _adGuardCookies,
+                UseCookies = true,
+                AutomaticDecompression =
+                    DecompressionMethods.GZip |
+                    DecompressionMethods.Deflate
+            };
+
+            _adGuardClient = new HttpClient(adGuardHandler)
+            {
+                BaseAddress = _adGuardBaseUri,
+                Timeout = TimeSpan.FromSeconds(10)
+            };
+
+            _adGuardClient.DefaultRequestHeaders
+                .Accept
+                .ParseAdd("application/json");
         }
 
         //
@@ -949,88 +979,36 @@ namespace AdGuardTray.Services
                 string token,
                 string? json = null)
         {
-            var cookieContainer =
-                new CookieContainer();
+            _adGuardCookies.SetCookies(
+                _adGuardBaseUri,
+                $"Admin-Token={token}; Path=/");
 
-            var adGuardBaseUri =
-                new Uri(
-                    $"http://{_routerIp}:3000");
-
-            cookieContainer.Add(
-                adGuardBaseUri,
-                new Cookie(
-                    "Admin-Token",
-                    token,
-                    "/"));
-
-            using var handler =
-                new HttpClientHandler
-                {
-                    CookieContainer =
-                        cookieContainer,
-
-                    UseCookies =
-                        true,
-
-                    AutomaticDecompression =
-                        DecompressionMethods.GZip |
-                        DecompressionMethods.Deflate
-                };
-
-            using var client =
-                new HttpClient(handler)
-                {
-                    Timeout =
-                        TimeSpan.FromSeconds(10)
-                };
-
-            client.DefaultRequestHeaders
-                .Accept
-                .ParseAdd(
-                    "application/json");
-
-            string safeEndpoint =
-                endpoint.TrimStart('/');
-
-            string url =
-                $"http://{_routerIp}:3000/control/" +
-                safeEndpoint;
+            string safeEndpoint = endpoint.TrimStart('/');
+            Uri url = new Uri(
+                _adGuardBaseUri,
+                "control/" + safeEndpoint);
 
             using var request =
-                new HttpRequestMessage(
-                    method,
-                    url);
+                new HttpRequestMessage(method, url);
 
             if (json is not null)
             {
-                // Some GL.iNet AdGuard Home builds reject
-                // "application/json; charset=utf-8" and require the
-                // Content-Type value to be exactly "application/json".
-                //
-                // StringContent automatically appends the charset, so
-                // use ByteArrayContent and set the header explicitly.
-                request.Content =
-                    new ByteArrayContent(
-                        System.Text.Encoding.UTF8
-                            .GetBytes(
-                                json));
+                request.Content = new ByteArrayContent(
+                    System.Text.Encoding.UTF8.GetBytes(json));
 
-                request.Content.Headers
-                    .TryAddWithoutValidation(
-                        "Content-Type",
-                        "application/json");
+                request.Content.Headers.TryAddWithoutValidation(
+                    "Content-Type",
+                    "application/json");
             }
 
             Debug.WriteLine(
                 $"Calling AdGuard {method}: {url}");
 
             using HttpResponseMessage response =
-                await client.SendAsync(
-                    request);
+                await _adGuardClient.SendAsync(request);
 
             string content =
-                await response.Content
-                    .ReadAsStringAsync();
+                await response.Content.ReadAsStringAsync();
 
             Debug.WriteLine(
                 "AdGuard control status: " +

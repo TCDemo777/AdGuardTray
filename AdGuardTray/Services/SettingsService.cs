@@ -1,101 +1,177 @@
-﻿using System;
+using System;
+using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using AdGuardTray.Configuration;
 using AdGuardTray.Models;
 
-namespace AdGuardTray.Services
+namespace AdGuardTray.Services;
+
+public sealed class SettingsService
 {
-    public class SettingsService
+    private static readonly JsonSerializerOptions JsonOptions = new()
     {
-        private readonly string _settingsFolder;
-        private readonly string _settingsFile;
+        WriteIndented = true,
+        PropertyNameCaseInsensitive = true
+    };
 
-        public SettingsService()
+    private readonly string _settingsFolder;
+    private readonly string _settingsFile;
+
+    public SettingsService(string? settingsFolder = null)
+    {
+        _settingsFolder = settingsFolder ?? Path.Combine(
+            Environment.GetFolderPath(
+                Environment.SpecialFolder.LocalApplicationData),
+            "AdGuardTray");
+
+        _settingsFile = Path.Combine(
+            _settingsFolder,
+            "settings.json");
+    }
+
+    public AppSettings Load()
+    {
+        Directory.CreateDirectory(_settingsFolder);
+
+        if (!File.Exists(_settingsFile))
+            return new AppSettings();
+
+        try
         {
-            _settingsFolder = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "AdGuardTray");
+            string json = File.ReadAllText(_settingsFile);
+            AppSettings settings =
+                JsonSerializer.Deserialize<AppSettings>(
+                    json,
+                    JsonOptions)
+                ?? new AppSettings();
 
-            _settingsFile = Path.Combine(_settingsFolder, "settings.json");
+            Migrate(settings);
+            return settings;
         }
-
-        public AppSettings Load()
+        catch (Exception ex)
+            when (ex is IOException
+                or UnauthorizedAccessException
+                or JsonException)
         {
-            try
-            {
-                if (!Directory.Exists(_settingsFolder))
-                    Directory.CreateDirectory(_settingsFolder);
-
-                if (!File.Exists(_settingsFile))
-                {
-                    var settings = new AppSettings();
-                    Save(settings);
-                    return settings;
-                }
-
-                var json = File.ReadAllText(_settingsFile);
-
-                return JsonSerializer.Deserialize<AppSettings>(json)
-                       ?? new AppSettings();
-            }
-            catch
-            {
-                return new AppSettings();
-            }
+            Debug.WriteLine(
+                $"Unable to load settings: {ex}");
+            return new AppSettings();
         }
+    }
 
-        public void Save(AppSettings settings)
+    public void Save(AppSettings settings)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        Directory.CreateDirectory(_settingsFolder);
+
+        string tempFile = _settingsFile + ".tmp";
+        string backupFile = _settingsFile + ".bak";
+        string json = JsonSerializer.Serialize(
+            settings,
+            JsonOptions);
+
+        File.WriteAllText(tempFile, json, Encoding.UTF8);
+
+        if (File.Exists(_settingsFile))
         {
-            if (!Directory.Exists(_settingsFolder))
-                Directory.CreateDirectory(_settingsFolder);
-
-            var json = JsonSerializer.Serialize(
-                settings,
-                new JsonSerializerOptions
-                {
-                    WriteIndented = true
-                });
-
-            File.WriteAllText(_settingsFile, json);
+            File.Replace(
+                tempFile,
+                _settingsFile,
+                backupFile,
+                ignoreMetadataErrors: true);
         }
-
-        public string EncryptPassword(string password)
+        else
         {
-            if (string.IsNullOrWhiteSpace(password))
-                return "";
+            File.Move(tempFile, _settingsFile);
+        }
+    }
 
-            byte[] bytes = Encoding.UTF8.GetBytes(password);
+    public RouterConnectionOptions CreateConnectionOptions(
+        AppSettings settings)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
 
-            byte[] encrypted = ProtectedData.Protect(
-                bytes,
-                null,
+        var options = new RouterConnectionOptions
+        {
+            Host = settings.RouterHost,
+            RouterScheme = settings.UseRouterHttps
+                ? Uri.UriSchemeHttps
+                : Uri.UriSchemeHttp,
+            RouterPort = settings.RouterPort,
+            AdGuardScheme = settings.UseAdGuardHttps
+                ? Uri.UriSchemeHttps
+                : Uri.UriSchemeHttp,
+            AdGuardPort = settings.AdGuardPort,
+            RequestTimeoutSeconds = 10
+        };
+
+        options.Validate();
+        return options;
+    }
+
+    public string EncryptPassword(string password)
+    {
+        if (string.IsNullOrWhiteSpace(password))
+            return string.Empty;
+
+        byte[] encrypted = ProtectedData.Protect(
+            Encoding.UTF8.GetBytes(password),
+            optionalEntropy: null,
+            DataProtectionScope.CurrentUser);
+
+        return Convert.ToBase64String(encrypted);
+    }
+
+    public string DecryptPassword(string encryptedPassword)
+    {
+        if (string.IsNullOrWhiteSpace(encryptedPassword))
+            return string.Empty;
+
+        try
+        {
+            byte[] decrypted = ProtectedData.Unprotect(
+                Convert.FromBase64String(encryptedPassword),
+                optionalEntropy: null,
                 DataProtectionScope.CurrentUser);
 
-            return Convert.ToBase64String(encrypted);
+            return Encoding.UTF8.GetString(decrypted);
         }
-
-        public string DecryptPassword(string encryptedPassword)
+        catch (Exception ex)
+            when (ex is CryptographicException
+                or FormatException)
         {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(encryptedPassword))
-                    return "";
-
-                byte[] bytes = Convert.FromBase64String(encryptedPassword);
-
-                byte[] decrypted = ProtectedData.Unprotect(
-                    bytes,
-                    null,
-                    DataProtectionScope.CurrentUser);
-
-                return Encoding.UTF8.GetString(decrypted);
-            }
-            catch
-            {
-                return "";
-            }
+            Debug.WriteLine(
+                $"Unable to decrypt saved password: {ex}");
+            return string.Empty;
         }
+    }
+
+    private static void Migrate(AppSettings settings)
+    {
+        if (string.IsNullOrWhiteSpace(settings.RouterHost) &&
+            !string.IsNullOrWhiteSpace(settings.RouterIp))
+        {
+            settings.RouterHost =
+                RouterConnectionOptions.NormaliseHost(
+                    settings.RouterIp);
+        }
+
+        settings.RouterIp = null;
+        settings.RouterPort =
+            settings.RouterPort is >= 1 and <= 65535
+                ? settings.RouterPort
+                : 80;
+        settings.AdGuardPort =
+            settings.AdGuardPort is >= 1 and <= 65535
+                ? settings.AdGuardPort
+                : 3000;
+        settings.RefreshIntervalSeconds =
+            Math.Clamp(
+                settings.RefreshIntervalSeconds,
+                5,
+                3600);
     }
 }

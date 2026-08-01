@@ -2,22 +2,76 @@
 using System;
 using System.Diagnostics;
 using System.Windows;
+using AdGuardTray.Configuration;
+using AdGuardTray.Models;
+using AdGuardTray.Services;
 
 namespace AdGuardTray
 {
     public partial class MainWindow : Window
     {
-        private TaskbarIcon trayIcon;
+        private TaskbarIcon? trayIcon;
+        private SettingsService? _settingsService;
+        private RouterEndpointProvider? _endpoints;
+        private RouterService? _routerService;
 
         public MainWindow()
         {
             InitializeComponent();
 
-            // Show Settings on first launch (temporary)
-            new Views.SettingsWindow().ShowDialog();
+            if (!TryInitialiseServices())
+            {
+                Application.Current.Shutdown();
+                return;
+            }
 
             Hide();
+            BuildTrayIcon();
+        }
 
+        private bool TryInitialiseServices()
+        {
+            _settingsService = new SettingsService();
+            AppSettings settings = _settingsService.Load();
+
+            if (!settings.IsConfigured)
+            {
+                new Views.SettingsWindow().ShowDialog();
+                settings = _settingsService.Load();
+            }
+
+            if (!settings.IsConfigured)
+            {
+                MessageBox.Show(
+                    "A router address has not been configured. Open Settings and enter the router host or IP address.",
+                    "AdGuard Tray",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return false;
+            }
+
+            try
+            {
+                RouterConnectionOptions options =
+                    _settingsService.CreateConnectionOptions(settings);
+
+                _endpoints = new RouterEndpointProvider(options);
+                _routerService = new RouterService(_endpoints);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"The saved router configuration is invalid.\n\n{ex.Message}",
+                    "AdGuard Tray",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                return false;
+            }
+        }
+
+        private void BuildTrayIcon()
+        {
             trayIcon = new TaskbarIcon
             {
                 Icon = System.Drawing.SystemIcons.Application,
@@ -25,174 +79,130 @@ namespace AdGuardTray
                 ContextMenu = new System.Windows.Controls.ContextMenu()
             };
 
-
-
-            //
-            // Dashboard
-            //
-
-            var dashboard =
-                new System.Windows.Controls.MenuItem
-                {
-                    Header = "Dashboard"
-                };
-
-            dashboard.Click += (s, e) =>
+            var dashboard = new System.Windows.Controls.MenuItem
             {
-                var window =
-                    new Views.DashboardWindow();
-
+                Header = "Dashboard"
+            };
+            dashboard.Click += (_, _) =>
+            {
+                var window = new Views.DashboardWindow();
                 window.Show();
                 window.Activate();
             };
 
-
-
-            //
-            // Open AdGuard Home
-            //
-
-            var openAdGuard =
-                new System.Windows.Controls.MenuItem
-                {
-                    Header = "Open AdGuard Home"
-                };
-
+            var openAdGuard = new System.Windows.Controls.MenuItem
+            {
+                Header = "Open AdGuard Home"
+            };
             openAdGuard.Click += OpenAdGuard_Click;
 
-
-
-            //
-            // Open Router
-            //
-
-            var openRouter =
-                new System.Windows.Controls.MenuItem
-                {
-                    Header = "Open GL.iNet Router"
-                };
-
-            openRouter.Click += (s, e) =>
+            var openRouter = new System.Windows.Controls.MenuItem
             {
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = "http://192.168.1.1/",
-                    UseShellExecute = true
-                });
+                Header = "Open GL.iNet Router"
+            };
+            openRouter.Click += (_, _) => OpenRouterPage();
+
+            var settings = new System.Windows.Controls.MenuItem
+            {
+                Header = "Settings"
+            };
+            settings.Click += (_, _) =>
+            {
+                new Views.SettingsWindow().ShowDialog();
+                ReloadServicesAfterSettingsChange();
             };
 
-
-
-            //
-            // Settings
-            //
-
-            var settings =
-                new System.Windows.Controls.MenuItem
-                {
-                    Header = "Settings"
-                };
-
-            settings.Click += (s, e) =>
+            var diagnostics = new System.Windows.Controls.MenuItem
             {
-                new Views.SettingsWindow()
-                    .ShowDialog();
+                Header = "Diagnostics"
             };
+            diagnostics.Click += (_, _) =>
+                new Views.DiagnosticsWindow().Show();
 
-
-
-            //
-            // Diagnostics
-            //
-
-            var diagnostics =
-                new System.Windows.Controls.MenuItem
-                {
-                    Header = "Diagnostics"
-                };
-
-            diagnostics.Click += (s, e) =>
+            var exit = new System.Windows.Controls.MenuItem
             {
-                new Views.DiagnosticsWindow()
-                    .Show();
+                Header = "Exit"
             };
-
-
-
-            //
-            // Exit
-            //
-
-            var exit =
-                new System.Windows.Controls.MenuItem
-                {
-                    Header = "Exit"
-                };
-
-            exit.Click += (s, e) =>
+            exit.Click += (_, _) =>
             {
-                trayIcon.Dispose();
+                DisposeServices();
                 Application.Current.Shutdown();
             };
 
-
-
-            //
-            // Build Menu
-            //
-
             trayIcon.ContextMenu.Items.Add(dashboard);
             trayIcon.ContextMenu.Items.Add(settings);
-
-            trayIcon.ContextMenu.Items.Add(
-                new System.Windows.Controls.Separator());
-
+            trayIcon.ContextMenu.Items.Add(new System.Windows.Controls.Separator());
             trayIcon.ContextMenu.Items.Add(openAdGuard);
             trayIcon.ContextMenu.Items.Add(openRouter);
-
-            trayIcon.ContextMenu.Items.Add(
-                new System.Windows.Controls.Separator());
-
+            trayIcon.ContextMenu.Items.Add(new System.Windows.Controls.Separator());
             trayIcon.ContextMenu.Items.Add(diagnostics);
-
-            trayIcon.ContextMenu.Items.Add(
-                new System.Windows.Controls.Separator());
-
+            trayIcon.ContextMenu.Items.Add(new System.Windows.Controls.Separator());
             trayIcon.ContextMenu.Items.Add(exit);
         }
 
-
-
-
-
-        private async void OpenAdGuard_Click(
-            object sender,
-            RoutedEventArgs e)
+        private void ReloadServicesAfterSettingsChange()
         {
-            var router =
-                new Services.RouterService();
-
-            await router.OpenCorrectPageAsync();
+            _routerService?.Dispose();
+            _routerService = null;
+            _endpoints = null;
+            TryInitialiseServices();
         }
 
-
-
-
-
-        public void DisposeTrayIcon()
+        private async void OpenAdGuard_Click(object sender, RoutedEventArgs e)
         {
-            trayIcon?.Dispose();
+            if (_routerService is null)
+                return;
+
+            try
+            {
+                await _routerService.OpenCorrectPageAsync();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Unable to open AdGuard Home.\n\n{ex.Message}",
+                    "AdGuard Tray",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
         }
 
-
-
-
-
-        protected override void OnClosed(
-            EventArgs e)
+        private void OpenRouterPage()
         {
-            trayIcon?.Dispose();
+            if (_endpoints is null)
+                return;
 
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = _endpoints.RouterBaseUri.AbsoluteUri,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Unable to open the router page.\n\n{ex.Message}",
+                    "AdGuard Tray",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+
+        public void DisposeTrayIcon() => trayIcon?.Dispose();
+
+        private void DisposeServices()
+        {
+            _routerService?.Dispose();
+            _routerService = null;
+            trayIcon?.Dispose();
+            trayIcon = null;
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            DisposeServices();
             base.OnClosed(e);
         }
     }
