@@ -19,7 +19,10 @@ namespace AdGuardTray.Views
         private readonly SettingsService _settingsService;
         private readonly DispatcherTimer _refreshTimer;
         private readonly DispatcherTimer _trafficTimer;
+        private bool _refreshInProgress;
         private bool _trafficRefreshInProgress;
+        private RouterManager? _routerManager;
+        private string? _routerSignature;
 
         private NetworkTrafficSnapshot? _previousTrafficSnapshot;
         private double _peakDownloadMbps;
@@ -100,6 +103,13 @@ namespace AdGuardTray.Views
 
         private async Task RefreshDashboard()
         {
+            if (_refreshInProgress)
+            {
+                return;
+            }
+
+            _refreshInProgress = true;
+
             try
             {
                 AppSettings settings =
@@ -130,10 +140,9 @@ namespace AdGuardTray.Views
                     _settingsService.DecryptPassword(
                         settings.EncryptedPassword);
 
-                var router =
-                    new RouterManager(
-                        settings.RouterHost,
-                        settings.Username,
+                RouterManager router =
+                    GetRouterManager(
+                        settings,
                         password);
 
                 RouterInfo info =
@@ -194,8 +203,30 @@ namespace AdGuardTray.Views
                 _viewModel.AdGuardService =
                     adGuard.ServiceStatus;
 
+                // These requests use the pooled AdGuard HTTP client and are
+                // independent, so run them together instead of serially.
+                Task<AdGuardStatistics> statisticsTask =
+                    router.GetAdGuardStatisticsAsync();
+
+                Task<List<QueryLogEntry>> rankingTask =
+                    router.GetQueryLogAsync();
+
+                Task<AdGuardProtectionStatus> protectionTask =
+                    router.GetAdGuardProtectionStatusAsync();
+
+                await Task.WhenAll(
+                    statisticsTask,
+                    rankingTask,
+                    protectionTask);
+
                 AdGuardStatistics statistics =
-                    await router.GetAdGuardStatisticsAsync();
+                    await statisticsTask;
+
+                List<QueryLogEntry> rankingEntries =
+                    await rankingTask;
+
+                AdGuardProtectionStatus protectionStatus =
+                    await protectionTask;
 
                 _viewModel.UpdateAdGuardStatistics(
                     statistics);
@@ -203,9 +234,6 @@ namespace AdGuardTray.Views
                 // Several AdGuard Home builds omit ranking arrays from
                 // /control/stats. Build those Analytics lists from the
                 // current query-log window whenever the stats lists are empty.
-                List<QueryLogEntry> rankingEntries =
-                    await router.GetQueryLogAsync();
-
                 _viewModel.UpdateRankingsFromQueryLog(
                     rankingEntries,
                     onlyWhenEmpty: false);
@@ -213,8 +241,6 @@ namespace AdGuardTray.Views
                 // Protection state is authoritative from /control/status.
                 // Statistics responses are not reliable for this value on
                 // every GL.iNet AdGuard Home build.
-                AdGuardProtectionStatus protectionStatus =
-                    await router.GetAdGuardProtectionStatusAsync();
 
                 _viewModel.AdGuardProtectionEnabled =
                     protectionStatus.IsEnabled;
@@ -321,6 +347,10 @@ namespace AdGuardTray.Views
                 ShowConnectionError(
                     ex.Message);
             }
+            finally
+            {
+                _refreshInProgress = false;
+            }
         }
 
         private async Task RefreshNetworkTrafficAsync()
@@ -346,10 +376,10 @@ namespace AdGuardTray.Views
                     _settingsService.DecryptPassword(
                         settings.EncryptedPassword);
 
-                var router = new RouterManager(
-                    settings.RouterHost,
-                    settings.Username,
-                    password);
+                RouterManager router =
+                    GetRouterManager(
+                        settings,
+                        password);
 
                 NetworkTrafficSnapshot snapshot =
                     await router.GetNetworkTrafficSnapshotAsync();
@@ -365,6 +395,46 @@ namespace AdGuardTray.Views
             {
                 _trafficRefreshInProgress = false;
             }
+        }
+
+        private RouterManager GetRouterManager(
+            AppSettings settings,
+            string password)
+        {
+            string signature = string.Join(
+                "|",
+                settings.RouterHost.Trim(),
+                settings.Username.Trim(),
+                password);
+
+            if (_routerManager is not null &&
+                string.Equals(
+                    _routerSignature,
+                    signature,
+                    StringComparison.Ordinal))
+            {
+                return _routerManager;
+            }
+
+            _routerManager?.Dispose();
+            _routerManager = new RouterManager(
+                settings.RouterHost,
+                settings.Username,
+                password);
+            _routerSignature = signature;
+
+            ResetTrafficStatistics();
+            return _routerManager;
+        }
+
+        private void ResetTrafficStatistics()
+        {
+            _previousTrafficSnapshot = null;
+            _peakDownloadMbps = 0;
+            _peakUploadMbps = 0;
+            _downloadTotalMbps = 0;
+            _uploadTotalMbps = 0;
+            _trafficSampleCount = 0;
         }
 
         private void UpdateNetworkTraffic(
@@ -553,12 +623,7 @@ namespace AdGuardTray.Views
             _viewModel.Latency =
                 "-";
 
-            _previousTrafficSnapshot = null;
-            _peakDownloadMbps = 0;
-            _peakUploadMbps = 0;
-            _downloadTotalMbps = 0;
-            _uploadTotalMbps = 0;
-            _trafficSampleCount = 0;
+            ResetTrafficStatistics();
             _viewModel.ClearNetworkTraffic();
 
             _viewModel.StatusMessage =
@@ -751,9 +816,13 @@ namespace AdGuardTray.Views
             EventArgs e)
         {
             _refreshTimer.Stop();
+            _trafficTimer.Stop();
 
             ProtectionStateNotifier.StateChanged -=
                 ProtectionStateNotifier_StateChanged;
+
+            _routerManager?.Dispose();
+            _routerManager = null;
 
             base.OnClosed(e);
         }
