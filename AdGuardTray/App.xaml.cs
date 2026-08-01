@@ -26,11 +26,29 @@ namespace AdGuardTray
             base.OnStartup(e);
 
             var serviceCollection = new ServiceCollection();
+            serviceCollection.AddSingleton<SettingsService>();
+            serviceCollection.AddSingleton(serviceProvider =>
+            {
+                SettingsService settingsService =
+                    serviceProvider.GetRequiredService<SettingsService>();
+                AppSettings settings = settingsService.Load();
+                string password = settingsService.DecryptPassword(
+                    settings.EncryptedPassword);
+
+                return new RouterManager(
+                    settings.RouterHost,
+                    settings.Username,
+                    password);
+            });
             serviceCollection.AddSingleton(
                 _ => new NotificationService(Dispatcher));
             serviceCollection.AddSingleton<AdGuardProtectionNotificationTracker>();
             serviceCollection.AddSingleton<NewDeviceNotificationTracker>();
             serviceCollection.AddSingleton<NotificationCentreViewModel>();
+            serviceCollection.AddTransient<ClientsViewModel>();
+            serviceCollection.AddTransient<LogsViewModel>();
+            serviceCollection.AddSingleton<ProtectionViewModel>();
+            serviceCollection.AddTransient<GlobalSearchViewModel>();
             _services = serviceCollection.BuildServiceProvider();
 
             await Services.GetRequiredService<NotificationService>()
@@ -128,12 +146,18 @@ namespace AdGuardTray
                 await _dashboardWindow.RefreshNowAsync();
         }
 
-        private void ExitApplication()
+        private async void ExitApplication()
         {
             IsExitRequested = true;
             _trayManager?.Dispose();
             _trayManager = null;
-            _dashboardWindow?.Close();
+
+            if (_dashboardWindow is not null)
+            {
+                await _dashboardWindow.PrepareForShutdownAsync();
+                _dashboardWindow.Close();
+            }
+
             _dashboardWindow = null;
             Shutdown();
         }

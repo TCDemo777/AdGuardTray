@@ -16,11 +16,9 @@ namespace AdGuardTray.ViewModels
 {
     public sealed class ProtectionViewModel : ObservableObject, IDisposable
     {
-        private readonly SettingsService _settingsService = new();
+        private readonly RouterManager _routerManager;
         private readonly AdGuardProtectionNotificationTracker _protectionNotificationTracker;
         private readonly DispatcherTimer _timer;
-        private RouterManager? _routerManager;
-        private string _routerSignature = "";
         private bool _isBusy;
         private bool _isInitialising;
         private string _statusText = "Loading...";
@@ -54,8 +52,10 @@ namespace AdGuardTray.ViewModels
         private string _queryLogStatus = "Loading recent DNS activity...";
 
         public ProtectionViewModel(
+            RouterManager routerManager,
             AdGuardProtectionNotificationTracker protectionNotificationTracker)
         {
+            _routerManager = routerManager;
             _protectionNotificationTracker = protectionNotificationTracker;
             _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
             _timer.Tick += async (_, _) => await RefreshTimedDataAsync();
@@ -534,10 +534,6 @@ namespace AdGuardTray.ViewModels
 
         private RouterManager GetRouterManager()
         {
-            AppSettings settings = _settingsService.Load();
-            string password = _settingsService.DecryptPassword(settings.EncryptedPassword);
-            string signature = settings.RouterHost + "\n" + settings.Username + "\n" + settings.EncryptedPassword;
-            if (_routerManager is null || !string.Equals(_routerSignature, signature, StringComparison.Ordinal)) { _routerManager = new RouterManager(settings.RouterHost, settings.Username, password); _routerSignature = signature; }
             return _routerManager;
         }
 

@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using AdGuardTray.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AdGuardTray.Views
 {
@@ -13,7 +14,8 @@ namespace AdGuardTray.Views
             InitializeComponent();
 
             _viewModel =
-                new GlobalSearchViewModel();
+                ((App)Application.Current).Services
+                    .GetRequiredService<GlobalSearchViewModel>();
 
             DataContext =
                 _viewModel;

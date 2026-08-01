@@ -19,9 +19,8 @@ namespace AdGuardTray.Views
         {
             InitializeComponent();
 
-            var app = (App)Application.Current;
-            _viewModel = new ClientsViewModel(
-                app.Services.GetRequiredService<NewDeviceNotificationTracker>());
+            _viewModel = ((App)Application.Current).Services
+                .GetRequiredService<ClientsViewModel>();
             DataContext = _viewModel;
 
             _refreshTimer =

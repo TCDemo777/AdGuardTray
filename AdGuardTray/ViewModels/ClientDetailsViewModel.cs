@@ -14,13 +14,11 @@ namespace AdGuardTray.ViewModels
 {
     public partial class ClientDetailsViewModel : ObservableObject
     {
-        private readonly SettingsService _settingsService;
+        private readonly RouterManager _routerManager;
         private readonly ClientProfileService _clientProfileService;
         private readonly Dictionary<string, ClientProfile> _clientProfiles;
         private readonly DispatcherTimer _refreshTimer;
         private readonly ClientInfo _client;
-
-        private RouterManager? _routerManager;
 
         public ObservableCollection<QueryLogEntry> RecentQueries { get; } =
             new();
@@ -69,10 +67,11 @@ namespace AdGuardTray.ViewModels
             IsPaused ? "Resume" : "Pause";
 
         public ClientDetailsViewModel(
-            ClientInfo client)
+            ClientInfo client,
+            RouterManager routerManager)
         {
             _client = client;
-            _settingsService = new SettingsService();
+            _routerManager = routerManager;
             _clientProfileService = new ClientProfileService();
             _clientProfiles = _clientProfileService.Load();
 
@@ -89,37 +88,6 @@ namespace AdGuardTray.ViewModels
 
         public async Task StartAsync()
         {
-            if (_routerManager is null)
-            {
-                var settings =
-                    _settingsService.Load();
-
-                if (string.IsNullOrWhiteSpace(settings.RouterHost) ||
-                    string.IsNullOrWhiteSpace(settings.Username))
-                {
-                    StatusMessage =
-                        "Router settings are incomplete.";
-                    return;
-                }
-
-                string password =
-                    _settingsService.DecryptPassword(
-                        settings.EncryptedPassword);
-
-                if (string.IsNullOrWhiteSpace(password))
-                {
-                    StatusMessage =
-                        "The router password is missing.";
-                    return;
-                }
-
-                _routerManager =
-                    new RouterManager(
-                        settings.RouterHost,
-                        settings.Username,
-                        password);
-            }
-
             await RefreshAsync();
 
             if (!_refreshTimer.IsEnabled)
@@ -137,8 +105,7 @@ namespace AdGuardTray.ViewModels
         public async Task RefreshAsync()
         {
             if (IsLoading ||
-                IsPaused ||
-                _routerManager is null)
+                IsPaused)
             {
                 return;
             }

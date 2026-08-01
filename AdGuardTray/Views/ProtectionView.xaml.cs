@@ -12,9 +12,8 @@ namespace AdGuardTray.Views
         public ProtectionView()
         {
             InitializeComponent();
-            _viewModel = new ProtectionViewModel(
-                ((App)Application.Current).Services
-                    .GetRequiredService<AdGuardProtectionNotificationTracker>());
+            _viewModel = ((App)Application.Current).Services
+                .GetRequiredService<ProtectionViewModel>();
             DataContext = _viewModel;
             Loaded += ProtectionView_Loaded;
             Unloaded += ProtectionView_Unloaded;

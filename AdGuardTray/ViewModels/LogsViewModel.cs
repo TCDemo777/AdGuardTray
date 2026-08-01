@@ -16,13 +16,11 @@ namespace AdGuardTray.ViewModels
         // Keeping the on-screen collection bounded prevents the WPF DataGrid
         // from creating thousands of row containers during initial navigation.
         private const int MaxVisibleEntries = 1500;
-        private readonly SettingsService _settingsService;
+        private readonly RouterManager _routerManager;
         private readonly DispatcherTimer _refreshTimer;
 
         private readonly List<QueryLogEntry> _allEntries =
             new();
-
-        private RouterManager? _routerManager;
 
         public ObservableCollection<QueryLogEntry> Entries
         {
@@ -48,10 +46,9 @@ namespace AdGuardTray.ViewModels
                 ? "Resume"
                 : "Pause";
 
-        public LogsViewModel()
+        public LogsViewModel(RouterManager routerManager)
         {
-            _settingsService =
-                new SettingsService();
+            _routerManager = routerManager;
 
             _refreshTimer =
                 new DispatcherTimer
@@ -66,42 +63,6 @@ namespace AdGuardTray.ViewModels
 
         public async Task StartAsync()
         {
-            if (_routerManager is null)
-            {
-                var settings =
-                    _settingsService.Load();
-
-                if (string.IsNullOrWhiteSpace(
-                        settings.RouterHost) ||
-                    string.IsNullOrWhiteSpace(
-                        settings.Username))
-                {
-                    StatusMessage =
-                        "Router settings are incomplete.";
-
-                    return;
-                }
-
-                string password =
-                    _settingsService.DecryptPassword(
-                        settings.EncryptedPassword);
-
-                if (string.IsNullOrWhiteSpace(
-                        password))
-                {
-                    StatusMessage =
-                        "The router password is missing.";
-
-                    return;
-                }
-
-                _routerManager =
-                    new RouterManager(
-                        settings.RouterHost,
-                        settings.Username,
-                        password);
-            }
-
             await LoadLogsAsync();
 
             if (!_refreshTimer.IsEnabled)
@@ -119,8 +80,7 @@ namespace AdGuardTray.ViewModels
         public async Task LoadLogsAsync()
         {
             if (IsLoading ||
-                IsPaused ||
-                _routerManager is null)
+                IsPaused)
             {
                 return;
             }

@@ -12,13 +12,12 @@ namespace AdGuardTray.ViewModels
 {
     public partial class ClientsViewModel : ObservableObject
     {
-        private readonly SettingsService _settingsService;
+        private readonly RouterManager _routerManager;
         private readonly ClientProfileService _clientProfileService;
         private readonly NewDeviceNotificationTracker _newDeviceNotificationTracker;
         private readonly Dictionary<string, ClientProfile> _clientProfiles;
         private DateTime _lastProfileSaveUtc = DateTime.MinValue;
         private readonly List<ClientInfo> _allClients = new();
-        private RouterManager? _routerManager;
         private readonly Dictionary<string, WifiClientInfo> _liveClientLookup =
             new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, List<ClientActivityItem>> _clientActivityHistory =
@@ -91,10 +90,11 @@ namespace AdGuardTray.ViewModels
             SortDescending ? "Descending" : "Ascending";
 
         public ClientsViewModel(
+            RouterManager routerManager,
             NewDeviceNotificationTracker newDeviceNotificationTracker)
         {
+            _routerManager = routerManager;
             _newDeviceNotificationTracker = newDeviceNotificationTracker;
-            _settingsService = new SettingsService();
             _clientProfileService = new ClientProfileService();
             _clientProfiles = _clientProfileService.Load();
 
@@ -113,33 +113,6 @@ namespace AdGuardTray.ViewModels
 
             try
             {
-                if (_routerManager is null)
-                {
-                    var settings = _settingsService.Load();
-
-                    if (string.IsNullOrWhiteSpace(settings.RouterHost) ||
-                        string.IsNullOrWhiteSpace(settings.Username))
-                    {
-                        StatusMessage = "Router settings are incomplete.";
-                        return;
-                    }
-
-                    string password =
-                        _settingsService.DecryptPassword(
-                            settings.EncryptedPassword);
-
-                    if (string.IsNullOrWhiteSpace(password))
-                    {
-                        StatusMessage = "The router password is missing.";
-                        return;
-                    }
-
-                    _routerManager = new RouterManager(
-                        settings.RouterHost,
-                        settings.Username,
-                        password);
-                }
-
                 string? selectedKey = SelectedClient is null
                     ? null
                     : ClientKey(SelectedClient);

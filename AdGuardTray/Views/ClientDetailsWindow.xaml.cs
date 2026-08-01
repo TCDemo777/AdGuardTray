@@ -2,6 +2,7 @@ using System;
 using System.Windows;
 using AdGuardTray.Models;
 using AdGuardTray.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AdGuardTray.Views
 {
@@ -15,7 +16,9 @@ namespace AdGuardTray.Views
             InitializeComponent();
 
             _viewModel =
-                new ClientDetailsViewModel(client);
+                ActivatorUtilities.CreateInstance<ClientDetailsViewModel>(
+                    ((App)Application.Current).Services,
+                    client);
 
             DataContext = _viewModel;
 

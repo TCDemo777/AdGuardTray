@@ -3,12 +3,14 @@ using System.Threading.Tasks;
 using System.Windows;
 using AdGuardTray.Models;
 using AdGuardTray.Services;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AdGuardTray.Views
 {
     public partial class DiagnosticsWindow : Window
     {
         private readonly SettingsService _settingsService;
+        private readonly RouterManager _routerManager;
 
         public DiagnosticsWindow()
         {
@@ -16,6 +18,8 @@ namespace AdGuardTray.Views
 
             _settingsService =
                 new SettingsService();
+            _routerManager = ((App)Application.Current).Services
+                .GetRequiredService<RouterManager>();
         }
                 private async Task<RouterManager> CreateRouterManagerAsync()
         {
@@ -41,10 +45,7 @@ namespace AdGuardTray.Views
                     "The router login succeeded but no Admin-Token was returned.");
             }
 
-            return new RouterManager(
-    settings.RouterHost,
-    settings.Username,
-    password);
+            return _routerManager;
         }
 
         private async Task RunDiagnosticAsync(

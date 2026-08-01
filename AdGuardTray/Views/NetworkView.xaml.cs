@@ -3,24 +3,20 @@ using System.Windows;
 using System.Windows.Controls;
 using AdGuardTray.Models;
 using AdGuardTray.Services;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AdGuardTray.Views
 {
     public partial class NetworkView : UserControl
     {
-        private readonly SettingsService _settingsService = new SettingsService();
+        private readonly RouterManager _routerManager;
         private bool _maintenanceInProgress;
 
         public NetworkView()
         {
             InitializeComponent();
-        }
-
-        private RouterManager CreateRouterManager()
-        {
-            AppSettings settings = _settingsService.Load();
-            string password = _settingsService.DecryptPassword(settings.EncryptedPassword);
-            return new RouterManager(settings.RouterHost, settings.Username, password);
+            _routerManager = ((App)Application.Current).Services
+                .GetRequiredService<RouterManager>();
         }
 
         private async void RestartWifi_Click(object sender, RoutedEventArgs e)
@@ -62,8 +58,7 @@ namespace AdGuardTray.Views
 
             try
             {
-                RouterManager router = CreateRouterManager();
-                MaintenanceStatusText.Text = await operation(router);
+                MaintenanceStatusText.Text = await operation(_routerManager);
             }
             catch (Exception ex)
             {

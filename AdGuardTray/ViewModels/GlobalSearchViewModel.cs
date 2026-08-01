@@ -12,10 +12,9 @@ namespace AdGuardTray.ViewModels
 {
     public partial class GlobalSearchViewModel : ObservableObject
     {
-        private readonly SettingsService _settingsService;
+        private readonly RouterManager _routerManager;
         private readonly List<ClientInfo> _clients = new();
         private readonly List<QueryLogEntry> _logs = new();
-        private RouterManager? _routerManager;
 
         public ObservableCollection<GlobalSearchResult> Results { get; } = new();
 
@@ -29,9 +28,9 @@ namespace AdGuardTray.ViewModels
         [ObservableProperty]
         private bool isLoading;
 
-        public GlobalSearchViewModel()
+        public GlobalSearchViewModel(RouterManager routerManager)
         {
-            _settingsService = new SettingsService();
+            _routerManager = routerManager;
         }
 
         [RelayCommand]
@@ -47,13 +46,6 @@ namespace AdGuardTray.ViewModels
 
             try
             {
-                await EnsureRouterAsync();
-
-                if (_routerManager is null)
-                {
-                    return;
-                }
-
                 List<ClientInfo> clients =
                     await _routerManager.GetAdGuardClientsAsync();
 
@@ -87,37 +79,6 @@ namespace AdGuardTray.ViewModels
         partial void OnSearchTextChanged(string value)
         {
             ApplySearch();
-        }
-
-        private Task EnsureRouterAsync()
-        {
-            if (_routerManager is not null)
-            {
-                return Task.CompletedTask;
-            }
-
-            AppSettings settings =
-                _settingsService.Load();
-
-            string password =
-                _settingsService.DecryptPassword(
-                    settings.EncryptedPassword);
-
-            if (string.IsNullOrWhiteSpace(settings.RouterHost) ||
-                string.IsNullOrWhiteSpace(settings.Username) ||
-                string.IsNullOrWhiteSpace(password))
-            {
-                StatusMessage =
-                    "Router settings are incomplete.";
-                return Task.CompletedTask;
-            }
-
-            _routerManager = new RouterManager(
-                settings.RouterHost,
-                settings.Username,
-                password);
-
-            return Task.CompletedTask;
         }
 
         private void ApplySearch()

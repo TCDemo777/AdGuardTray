@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using AdGuardTray.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AdGuardTray.Views
 {
@@ -13,7 +14,8 @@ namespace AdGuardTray.Views
             InitializeComponent();
 
             _viewModel =
-                new LogsViewModel();
+                ((App)Application.Current).Services
+                    .GetRequiredService<LogsViewModel>();
 
             DataContext =
                 _viewModel;

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -24,10 +25,10 @@ namespace AdGuardTray.Views
         private readonly NotificationCentreViewModel _notificationCentreViewModel;
         private readonly AdGuardProtectionNotificationTracker _protectionNotificationTracker;
         private readonly RefreshCoordinator _refreshCoordinator;
+        private readonly SemaphoreSlim _routerManagerUsageGate = new(1, 1);
         private bool _refreshInProgress;
         private bool _trafficRefreshInProgress;
-        private RouterManager? _routerManager;
-        private string? _routerSignature;
+        private readonly RouterManager _routerManager;
         private bool _routerOnline = true;
 
         private NetworkTrafficSnapshot? _previousTrafficSnapshot;
@@ -68,6 +69,8 @@ namespace AdGuardTray.Views
                 .Services.GetRequiredService<NotificationCentreViewModel>();
             _protectionNotificationTracker = ((App)Application.Current)
                 .Services.GetRequiredService<AdGuardProtectionNotificationTracker>();
+            _routerManager = ((App)Application.Current).Services
+                .GetRequiredService<RouterManager>();
             NotificationButton.DataContext = _notificationService;
 
             _settingsService =
@@ -86,12 +89,14 @@ namespace AdGuardTray.Views
             _refreshCoordinator.Register(
                 DashboardRefreshTask,
                 TimeSpan.FromSeconds(30),
-                _ => RunOnUiThreadAsync(RefreshDashboard),
+                cancellationToken => RunOnUiThreadAsync(
+                    () => RefreshDashboard(cancellationToken)),
                 enabled: false);
             _refreshCoordinator.Register(
                 TrafficRefreshTask,
                 TimeSpan.FromSeconds(2),
-                _ => RunOnUiThreadAsync(RefreshNetworkTrafficAsync),
+                cancellationToken => RunOnUiThreadAsync(
+                    () => RefreshNetworkTrafficAsync(cancellationToken)),
                 enabled: false);
 
             ProtectionStateNotifier.StateChanged +=
@@ -105,20 +110,23 @@ namespace AdGuardTray.Views
             await _refreshCoordinator.RunNowAsync(
                 DashboardRefreshTask);
 
-            _refreshCoordinator.SetEnabled(
+            await _refreshCoordinator.SetEnabledAsync(
                 DashboardRefreshTask,
                 true);
 
             if (IsVisible)
             {
-                _refreshCoordinator.SetEnabled(
+                await _refreshCoordinator.SetEnabledAsync(
                     TrafficRefreshTask,
                     true);
             }
         }
 
-        private async Task RefreshDashboard()
+        private async Task RefreshDashboard(
+            CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (_refreshInProgress)
             {
                 return;
@@ -126,9 +134,13 @@ namespace AdGuardTray.Views
 
             _refreshInProgress = true;
             bool routerCommunicationConfirmed = false;
+            bool routerManagerGateEntered = false;
 
             try
             {
+                await _routerManagerUsageGate.WaitAsync(cancellationToken);
+                routerManagerGateEntered = true;
+
                 AppSettings settings =
                     _settingsService.Load();
 
@@ -155,18 +167,12 @@ namespace AdGuardTray.Views
                     return;
                 }
 
-                string password =
-                    _settingsService.DecryptPassword(
-                        settings.EncryptedPassword);
-
-                RouterManager router =
-                    GetRouterManager(
-                        settings,
-                        password);
+                RouterManager router = _routerManager;
 
                 RouterInfo info =
                     await router.GetRouterInfoAsync();
 
+                cancellationToken.ThrowIfCancellationRequested();
                 routerCommunicationConfirmed = true;
 
                 _viewModel.RouterConnected =
@@ -202,6 +208,7 @@ namespace AdGuardTray.Views
                 AdGuardStatus adGuard =
                     await router.GetAdGuardStatusAsync();
 
+                cancellationToken.ThrowIfCancellationRequested();
                 if (adGuard.ServiceStatus.StartsWith(
                     "SSH_",
                     StringComparison.OrdinalIgnoreCase))
@@ -235,34 +242,49 @@ namespace AdGuardTray.Views
                 Task<AdGuardProtectionStatus> protectionTask =
                     router.GetAdGuardProtectionStatusAsync();
 
-                AdGuardProtectionStatus protectionStatus =
-                    await protectionTask;
-
-                await _protectionNotificationTracker.ProcessProtectionStateAsync(
-                    protectionStatus.IsEnabled,
-                    ProtectionStateSource.Refresh);
-
-                // Protection state is authoritative from /control/status.
-                // Process this independently so unrelated statistics or
-                // query-log failures cannot hide a confirmed state change.
-                _viewModel.AdGuardProtectionEnabled =
-                    protectionStatus.IsEnabled;
-
-                _viewModel.AdGuardProtectionPaused =
-                    protectionStatus.IsPaused;
-
-                _viewModel.AdGuardProtectionStatusKnown =
-                    true;
-
-                _viewModel.AdGuardProtectionRemaining =
-                    protectionStatus.IsPaused
-                        ? FormatProtectionRemaining(
-                            protectionStatus.RemainingPause)
-                        : "";
-
-                await Task.WhenAll(
+                Task allAdGuardTasks = Task.WhenAll(
                     statisticsTask,
-                    rankingTask);
+                    rankingTask,
+                    protectionTask);
+
+                try
+                {
+                    AdGuardProtectionStatus protectionStatus =
+                        await protectionTask;
+
+                    cancellationToken.ThrowIfCancellationRequested();
+                    await _protectionNotificationTracker.ProcessProtectionStateAsync(
+                        protectionStatus.IsEnabled,
+                        ProtectionStateSource.Refresh);
+
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    // Protection state is authoritative from /control/status.
+                    // Keep processing it before applying the other results.
+                    _viewModel.AdGuardProtectionEnabled =
+                        protectionStatus.IsEnabled;
+
+                    _viewModel.AdGuardProtectionPaused =
+                        protectionStatus.IsPaused;
+
+                    _viewModel.AdGuardProtectionStatusKnown =
+                        true;
+
+                    _viewModel.AdGuardProtectionRemaining =
+                        protectionStatus.IsPaused
+                            ? FormatProtectionRemaining(
+                                protectionStatus.RemainingPause)
+                            : "";
+
+                    await allAdGuardTasks;
+                }
+                catch
+                {
+                    await ObserveTaskAsync(allAdGuardTasks);
+                    throw;
+                }
+
+                cancellationToken.ThrowIfCancellationRequested();
 
                 AdGuardStatistics statistics =
                     await statisticsTask;
@@ -310,6 +332,7 @@ namespace AdGuardTray.Views
                 NetworkInfo network =
                     await router.GetNetworkInfoAsync();
 
+                cancellationToken.ThrowIfCancellationRequested();
                 _viewModel.InternetConnected =
                     network.Connected;
 
@@ -333,7 +356,13 @@ namespace AdGuardTray.Views
                     List<WifiRadioInfo> wifiRadios =
                         await router.GetWifiRadiosAsync();
 
+                    cancellationToken.ThrowIfCancellationRequested();
                     _viewModel.UpdateWifiRadios(wifiRadios);
+                }
+                catch (OperationCanceledException)
+                    when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
                 }
                 catch
                 {
@@ -357,6 +386,10 @@ namespace AdGuardTray.Views
                     DateTime.Now.ToString(
                         "dd MMM yyyy HH:mm:ss");
             }
+            catch (OperationCanceledException)
+                when (cancellationToken.IsCancellationRequested)
+            {
+            }
             catch (SshAuthenticationException)
             {
                 await ShowConnectionErrorAsync(
@@ -375,12 +408,20 @@ namespace AdGuardTray.Views
             }
             finally
             {
+                if (routerManagerGateEntered)
+                {
+                    _routerManagerUsageGate.Release();
+                }
+
                 _refreshInProgress = false;
             }
         }
 
-        private async Task RefreshNetworkTrafficAsync()
+        private async Task RefreshNetworkTrafficAsync(
+            CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (!IsVisible ||
                 _trafficRefreshInProgress)
             {
@@ -388,9 +429,13 @@ namespace AdGuardTray.Views
             }
 
             _trafficRefreshInProgress = true;
+            bool routerManagerGateEntered = false;
 
             try
             {
+                await _routerManagerUsageGate.WaitAsync(cancellationToken);
+                routerManagerGateEntered = true;
+
                 AppSettings settings = _settingsService.Load();
 
                 if (string.IsNullOrWhiteSpace(settings.RouterHost) ||
@@ -399,24 +444,22 @@ namespace AdGuardTray.Views
                     return;
                 }
 
-                string password =
-                    _settingsService.DecryptPassword(
-                        settings.EncryptedPassword);
-
-                RouterManager router =
-                    GetRouterManager(
-                        settings,
-                        password);
+                RouterManager router = _routerManager;
 
                 NetworkTrafficSnapshot snapshot =
                     await router.GetNetworkTrafficSnapshotAsync();
 
+                cancellationToken.ThrowIfCancellationRequested();
                 if (!IsVisible)
                 {
                     return;
                 }
 
                 UpdateNetworkTraffic(snapshot);
+            }
+            catch (OperationCanceledException)
+                when (cancellationToken.IsCancellationRequested)
+            {
             }
             catch
             {
@@ -425,38 +468,25 @@ namespace AdGuardTray.Views
             }
             finally
             {
+                if (routerManagerGateEntered)
+                {
+                    _routerManagerUsageGate.Release();
+                }
+
                 _trafficRefreshInProgress = false;
             }
         }
 
-        private RouterManager GetRouterManager(
-            AppSettings settings,
-            string password)
+        private static async Task ObserveTaskAsync(Task task)
         {
-            string signature = string.Join(
-                "|",
-                settings.RouterHost.Trim(),
-                settings.Username.Trim(),
-                password);
-
-            if (_routerManager is not null &&
-                string.Equals(
-                    _routerSignature,
-                    signature,
-                    StringComparison.Ordinal))
+            try
             {
-                return _routerManager;
+                await task;
             }
-
-            _routerManager?.Dispose();
-            _routerManager = new RouterManager(
-                settings.RouterHost,
-                settings.Username,
-                password);
-            _routerSignature = signature;
-
-            ResetTrafficStatistics();
-            return _routerManager;
+            catch
+            {
+                // The original exception is rethrown by the caller.
+            }
         }
 
         private void ResetTrafficStatistics()
@@ -559,7 +589,7 @@ namespace AdGuardTray.Views
             }
         }
 
-        private void DashboardWindow_IsVisibleChanged(
+        private async void DashboardWindow_IsVisibleChanged(
             object sender,
             DependencyPropertyChangedEventArgs e)
         {
@@ -570,7 +600,7 @@ namespace AdGuardTray.Views
 
                 if (IsLoaded)
                 {
-                    _refreshCoordinator.SetEnabled(
+                    await _refreshCoordinator.SetEnabledAsync(
                         TrafficRefreshTask,
                         true);
                 }
@@ -578,7 +608,7 @@ namespace AdGuardTray.Views
                 return;
             }
 
-            _refreshCoordinator.SetEnabled(
+            await _refreshCoordinator.SetEnabledAsync(
                 TrafficRefreshTask,
                 false);
         }
@@ -594,7 +624,6 @@ namespace AdGuardTray.Views
                 return;
             }
 
-            _refreshCoordinator.StopAll();
             base.OnClosing(e);
         }
 
@@ -734,6 +763,11 @@ namespace AdGuardTray.Views
                     ? "RouterOnline"
                     : "RouterOffline"
             });
+        }
+
+        public Task PrepareForShutdownAsync()
+        {
+            return _refreshCoordinator.DisposeAsync().AsTask();
         }
 
         private async void Refresh_Click(
@@ -923,17 +957,15 @@ namespace AdGuardTray.Views
             }
         }
 
-        protected override void OnClosed(
+        protected override async void OnClosed(
             EventArgs e)
         {
-            _refreshCoordinator.StopAll();
-            _ = _refreshCoordinator.DisposeAsync();
+            await PrepareForShutdownAsync();
 
             ProtectionStateNotifier.StateChanged -=
                 ProtectionStateNotifier_StateChanged;
 
-            _routerManager?.Dispose();
-            _routerManager = null;
+            _routerManagerUsageGate.Dispose();
 
             base.OnClosed(e);
         }

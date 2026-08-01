@@ -10,14 +10,15 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Navigation;
 using AdGuardTray.Services;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Win32;
 
 namespace AdGuardTray.Views
 {
     public partial class AboutView : UserControl
     {
-        private readonly SettingsService _settingsService =
-            new SettingsService();
+        private readonly RouterManager _routerManager;
+        private readonly SettingsService _settingsService;
 
         private readonly StringBuilder _supportLog =
             new StringBuilder();
@@ -25,6 +26,10 @@ namespace AdGuardTray.Views
         public AboutView()
         {
             InitializeComponent();
+            _routerManager = ((App)Application.Current).Services
+                .GetRequiredService<RouterManager>();
+            _settingsService = ((App)Application.Current).Services
+                .GetRequiredService<SettingsService>();
             VersionTextBlock.Text = "Version " + GetApplicationVersion();
             BuildDateTextBlock.Text = "Build date: " + GetBuildDate();
             LoadChangelog();
@@ -34,17 +39,7 @@ namespace AdGuardTray.Views
 
         private RouterManager CreateRouterManager()
         {
-            var settings =
-                _settingsService.Load();
-
-            string password =
-                _settingsService.DecryptPassword(
-                    settings.EncryptedPassword);
-
-            return new RouterManager(
-                settings.RouterHost,
-                settings.Username,
-                password);
+            return _routerManager;
         }
 
         private async Task RunRouterToolAsync(
