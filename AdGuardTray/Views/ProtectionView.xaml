@@ -3,6 +3,26 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              Background="{DynamicResource Brush.WindowBackground}">
     <UserControl.Resources>
+        <Style TargetType="TabControl">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+        </Style>
+
+        <Style TargetType="TabItem">
+            <Setter Property="Padding" Value="16,8"/>
+            <Setter Property="Margin" Value="0,0,6,0"/>
+            <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextSecondary}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource Brush.SurfaceMuted}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
         <Style x:Key="Protection.ActionButton"
                TargetType="Button"
                BasedOn="{StaticResource Button.Secondary}">
@@ -147,10 +167,10 @@
                     Command="{Binding RefreshAllCommand}"/>
         </Grid>
 
-        <ScrollViewer Grid.Row="2"
-                      VerticalScrollBarVisibility="Auto"
-                      HorizontalScrollBarVisibility="Disabled">
-            <StackPanel>
+        <TabControl Grid.Row="2" Background="Transparent" BorderThickness="0">
+            <TabControl.Resources>
+                <DataTemplate x:Key="ProtectionTab.Core">
+                    <StackPanel>
 
                 <!-- Summary cards -->
                 <Grid Margin="0,0,0,16">
@@ -407,8 +427,11 @@
                         </StackPanel>
                     </Border>
                 </Grid>
+                    </StackPanel>
+                </DataTemplate>
 
                 <!-- Blocked services -->
+                <DataTemplate x:Key="ProtectionTab.BlockedServices">
                 <Border Margin="0,0,0,16" Style="{DynamicResource Card}">
                     <StackPanel>
                         <Grid>
@@ -554,8 +577,10 @@
                         </Border>
                     </StackPanel>
                 </Border>
+                </DataTemplate>
 
                 <!-- AdGuard service schedules -->
+                <DataTemplate x:Key="ProtectionTab.Schedules">
                 <Border Margin="0,0,0,16" Style="{DynamicResource Card}" DataContext="{Binding Schedules}">
                     <StackPanel>
                         <Grid>
@@ -746,8 +771,11 @@
                         </Expander>
                     </StackPanel>
                 </Border>
+                </DataTemplate>
 
                 <!-- Recent DNS activity -->
+                <DataTemplate x:Key="ProtectionTab.DnsManagement">
+                <StackPanel>
                 <Border Margin="0,0,0,16" Style="{DynamicResource Card}">
                     <Grid>
                         <Grid.RowDefinitions>
@@ -951,7 +979,30 @@
                         </Grid>
                     </Border>
                 </Grid>
-            </StackPanel>
-        </ScrollViewer>
+                </StackPanel>
+                </DataTemplate>
+            </TabControl.Resources>
+
+            <TabItem Header="Protection">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel>
+                        <ContentControl Content="{Binding}" ContentTemplate="{StaticResource ProtectionTab.Core}"/>
+                        <ContentControl Content="{Binding}" ContentTemplate="{StaticResource ProtectionTab.DnsManagement}"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Blocked Services">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <ContentControl Content="{Binding}" ContentTemplate="{StaticResource ProtectionTab.BlockedServices}"/>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Schedules">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <ContentControl Content="{Binding}" ContentTemplate="{StaticResource ProtectionTab.Schedules}"/>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
     </Grid>
 </UserControl>

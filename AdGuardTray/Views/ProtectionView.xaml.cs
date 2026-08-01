@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using AdGuardTray.ViewModels;
 using AdGuardTray.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,39 +22,60 @@ namespace AdGuardTray.Views
         private async void ProtectionView_Loaded(object sender, RoutedEventArgs e) => await _viewModel.StartAsync();
         private void ProtectionView_Unloaded(object sender, RoutedEventArgs e) => _viewModel.Stop();
 
+        private Expander? ScheduleEditor => FindDescendant<Expander>(this, "ScheduleEditor");
+        private Expander? AllowedWindowEditor => FindDescendant<Expander>(this, "AllowedWindowEditor");
+
         private void AddSchedule_Click(object sender, RoutedEventArgs e)
         {
-            AllowedWindowEditor.IsExpanded = false;
-            ScheduleEditor.IsExpanded = true;
-            ScheduleEditor.Focus();
+            ShowEditor(showAllowedWindow: false);
         }
 
         private void OpenAllowedWindow_Click(object sender, RoutedEventArgs e)
         {
-            ScheduleEditor.IsExpanded = false;
-            AllowedWindowEditor.IsExpanded = true;
-            AllowedWindowEditor.Focus();
+            ShowEditor(showAllowedWindow: true);
         }
 
         private void EditWindow_Click(object sender, RoutedEventArgs e)
         {
-            ScheduleEditor.IsExpanded = false;
-            AllowedWindowEditor.IsExpanded = true;
-            AllowedWindowEditor.Focus();
+            ShowEditor(showAllowedWindow: true);
         }
 
         private void EditSchedule_Click(object sender, RoutedEventArgs e)
         {
-            AllowedWindowEditor.IsExpanded = false;
-            ScheduleEditor.IsExpanded = true;
-            ScheduleEditor.Focus();
+            ShowEditor(showAllowedWindow: false);
         }
 
-        private void CancelSchedule_Click(object sender, RoutedEventArgs e) =>
-            ScheduleEditor.IsExpanded = false;
+        private void CancelSchedule_Click(object sender, RoutedEventArgs e)
+        {
+            if (ScheduleEditor is { } editor) editor.IsExpanded = false;
+        }
 
-        private void CancelWindow_Click(object sender, RoutedEventArgs e) =>
-            AllowedWindowEditor.IsExpanded = false;
+        private void CancelWindow_Click(object sender, RoutedEventArgs e)
+        {
+            if (AllowedWindowEditor is { } editor) editor.IsExpanded = false;
+        }
+
+        private void ShowEditor(bool showAllowedWindow)
+        {
+            if (ScheduleEditor is { } scheduleEditor)
+                scheduleEditor.IsExpanded = !showAllowedWindow;
+            if (AllowedWindowEditor is { } windowEditor)
+                windowEditor.IsExpanded = showAllowedWindow;
+
+            (showAllowedWindow ? AllowedWindowEditor : ScheduleEditor)?.Focus();
+        }
+
+        private static T? FindDescendant<T>(DependencyObject parent, string name) where T : FrameworkElement
+        {
+            for (int index = 0; index < VisualTreeHelper.GetChildrenCount(parent); index++)
+            {
+                DependencyObject child = VisualTreeHelper.GetChild(parent, index);
+                if (child is T match && match.Name == name) return match;
+                if (FindDescendant<T>(child, name) is { } descendant) return descendant;
+            }
+
+            return null;
+        }
 
         private void RunWindowAllowNow_Click(object sender, RoutedEventArgs e) =>
             ConfirmWindowAction(sender, Models.AdGuardServiceScheduleAction.Allow);
