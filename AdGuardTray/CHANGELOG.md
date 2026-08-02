@@ -1,5 +1,37 @@
 # RouterPilot Changelog
 
+## [1.6.1] - 2026-08-02
+
+### Added
+- Added first-class scheduled AdGuard allowed-time windows with Allow and Block actions managed as one setting.
+- Added advanced one-time, daily and selected-day single-action schedules.
+- Added internal Protection, Blocked Services and Schedules tabs to the Protection page.
+
+### Changed
+- Unified allowed-time-window creation, editing, duplication, enablement and deletion while preserving atomic paired actions.
+- Improved schedule editors with the complete shared AdGuard service catalogue and full-width responsive service selectors.
+- Simplified global protection actions to Enable and Disable.
+- Reordered the Network page so summary information and Quick Maintenance precede Wi-Fi and detailed network data.
+- Updated repository and release links for the renamed `TCDemo777/RouterPilot` GitHub repository.
+- Standardised unavailable AdGuard-derived values as theme-safe `N/A` states across RouterPilot.
+
+### Fixed
+- Kept router health, WAN, Wi-Fi, internet and router information refreshing when AdGuard Home is stopped or unavailable.
+- Kept router-derived clients visible while treating optional AdGuard DNS activity as unavailable.
+- Prevented stale protection, DNS statistics and rankings from appearing as current during AdGuard outages.
+- Corrected client-card `N/A` typography and alignment without changing card dimensions.
+- Restored GL.iNet physical and virtual-interface Wi-Fi discovery, including Main, Guest and IoT mapping.
+- Restored the complete blocked-service catalogue in the manual controls and both schedule editors.
+- Constrained About-page scrolling to the dashboard content region.
+- Corrected MSI harvesting so the installer packages the complete self-contained publish output and launches `AdGuardTray.exe` from the installed RouterPilot folder.
+- Standardised page spacing and corrected Protection, Network and schedule-editor layout regressions.
+
+### Internal
+- Separated router-authoritative refresh results from optional AdGuard status, statistics and client enrichment.
+- Preserved the last successful router and Wi-Fi data when optional subsystem refreshes fail.
+- Preserved the `AdGuardTray.exe` executable, internal namespaces and `%LocalAppData%\AdGuardTray` compatibility paths.
+- Synchronized application, assembly, file, informational and installer versions at 1.6.1.
+
 ## [1.6.0] - 2026-08-01
 
 ### Added

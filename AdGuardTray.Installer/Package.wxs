@@ -1,9 +1,9 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Package
-    Id="TCDemo777.RouterPilot.V1_6_0"
+    Id="TCDemo777.RouterPilot.V1_6_1"
     Name="RouterPilot"
     Manufacturer="Tristan Caldwell"
-    Version="1.6.0"
+    Version="1.6.1"
     UpgradeCode="{A8CB381D-E4EB-5521-B4D1-064F5EB4BDC6}"
     Scope="perMachine"
     Compressed="yes">

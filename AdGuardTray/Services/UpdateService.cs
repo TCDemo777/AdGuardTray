@@ -11,8 +11,8 @@ namespace AdGuardTray.Services;
 // Restored shared update checker; About invokes this service rather than issuing HTTP itself.
 public sealed class UpdateService : IDisposable
 {
-    public const string ReleasesPageUrl = "https://github.com/TCDemo777/AdGuardTray/releases";
-    private const string ReleasesApiUrl = "https://api.github.com/repos/TCDemo777/AdGuardTray/releases?per_page=20";
+    public const string ReleasesPageUrl = "https://github.com/TCDemo777/RouterPilot/releases";
+    private const string ReleasesApiUrl = "https://api.github.com/repos/TCDemo777/RouterPilot/releases?per_page=20";
     private readonly SettingsService _settingsService;
     private readonly NotificationService _notificationService;
     private readonly HttpClient _httpClient;

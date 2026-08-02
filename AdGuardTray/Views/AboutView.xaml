@@ -136,21 +136,21 @@
                                         <Button Margin="0,0,8,8"
                                                 Padding="14,6">
                                             <TextBlock>
-                                                <Hyperlink NavigateUri="https://github.com/TCDemo777/AdGuardTray"
+                                                <Hyperlink NavigateUri="https://github.com/TCDemo777/RouterPilot"
                                                            RequestNavigate="GitHubLink_RequestNavigate">GitHub</Hyperlink>
                                             </TextBlock>
                                         </Button>
                                         <Button Margin="0,0,8,8"
                                                 Padding="14,6">
                                             <TextBlock>
-                                                <Hyperlink NavigateUri="https://github.com/TCDemo777/AdGuardTray#readme"
+                                                <Hyperlink NavigateUri="https://github.com/TCDemo777/RouterPilot#readme"
                                                            RequestNavigate="GitHubLink_RequestNavigate">Documentation</Hyperlink>
                                             </TextBlock>
                                         </Button>
                                         <Button Margin="0,0,8,8"
                                                 Padding="14,6">
                                             <TextBlock>
-                                                <Hyperlink NavigateUri="https://github.com/TCDemo777/AdGuardTray/issues/new"
+                                                <Hyperlink NavigateUri="https://github.com/TCDemo777/RouterPilot/issues/new"
                                                            RequestNavigate="GitHubLink_RequestNavigate">Report an issue</Hyperlink>
                                             </TextBlock>
                                         </Button>

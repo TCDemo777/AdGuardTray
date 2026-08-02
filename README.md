@@ -1,7 +1,7 @@
 # RouterPilot
 
-[![Release](https://img.shields.io/github/v/release/TCDemo777/AdGuardTray)](https://github.com/TCDemo777/AdGuardTray/releases)
-[![Build](https://github.com/TCDemo777/AdGuardTray/actions/workflows/build.yml/badge.svg)](https://github.com/TCDemo777/AdGuardTray/actions)
+[![Release](https://img.shields.io/github/v/release/TCDemo777/RouterPilot)](https://github.com/TCDemo777/RouterPilot/releases)
+[![Build](https://github.com/TCDemo777/RouterPilot/actions/workflows/build.yml/badge.svg)](https://github.com/TCDemo777/RouterPilot/actions)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 Companion for GL.iNet Routers & AdGuard Home
@@ -24,26 +24,27 @@ Companion for GL.iNet Routers & AdGuard Home
 - Light, dark and system theme support
 - Notification-area integration with close-to-tray behaviour
 
-## What’s new in 1.6.0
+## What’s new in 1.6.1
 
-Version 1.6 adds local historical data, scheduled AdGuard service controls and richer network insights while preserving RouterPilot's local-first architecture.
+Version 1.6.1 improves AdGuard service scheduling, separates router monitoring from optional AdGuard enrichment and resolves installer, Wi-Fi discovery and layout regressions.
 
-- Added a SQLite-backed historical data platform alongside existing JSON configuration
-- Added persistent device connection events and recent activity in Client Details
-- Added historical WAN usage and router CPU/memory analytics with retention and downsampling
-- Added weekly network summaries, Network Timeline, Router Insights and deterministic network intelligence
-- Added privacy-aware diagnostic ZIP export and an automatic GitHub release update checker
-- Added scheduled AdGuard blocked-service controls with daily, selected-day and one-time recurrence
-- Added paired allowed-time windows, safe read-modify-write updates and schedule notifications
-- Polished RouterPilot's dashboard, analytics, notifications, protection, settings and About experiences
-- Restored compatible GL.iNet Wi-Fi discovery while retaining Guest, IoT and virtual-interface mapping
+- Added scheduled AdGuard allowed-time windows and advanced single-action schedules
+- Added Protection, Blocked Services and Schedules tabs to the Protection page
+- Unified paired allowed-time-window creation and editing as one user-facing setting
+- Improved schedule service selection using the complete shared AdGuard service catalogue
+- Kept router health, WAN, Wi-Fi and connected-client monitoring available when AdGuard Home is offline
+- Standardised unavailable AdGuard-derived values as clear, theme-safe `N/A` states
+- Restored GL.iNet Wi-Fi discovery, Guest/IoT mapping and transient-failure data retention
+- Corrected the self-contained MSI payload and launch path
+
+The public repository is now [TCDemo777/RouterPilot](https://github.com/TCDemo777/RouterPilot). For compatibility, the executable, project and namespaces remain `AdGuardTray`, and local settings and data remain under `%LocalAppData%\AdGuardTray`.
 
 ## Requirements
 
 - Windows 10 or Windows 11
 - A supported GL.iNet router reachable over the local network
 - SSH access enabled on the router
-- AdGuard Home installed and available on the router
+- AdGuard Home installed on the router for DNS filtering, query activity and protection controls
 - .NET 9 Desktop Runtime when using a framework-dependent build
 
 ## Getting started
@@ -67,7 +68,7 @@ dotnet build .\AdGuardTray\AdGuardTray.csproj -c Release
 
 The About page includes system information, redacted diagnostics, support logs and export tools. Please remove any information you do not want to share before attaching diagnostics to an issue.
 
-Report issues through the [GitHub issue tracker](https://github.com/TCDemo777/AdGuardTray/issues).
+Report issues through the [GitHub issue tracker](https://github.com/TCDemo777/RouterPilot/issues).
 
 ## Licence
 
