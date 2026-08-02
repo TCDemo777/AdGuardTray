@@ -133,6 +133,10 @@ namespace AdGuardTray.ViewModels
         private bool adGuardRunning;
 
         [ObservableProperty]
+        private AdGuardAvailabilityState adGuardAvailability =
+            AdGuardAvailabilityState.Unavailable;
+
+        [ObservableProperty]
         private bool adGuardProtectionEnabled;
 
         [ObservableProperty]
@@ -392,19 +396,45 @@ namespace AdGuardTray.ViewModels
                 ? "#16803C"
                 : "#C62828";
 
-        public string AdGuardStatusText =>
-            AdGuardRunning
-                ? "Running"
-                : "Stopped";
+        public string AdGuardStatusText => AdGuardAvailability switch
+        {
+            AdGuardAvailabilityState.Available => AdGuardRunning ? "Running" : "Stopped",
+            _ => "N/A"
+        };
+
+        public bool IsAdGuardAvailable =>
+            AdGuardAvailability == AdGuardAvailabilityState.Available;
+
+        public string AdGuardVersionDisplay => IsAdGuardAvailable ? AdGuardVersion : "N/A";
+        public string AdGuardServiceDisplay => IsAdGuardAvailable ? AdGuardService : "N/A";
+        public string AdGuardQueriesDisplay => IsAdGuardAvailable ? AdGuardQueries : "N/A";
+        public string AdGuardBlockedDisplay => IsAdGuardAvailable ? AdGuardBlocked : "N/A";
+        public string AdGuardBlockRateDisplay => IsAdGuardAvailable ? AdGuardBlockRate : "N/A";
+        public string AdGuardLiveStatusText => IsAdGuardAvailable ? "LIVE STATISTICS" : "N/A";
+        public string TopClientsEmptyText => IsAdGuardAvailable ? "No client ranking data yet." : "N/A";
+        public string TopBlockedDomainsEmptyText => IsAdGuardAvailable ? "No blocked-domain data yet." : "N/A";
+        public string TopQueriedDomainsEmptyText => IsAdGuardAvailable ? "No requested-domain data yet." : "N/A";
+
+        public string AdGuardAvailabilityMessage => AdGuardAvailability switch
+        {
+            AdGuardAvailabilityState.Available => string.Empty,
+            AdGuardAvailabilityState.NotConfigured =>
+                "AdGuard Home is not configured. Router monitoring remains active.",
+            AdGuardAvailabilityState.AuthenticationFailed =>
+                "AdGuard Home authentication failed. Router monitoring remains active.",
+            _ => "AdGuard Home is unavailable. Router monitoring remains active."
+        };
 
         public string AdGuardStatusColour =>
-            AdGuardRunning
-                ? "#16803C"
-                : "#C62828";
+            !IsAdGuardAvailable
+                ? "#687386"
+                : AdGuardRunning
+                    ? "#16803C"
+                    : "#C62828";
 
         public string AdGuardProtectionStatusText =>
-            !AdGuardProtectionStatusKnown
-                ? "Status unavailable"
+            !IsAdGuardAvailable || !AdGuardProtectionStatusKnown
+                ? "N/A"
                 : AdGuardProtectionEnabled
                     ? "Protection enabled"
                     : AdGuardProtectionPaused
@@ -1085,6 +1115,38 @@ namespace AdGuardTray.ViewModels
         {
             RefreshStatusIndicators();
         }
+
+        partial void OnAdGuardAvailabilityChanged(
+            AdGuardAvailabilityState value)
+        {
+            OnPropertyChanged(nameof(AdGuardAvailabilityMessage));
+            OnPropertyChanged(nameof(IsAdGuardAvailable));
+            OnPropertyChanged(nameof(AdGuardVersionDisplay));
+            OnPropertyChanged(nameof(AdGuardServiceDisplay));
+            OnPropertyChanged(nameof(AdGuardQueriesDisplay));
+            OnPropertyChanged(nameof(AdGuardBlockedDisplay));
+            OnPropertyChanged(nameof(AdGuardBlockRateDisplay));
+            OnPropertyChanged(nameof(AdGuardLiveStatusText));
+            OnPropertyChanged(nameof(TopClientsEmptyText));
+            OnPropertyChanged(nameof(TopBlockedDomainsEmptyText));
+            OnPropertyChanged(nameof(TopQueriedDomainsEmptyText));
+            RefreshStatusIndicators();
+        }
+
+        partial void OnAdGuardVersionChanged(string value) =>
+            OnPropertyChanged(nameof(AdGuardVersionDisplay));
+
+        partial void OnAdGuardServiceChanged(string value) =>
+            OnPropertyChanged(nameof(AdGuardServiceDisplay));
+
+        partial void OnAdGuardQueriesChanged(string value) =>
+            OnPropertyChanged(nameof(AdGuardQueriesDisplay));
+
+        partial void OnAdGuardBlockedChanged(string value) =>
+            OnPropertyChanged(nameof(AdGuardBlockedDisplay));
+
+        partial void OnAdGuardBlockRateChanged(string value) =>
+            OnPropertyChanged(nameof(AdGuardBlockRateDisplay));
 
         partial void OnAdGuardProtectionEnabledChanged(
             bool value)

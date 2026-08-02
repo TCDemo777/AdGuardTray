@@ -15,6 +15,7 @@ namespace AdGuardTray.ViewModels
     public partial class ClientDetailsViewModel : ObservableObject
     {
         private readonly IRouterManagerProvider _routerManagerProvider;
+        private readonly AdGuardAvailabilityService _adGuardAvailabilityService;
         private readonly ClientProfileService _clientProfileService;
         private readonly Dictionary<string, ClientProfile> _clientProfiles;
         private readonly DispatcherTimer _refreshTimer;
@@ -36,9 +37,9 @@ namespace AdGuardTray.ViewModels
         public string IpAddress => _client.IpAddress;
         public string MacAddress => _client.MacAddress;
         public string LastSeen => _client.LastSeen;
-        public int TotalQueries => _client.TotalQueries;
-        public int BlockedQueries => _client.BlockedQueries;
-        public double BlockRate => _client.BlockRate;
+        public string TotalQueriesDisplay => _client.TotalQueriesDisplay;
+        public string BlockedQueriesDisplay => _client.BlockedQueriesDisplay;
+        public string BlockRateDisplay => _client.BlockRateDisplay;
 
         public bool HasRecentQueries => RecentQueries.Count > 0;
         public bool HasTopDomains => TopDomains.Count > 0;
@@ -68,10 +69,12 @@ namespace AdGuardTray.ViewModels
 
         public ClientDetailsViewModel(
             ClientInfo client,
-            IRouterManagerProvider routerManagerProvider)
+            IRouterManagerProvider routerManagerProvider,
+            AdGuardAvailabilityService adGuardAvailabilityService)
         {
             _client = client;
             _routerManagerProvider = routerManagerProvider;
+            _adGuardAvailabilityService = adGuardAvailabilityService;
             _clientProfileService = new ClientProfileService();
             _clientProfiles = _clientProfileService.Load();
 
@@ -116,6 +119,14 @@ namespace AdGuardTray.ViewModels
 
             try
             {
+                if (_adGuardAvailabilityService.State != AdGuardAvailabilityState.Available)
+                {
+                    ApplyEntries(new List<QueryLogEntry>());
+                    StatusMessage =
+                        "DNS activity is unavailable. Router client information remains available.";
+                    return;
+                }
+
                 RouterManager routerManager =
                     await _routerManagerProvider.GetRouterManagerAsync();
                 List<QueryLogEntry> entries =

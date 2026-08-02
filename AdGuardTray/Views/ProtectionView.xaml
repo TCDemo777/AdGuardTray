@@ -204,6 +204,11 @@
                 <DataTemplate x:Key="ProtectionTab.Core">
                     <StackPanel>
 
+                <TextBlock Margin="0,0,0,16"
+                           Style="{DynamicResource Text.Secondary}"
+                           Foreground="{DynamicResource Brush.Warning}"
+                           Text="{Binding AdGuardAvailabilityMessage}"/>
+
                 <!-- Summary cards -->
                 <Grid Margin="0,0,0,16">
                     <Grid.ColumnDefinitions>
@@ -618,7 +623,8 @@
 
                 <!-- AdGuard service schedules -->
                 <DataTemplate x:Key="ProtectionTab.Schedules">
-                <Border Margin="0,0,0,16" Style="{DynamicResource Card}" DataContext="{Binding Schedules}">
+                <Border Margin="0,0,0,16" Style="{DynamicResource Card}" DataContext="{Binding Schedules}"
+                        IsEnabled="{Binding DataContext.ControlsEnabled, RelativeSource={RelativeSource AncestorType=UserControl}}">
                     <StackPanel>
                         <Grid>
                             <Grid.ColumnDefinitions>

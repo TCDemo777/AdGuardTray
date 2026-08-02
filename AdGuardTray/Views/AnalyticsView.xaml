@@ -192,6 +192,12 @@
             <!-- Summary -->
             <TextBlock
                 Margin="0,0,0,12"
+                Style="{StaticResource Text.Secondary}"
+                Foreground="{DynamicResource Brush.Warning}"
+                Text="{Binding AdGuardAvailabilityMessage}" />
+
+            <TextBlock
+                Margin="0,0,0,12"
                 Style="{StaticResource Text.SectionTitle}"
                 Text="DNS summary" />
 
@@ -204,7 +210,7 @@
                     IconGlyph="&#xE774;"
                     Subtitle="All requests processed"
                     Title="TOTAL DNS QUERIES"
-                    Value="{Binding AdGuardQueries}" />
+                    Value="{Binding AdGuardQueriesDisplay}" />
 
                 <controls:StatisticCard
                     Width="250"
@@ -214,7 +220,7 @@
                     IconGlyph="&#xE72E;"
                     Subtitle="Requests stopped by protection"
                     Title="BLOCKED DNS QUERIES"
-                    Value="{Binding AdGuardBlocked}" />
+                    Value="{Binding AdGuardBlockedDisplay}" />
 
                 <controls:StatisticCard
                     Width="250"
@@ -224,7 +230,7 @@
                     IconGlyph="&#xE9D9;"
                     Subtitle="Share of traffic blocked"
                     Title="BLOCKING RATE"
-                    Value="{Binding AdGuardBlockRate}" />
+                    Value="{Binding AdGuardBlockRateDisplay}" />
             </WrapPanel>
 
             <!-- Chart -->
@@ -271,12 +277,12 @@
                                     Width="7"
                                     Height="7"
                                     Margin="0,0,7,0"
-                                    Fill="{DynamicResource Brush.Success}" />
+                                    Fill="{Binding AdGuardStatusColour}" />
                                 <TextBlock
                                     FontSize="11"
                                     FontWeight="SemiBold"
                                     Foreground="{DynamicResource Brush.TextSecondary}"
-                                    Text="LIVE STATISTICS" />
+                                    Text="{Binding AdGuardLiveStatusText}" />
                             </StackPanel>
                         </Border>
                     </Grid>
@@ -372,7 +378,7 @@
                                 <TextBlock
                                     Margin="0,10,0,0"
                                     Style="{StaticResource Text.Secondary}"
-                                    Text="No client ranking data yet." />
+                                    Text="{Binding TopClientsEmptyText}" />
                             </StackPanel>
 
                             <ListBox
@@ -511,7 +517,7 @@
                                 <TextBlock
                                     Margin="0,10,0,0"
                                     Style="{StaticResource Text.Secondary}"
-                                    Text="No blocked-domain data yet." />
+                                    Text="{Binding TopBlockedDomainsEmptyText}" />
                             </StackPanel>
 
                             <ListBox
@@ -646,7 +652,7 @@
                             <TextBlock
                                 Margin="0,10,0,0"
                                 Style="{StaticResource Text.Secondary}"
-                                Text="No requested-domain data yet." />
+                                Text="{Binding TopQueriedDomainsEmptyText}" />
                         </StackPanel>
 
                         <ListBox

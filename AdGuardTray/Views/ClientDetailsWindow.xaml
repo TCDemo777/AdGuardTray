@@ -140,7 +140,7 @@
                 <StackPanel>
                     <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextSecondary}" Text="TOTAL QUERIES"/>
                     <TextBlock Margin="0,8,0,3" FontSize="25" FontWeight="Bold" Foreground="{DynamicResource Brush.Primary}"
-                               Text="{Binding TotalQueries, StringFormat={}{0:N0}}"/>
+                               Text="{Binding TotalQueriesDisplay}"/>
                     <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextMuted}" Text="Requests from this client"/>
                 </StackPanel>
             </Border>
@@ -149,7 +149,7 @@
                 <StackPanel>
                     <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextSecondary}" Text="BLOCKED"/>
                     <TextBlock Margin="0,8,0,3" FontSize="25" FontWeight="Bold" Foreground="{DynamicResource Brush.Danger}"
-                               Text="{Binding BlockedQueries, StringFormat={}{0:N0}}"/>
+                               Text="{Binding BlockedQueriesDisplay}"/>
                     <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextMuted}" Text="Protection actions"/>
                 </StackPanel>
             </Border>
@@ -158,7 +158,7 @@
                 <StackPanel>
                     <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextSecondary}" Text="BLOCK RATE"/>
                     <TextBlock Margin="0,8,0,3" FontSize="25" FontWeight="Bold" Foreground="{DynamicResource Brush.Warning}"
-                               Text="{Binding BlockRate, StringFormat={}{0:F1}%}"/>
+                               Text="{Binding BlockRateDisplay}"/>
                     <TextBlock FontSize="12" Foreground="{DynamicResource Brush.TextMuted}" TextTrimming="CharacterEllipsis"
                                ToolTip="{Binding LastSeen}" Text="{Binding LastSeen, StringFormat=Last seen: {0}}"/>
                 </StackPanel>

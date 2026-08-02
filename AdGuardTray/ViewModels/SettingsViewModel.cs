@@ -12,6 +12,7 @@ namespace AdGuardTray.ViewModels
         public event EventHandler? SettingsSaved;
         private readonly SettingsService _settingsService;
         private readonly IRouterManagerProvider _routerManagerProvider;
+        public AdGuardAvailabilityService AdGuardAvailability { get; }
 
         private string _routerIp = "";
         private string _username = "";
@@ -143,10 +144,12 @@ namespace AdGuardTray.ViewModels
 
         public SettingsViewModel(
             SettingsService settingsService,
-            IRouterManagerProvider routerManagerProvider)
+            IRouterManagerProvider routerManagerProvider,
+            AdGuardAvailabilityService adGuardAvailability)
         {
             _settingsService = settingsService;
             _routerManagerProvider = routerManagerProvider;
+            AdGuardAvailability = adGuardAvailability;
 
             SaveCommand =
                 new RelayCommand(Save);

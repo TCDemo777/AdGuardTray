@@ -45,6 +45,7 @@ namespace AdGuardTray
                 sp.GetRequiredService<IClock>()));
             serviceCollection.AddSingleton<AdGuardServiceScheduleViewModel>();
             serviceCollection.AddSingleton<AdGuardProtectionNotificationTracker>();
+            serviceCollection.AddSingleton<AdGuardAvailabilityService>();
             serviceCollection.AddSingleton<NewDeviceNotificationTracker>();
             serviceCollection.AddSingleton<NotificationCentreViewModel>();
             serviceCollection.AddTransient<ClientsViewModel>();

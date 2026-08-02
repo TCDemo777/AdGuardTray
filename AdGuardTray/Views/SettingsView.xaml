@@ -214,6 +214,9 @@
                         <Border Margin="0,16,0,0" Style="{DynamicResource Card}">
                             <StackPanel>
                                 <TextBlock Style="{DynamicResource Text.SectionTitle}" Text="AdGuard Home"/>
+                                <TextBlock Margin="0,8,0,0"
+                                           Style="{DynamicResource Text.NotAvailable}"
+                                           Text="{Binding AdGuardAvailability.DisplayText}"/>
                                 <TextBlock Margin="0,5,0,18" Style="{DynamicResource Text.Secondary}"
                                            TextWrapping="Wrap"
                                            Text="Defaults used by protection controls and background refresh."/>

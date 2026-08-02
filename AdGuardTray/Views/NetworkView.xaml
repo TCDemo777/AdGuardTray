@@ -122,10 +122,10 @@
                                        FontSize="21"
                                        FontWeight="SemiBold"
                                        Foreground="{DynamicResource Brush.TextPrimary}"
-                                       Text="{Binding AdGuardService}"/>
+                                       Text="{Binding AdGuardServiceDisplay}"/>
                             <TextBlock Margin="0,5,0,0"
                                        Style="{DynamicResource Text.Muted}"
-                                       Text="{Binding AdGuardVersion}"/>
+                                       Text="{Binding AdGuardVersionDisplay}"/>
                         </StackPanel>
                     </Border>
 
@@ -335,12 +335,12 @@
                             <TextBlock Style="{StaticResource Network.Label}"
                                        Text="ADGUARD SERVICE"/>
                             <TextBlock Style="{StaticResource Network.Value}"
-                                       Text="{Binding AdGuardService}"/>
+                                       Text="{Binding AdGuardServiceDisplay}"/>
 
                             <TextBlock Style="{StaticResource Network.Label}"
                                        Text="VERSION"/>
                             <TextBlock Style="{StaticResource Network.Value}"
-                                       Text="{Binding AdGuardVersion}"/>
+                                       Text="{Binding AdGuardVersionDisplay}"/>
                         </StackPanel>
                     </Border>
 

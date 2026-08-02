@@ -107,7 +107,7 @@
                     Grid.Column="2"
                     Height="146"
                     AccentBrush="{Binding AdGuardStatusColour}"
-                    FooterText="{Binding AdGuardVersion}"
+                    FooterText="{Binding AdGuardVersionDisplay}"
                     IconBackground="{DynamicResource Brush.SuccessSubtle}"
                     IconGlyph="&#xE72E;"
                     Subtitle="DNS filtering"
@@ -392,8 +392,8 @@
                                 <TextBlock
                                     Grid.Column="1"
                                     Style="{StaticResource Overview.DetailValue}"
-                                    Text="{Binding AdGuardVersion}"
-                                    ToolTip="{Binding AdGuardVersion}" />
+                                    Text="{Binding AdGuardVersionDisplay}"
+                                    ToolTip="{Binding AdGuardVersionDisplay}" />
                             </Grid>
 
                             <Grid Style="{StaticResource Overview.DetailRow}">
@@ -402,7 +402,7 @@
                                     <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Style="{StaticResource Overview.DetailLabel}" Text="Service" />
-                                <TextBlock Grid.Column="1" Style="{StaticResource Overview.DetailValue}" Text="{Binding AdGuardService}" />
+                                <TextBlock Grid.Column="1" Style="{StaticResource Overview.DetailValue}" Text="{Binding AdGuardServiceDisplay}" />
                             </Grid>
 
                             <Grid Style="{StaticResource Overview.DetailRow}">
@@ -426,7 +426,7 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Style="{StaticResource Overview.DetailLabel}" Text="Queries" />
-                                <TextBlock Grid.Column="1" Style="{StaticResource Overview.DetailValue}" Text="{Binding AdGuardQueries}" />
+                                <TextBlock Grid.Column="1" Style="{StaticResource Overview.DetailValue}" Text="{Binding AdGuardQueriesDisplay}" />
                             </Grid>
 
                             <Grid Style="{StaticResource Overview.DetailRow}">
@@ -439,7 +439,7 @@
                                     Grid.Column="1"
                                     Style="{StaticResource Overview.DetailValue}"
                                     Foreground="{StaticResource Brush.Danger}"
-                                    Text="{Binding AdGuardBlocked}" />
+                                    Text="{Binding AdGuardBlockedDisplay}" />
                             </Grid>
 
                             <Grid>
@@ -448,7 +448,7 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Style="{StaticResource Overview.DetailLabel}" Text="Blocking rate" />
-                                <TextBlock Grid.Column="1" Style="{StaticResource Overview.DetailValue}" Text="{Binding AdGuardBlockRate}" />
+                                <TextBlock Grid.Column="1" Style="{StaticResource Overview.DetailValue}" Text="{Binding AdGuardBlockRateDisplay}" />
                             </Grid>
                         </StackPanel>
                     </Grid>

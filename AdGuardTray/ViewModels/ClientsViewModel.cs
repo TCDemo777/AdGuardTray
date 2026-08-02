@@ -15,6 +15,7 @@ namespace AdGuardTray.ViewModels
         private readonly IRouterManagerProvider _routerManagerProvider;
         private readonly ClientProfileService _clientProfileService;
         private readonly NewDeviceNotificationTracker _newDeviceNotificationTracker;
+        private readonly AdGuardAvailabilityService _adGuardAvailabilityService;
         private readonly Dictionary<string, ClientProfile> _clientProfiles;
         private DateTime _lastProfileSaveUtc = DateTime.MinValue;
         private readonly List<ClientInfo> _allClients = new();
@@ -91,10 +92,12 @@ namespace AdGuardTray.ViewModels
 
         public ClientsViewModel(
             IRouterManagerProvider routerManagerProvider,
-            NewDeviceNotificationTracker newDeviceNotificationTracker)
+            NewDeviceNotificationTracker newDeviceNotificationTracker,
+            AdGuardAvailabilityService adGuardAvailabilityService)
         {
             _routerManagerProvider = routerManagerProvider;
             _newDeviceNotificationTracker = newDeviceNotificationTracker;
+            _adGuardAvailabilityService = adGuardAvailabilityService;
             _clientProfileService = new ClientProfileService();
             _clientProfiles = _clientProfileService.Load();
 
@@ -120,13 +123,25 @@ namespace AdGuardTray.ViewModels
                     ? null
                     : ClientKey(SelectedClient);
 
-                List<ClientInfo> clients =
-                    await routerManager.GetAdGuardClientsAsync();
+                Task<ClientRefreshResult<List<ClientInfo>>> adGuardClientsTask =
+                    CaptureClientRefreshAsync(routerManager.GetAdGuardClientsAsync());
+                Task<ClientRefreshResult<List<WifiRadioInfo>>> wifiNetworksTask =
+                    CaptureClientRefreshAsync(routerManager.GetWifiRadiosAsync());
+                Task<ClientRefreshResult<List<WifiClientInfo>>> inventoryTask =
+                    CaptureClientRefreshAsync(routerManager.GetGlClientInventoryAsync());
 
-                // Use the same per-SSID mapping as the Network tab so selected
-                // clients receive the resolved Wi-Fi name, interface and signal.
-                List<WifiRadioInfo> wifiNetworks =
-                    await routerManager.GetWifiRadiosAsync();
+                await Task.WhenAll(adGuardClientsTask, wifiNetworksTask, inventoryTask);
+
+                ClientRefreshResult<List<ClientInfo>> adGuardResult = await adGuardClientsTask;
+                ClientRefreshResult<List<WifiRadioInfo>> wifiResult = await wifiNetworksTask;
+                ClientRefreshResult<List<WifiClientInfo>> inventoryResult = await inventoryTask;
+
+                if (wifiResult.Error is not null)
+                    throw wifiResult.Error;
+                if (inventoryResult.Error is not null)
+                    throw inventoryResult.Error;
+
+                List<WifiRadioInfo> wifiNetworks = wifiResult.Value ?? [];
 
                 // Flatten the per-network client lists while explicitly carrying
                 // the parent SSID/band/interface onto each client.  The Network
@@ -151,8 +166,7 @@ namespace AdGuardTray.ViewModels
 
                 // Retain Ethernet and any firmware-only clients that are not
                 // represented in the Wi-Fi network collection.
-                List<WifiClientInfo> inventoryClients =
-                    await routerManager.GetGlClientInventoryAsync();
+                List<WifiClientInfo> inventoryClients = inventoryResult.Value ?? [];
 
                 foreach (WifiClientInfo inventoryClient in inventoryClients)
                 {
@@ -167,11 +181,23 @@ namespace AdGuardTray.ViewModels
 
                 RebuildLiveClientLookup(liveClients);
 
+                AdGuardDataAvailability = adGuardResult.Error is not null
+                    ? _adGuardAvailabilityService.State
+                    : adGuardResult.Value is { Count: > 0 }
+                        ? AdGuardAvailabilityState.Available
+                        : AdGuardAvailabilityState.Unavailable;
+
+                List<ClientInfo> clients = BuildRouterClients(liveClients);
+                ApplyAdGuardEnrichment(clients, adGuardResult.Value ?? [], AdGuardDataAvailability);
+
                 foreach (ClientInfo client in clients)
                 {
                     ApplyLiveConnectionDetails(client, liveClients);
                     EnrichClient(client);
-                    RecordActivitySnapshot(client);
+                    if (client.AdGuardDataAvailability == AdGuardAvailabilityState.Available)
+                    {
+                        RecordActivitySnapshot(client);
+                    }
                 }
 
                 await _newDeviceNotificationTracker.ProcessAsync(
@@ -183,7 +209,9 @@ namespace AdGuardTray.ViewModels
                 ApplyFilterAndSort(selectedKey);
                 SaveProfiles();
 
-                StatusMessage = _allClients.Count switch
+                StatusMessage = AdGuardDataAvailability != AdGuardAvailabilityState.Available
+                    ? $"{_allClients.Count:N0} router-connected client(s) loaded. AdGuard enrichment is unavailable."
+                    : _allClients.Count switch
                 {
                     0 => "No clients were returned by AdGuard Home.",
                     1 => "1 client loaded.",
@@ -197,6 +225,102 @@ namespace AdGuardTray.ViewModels
             finally
             {
                 IsLoading = false;
+            }
+        }
+
+        private static async Task<ClientRefreshResult<T>> CaptureClientRefreshAsync<T>(Task<T> task)
+        {
+            try
+            {
+                return new ClientRefreshResult<T>(await task, null);
+            }
+            catch (Exception ex)
+            {
+                return new ClientRefreshResult<T>(default, ex);
+            }
+        }
+
+        private sealed record ClientRefreshResult<T>(T? Value, Exception? Error);
+
+        public AdGuardAvailabilityState AdGuardDataAvailability
+        {
+            get => _adGuardDataAvailability;
+            private set
+            {
+                if (!SetProperty(ref _adGuardDataAvailability, value)) return;
+                OnPropertyChanged(nameof(DnsActivityAvailabilityMessage));
+            }
+        }
+
+        private AdGuardAvailabilityState _adGuardDataAvailability =
+            AdGuardAvailabilityState.Unavailable;
+
+        public string DnsActivityAvailabilityMessage => AdGuardDataAvailability switch
+        {
+            AdGuardAvailabilityState.Available => string.Empty,
+            AdGuardAvailabilityState.NotConfigured =>
+                "DNS activity is unavailable because AdGuard Home is not configured. Router client information remains available.",
+            AdGuardAvailabilityState.AuthenticationFailed =>
+                "DNS activity is unavailable because AdGuard Home authentication failed. Router client information remains available.",
+            _ => "DNS activity is unavailable because AdGuard Home is not running or cannot be reached. Router client information remains available."
+        };
+
+        private static List<ClientInfo> BuildRouterClients(IEnumerable<WifiClientInfo> liveClients)
+        {
+            return liveClients
+                .Where(client => NormaliseMac(client.MacAddress).Length == 12 || HasUsefulValue(client.IpAddress))
+                .GroupBy(
+                    client => NormaliseMac(client.MacAddress).Length == 12
+                        ? "mac:" + NormaliseMac(client.MacAddress)
+                        : "ip:" + client.IpAddress.Trim(),
+                    StringComparer.OrdinalIgnoreCase)
+                .Select(group => group.First())
+                .Select(client => new ClientInfo
+                {
+                    Name = client.Name,
+                    RouterName = client.Name,
+                    MacAddress = client.MacAddress,
+                    IpAddress = client.IpAddress,
+                    WifiNetwork = client.Ssid,
+                    ConnectionType = client.Band,
+                    SignalStrength = client.Signal,
+                    LiveInterface = client.Interface,
+                    QueryLogAvailable = false
+                })
+                .ToList();
+        }
+
+        private static void ApplyAdGuardEnrichment(
+            IEnumerable<ClientInfo> routerClients,
+            IReadOnlyList<ClientInfo> adGuardClients,
+            AdGuardAvailabilityState availability)
+        {
+            foreach (ClientInfo routerClient in routerClients)
+            {
+                ClientInfo? enrichment = null;
+                string mac = NormaliseMac(routerClient.MacAddress);
+                if (mac.Length == 12)
+                {
+                    enrichment = adGuardClients.FirstOrDefault(client =>
+                        NormaliseMac(client.MacAddress).Equals(mac, StringComparison.OrdinalIgnoreCase));
+                }
+
+                if (enrichment is null && HasUsefulValue(routerClient.IpAddress))
+                {
+                    enrichment = adGuardClients.FirstOrDefault(client =>
+                        HasUsefulValue(client.IpAddress) &&
+                        client.IpAddress.Equals(routerClient.IpAddress, StringComparison.OrdinalIgnoreCase));
+                }
+
+                routerClient.AdGuardDataAvailability =
+                    enrichment is null ? AdGuardAvailabilityState.Unavailable : availability;
+                if (enrichment is null || availability != AdGuardAvailabilityState.Available)
+                    continue;
+
+                routerClient.TotalQueries = enrichment.TotalQueries;
+                routerClient.BlockedQueries = enrichment.BlockedQueries;
+                routerClient.LastSeen = enrichment.LastSeen;
+                routerClient.QueryLogAvailable = enrichment.QueryLogAvailable;
             }
         }
 
@@ -1076,6 +1200,13 @@ namespace AdGuardTray.ViewModels
         private static (string Text, string Colour) DetectHealth(
             ClientInfo client)
         {
+            if (client.AdGuardDataAvailability != AdGuardAvailabilityState.Available)
+            {
+                // Rows are created only from the current authoritative router
+                // snapshot, so DNS availability does not define online state.
+                return ("Online", "#16803C");
+            }
+
             if (DateTime.TryParse(
                 client.LastSeen,
                 out DateTime lastSeen))

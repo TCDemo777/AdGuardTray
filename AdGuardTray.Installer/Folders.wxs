@@ -5,12 +5,12 @@
 
     <StandardDirectory Id="ProgramFiles6432Folder">
       <Directory Id="INSTALLFOLDER"
-                 Name="AdGuardTray" />
+                 Name="RouterPilot" />
     </StandardDirectory>
 
     <StandardDirectory Id="ProgramMenuFolder">
-      <Directory Id="APPLICATIONPROGRAMSFOLDER"
-                 Name="AdGuardTray" />
+      <Directory Id="ApplicationProgramsFolder"
+                 Name="RouterPilot" />
     </StandardDirectory>
 
     <StandardDirectory Id="DesktopFolder" />

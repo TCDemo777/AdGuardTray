@@ -23,6 +23,7 @@ namespace AdGuardTray.ViewModels
         private readonly BlockedServiceMutationService _blockedServiceMutations;
         private readonly AdGuardServiceScheduleService _scheduleService;
         private readonly IAdGuardServiceCatalogueProvider _serviceCatalogue;
+        private readonly AdGuardAvailabilityService _adGuardAvailabilityService;
         private readonly DispatcherTimer _timer;
         private readonly SemaphoreSlim _protectionStateGate = new(1, 1);
         private readonly CancellationTokenSource _disposalCancellation = new();
@@ -30,6 +31,7 @@ namespace AdGuardTray.ViewModels
         private Task? _disposeTask;
         private bool _disposed;
         private bool _isBusy;
+        private bool _isAdGuardAvailable = true;
         private bool _isInitialising;
         private string _statusText = "Loading...";
         private string _statusDetail = "Reading AdGuard Home settings.";
@@ -67,32 +69,34 @@ namespace AdGuardTray.ViewModels
             BlockedServiceMutationService blockedServiceMutations,
             AdGuardServiceScheduleService scheduleService,
             IAdGuardServiceCatalogueProvider serviceCatalogue,
-            AdGuardServiceScheduleViewModel schedules)
+            AdGuardServiceScheduleViewModel schedules,
+            AdGuardAvailabilityService adGuardAvailabilityService)
         {
             _routerManagerProvider = routerManagerProvider;
             _protectionNotificationTracker = protectionNotificationTracker;
             _blockedServiceMutations = blockedServiceMutations;
             _scheduleService = scheduleService;
             _serviceCatalogue = serviceCatalogue;
+            _adGuardAvailabilityService = adGuardAvailabilityService;
             Schedules = schedules;
             _scheduleService.BlockedServicesChanged += ScheduleService_BlockedServicesChanged;
             _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
             _timer.Tick += async (_, _) => await RefreshTimedDataAsync();
 
             RefreshAllCommand = new AsyncRelayCommand(RefreshAllAsync, () => !IsBusy);
-            EnableProtectionCommand = new AsyncRelayCommand(() => RunStatusActionAsync("Enabling protection...", "Protection enabled.", r => r.EnableProtectionAsync(), processNotification: true), () => !IsBusy);
-            DisableProtectionCommand = new AsyncRelayCommand(DisableProtectionAsync, () => !IsBusy);
+            EnableProtectionCommand = new AsyncRelayCommand(() => RunStatusActionAsync("Enabling protection...", "Protection enabled.", r => r.EnableProtectionAsync(), processNotification: true), () => ControlsEnabled);
+            DisableProtectionCommand = new AsyncRelayCommand(DisableProtectionAsync, () => ControlsEnabled);
             ResumeProtectionCommand = new AsyncRelayCommand(() => RunStatusActionAsync("Resuming protection...", "Protection resumed.", r => r.ResumeProtectionAsync()), () => !IsBusy);
             Pause30Command = new AsyncRelayCommand(() => PauseAsync(TimeSpan.FromMinutes(30)), () => !IsBusy);
             Pause1HourCommand = new AsyncRelayCommand(() => PauseAsync(TimeSpan.FromHours(1)), () => !IsBusy);
             Pause4HoursCommand = new AsyncRelayCommand(() => PauseAsync(TimeSpan.FromHours(4)), () => !IsBusy);
             PauseUntilTomorrowCommand = new AsyncRelayCommand(PauseUntilTomorrowAsync, () => !IsBusy);
-            ApplyStandardProfileCommand = new AsyncRelayCommand(() => ApplyProfileAsync("Standard", true, true, false, false, true), () => !IsBusy);
-            ApplyFamilyProfileCommand = new AsyncRelayCommand(() => ApplyProfileAsync("Family", true, true, true, true, true), () => !IsBusy);
-            ApplyPrivacyProfileCommand = new AsyncRelayCommand(() => ApplyProfileAsync("Privacy", true, true, false, true, false), () => !IsBusy);
-            SaveBlockedServicesCommand = new AsyncRelayCommand(SaveBlockedServicesAsync, () => !IsBusy);
-            SelectAllServicesCommand = new RelayCommand(() => SetAllBlockedServices(true), () => !IsBusy);
-            ClearAllServicesCommand = new RelayCommand(() => SetAllBlockedServices(false), () => !IsBusy);
+            ApplyStandardProfileCommand = new AsyncRelayCommand(() => ApplyProfileAsync("Standard", true, true, false, false, true), () => ControlsEnabled);
+            ApplyFamilyProfileCommand = new AsyncRelayCommand(() => ApplyProfileAsync("Family", true, true, true, true, true), () => ControlsEnabled);
+            ApplyPrivacyProfileCommand = new AsyncRelayCommand(() => ApplyProfileAsync("Privacy", true, true, false, true, false), () => ControlsEnabled);
+            SaveBlockedServicesCommand = new AsyncRelayCommand(SaveBlockedServicesAsync, () => ControlsEnabled);
+            SelectAllServicesCommand = new RelayCommand(() => SetAllBlockedServices(true), () => ControlsEnabled);
+            ClearAllServicesCommand = new RelayCommand(() => SetAllBlockedServices(false), () => ControlsEnabled);
             BlockedServiceCategories.Add("All categories");
             BlockedServicesView = CollectionViewSource.GetDefaultView(BlockedServices);
             BlockedServicesView.Filter = FilterBlockedService;
@@ -120,7 +124,42 @@ namespace AdGuardTray.ViewModels
         public ICollectionView QueryLogView { get; }
 
         public bool IsBusy { get => _isBusy; private set { if (SetProperty(ref _isBusy, value)) { OnPropertyChanged(nameof(ControlsEnabled)); NotifyCommands(); } } }
-        public bool ControlsEnabled => !IsBusy;
+        public bool ControlsEnabled => !IsBusy && IsAdGuardAvailable;
+        public bool IsAdGuardAvailable
+        {
+            get => _isAdGuardAvailable;
+            private set
+            {
+                if (!SetProperty(ref _isAdGuardAvailable, value)) return;
+                OnPropertyChanged(nameof(ControlsEnabled));
+                OnPropertyChanged(nameof(AdGuardAvailabilityMessage));
+                if (value)
+                {
+                    _adGuardAvailabilityService.SetState(AdGuardAvailabilityState.Available);
+                }
+                else
+                {
+                    if (_adGuardAvailabilityService.State == AdGuardAvailabilityState.Available)
+                    {
+                        _adGuardAvailabilityService.SetState(AdGuardAvailabilityState.Unavailable);
+                    }
+
+                    StatusText = "N/A";
+                    StatusDetail = "AdGuard Home is unavailable. Router monitoring remains active.";
+                    Remaining = string.Empty;
+                    TotalQueriesText = "N/A";
+                    BlockedQueriesText = "N/A";
+                    BlockPercentageText = "N/A";
+                    TopBlockedDomain = "N/A";
+                    QueryLogEntries.Clear();
+                    QueryLogStatus = "DNS query information requires AdGuard Home.";
+                }
+                NotifyCommands();
+            }
+        }
+        public string AdGuardAvailabilityMessage => IsAdGuardAvailable
+            ? string.Empty
+            : "AdGuard Home is unavailable. Router monitoring remains active.";
         public string StatusText { get => _statusText; private set => SetProperty(ref _statusText, value); }
         public string StatusDetail { get => _statusDetail; private set => SetProperty(ref _statusDetail, value); }
         public string Remaining { get => _remaining; private set => SetProperty(ref _remaining, value); }
@@ -286,13 +325,15 @@ namespace AdGuardTray.ViewModels
                 DnsRewrites.Clear();
                 foreach (var rewrite in rewrites) DnsRewrites.Add(rewrite);
                 ApplyQueryLog(queryLog);
+                IsAdGuardAvailable = true;
                 Message = "Protection settings refreshed.";
             }
-            catch (Exception ex)
+            catch (Exception)
             {
+                IsAdGuardAvailable = false;
                 if (BlockedServices.Count == 0)
                     BlockedServicesStatus = "Blocked services could not be loaded. Use Refresh all to try again.";
-                Message = "Unable to refresh protection settings: " + ex.Message;
+                Message = "AdGuard Home is unavailable. Router monitoring remains active.";
             }
             finally { _isInitialising = false; IsBusy = false; }
         }
@@ -320,6 +361,7 @@ namespace AdGuardTray.ViewModels
             }
             catch
             {
+                IsAdGuardAvailable = false;
                 // Keep the last successful statistics visible when a
                 // transient router or AdGuard request fails.
             }
@@ -380,8 +422,8 @@ namespace AdGuardTray.ViewModels
         private async Task RefreshProtectionStatusAsync(bool showMessage)
         {
             if (IsBusy) return;
-            try { RouterManager router = await _routerManagerProvider.GetRouterManagerAsync(); ApplyStatus(await router.GetAdGuardProtectionStatusAsync()); if (showMessage) Message = "Protection status refreshed."; }
-            catch (Exception ex) { StatusDetail = "Protection status unavailable."; if (showMessage) Message = ex.Message; }
+            try { RouterManager router = await _routerManagerProvider.GetRouterManagerAsync(); ApplyStatus(await router.GetAdGuardProtectionStatusAsync()); IsAdGuardAvailable = true; if (showMessage) Message = "Protection status refreshed."; }
+            catch (Exception) { IsAdGuardAvailable = false; StatusDetail = "AdGuard Home is unavailable. Router monitoring remains active."; if (showMessage) Message = StatusDetail; }
         }
 
         private async Task DisableProtectionAsync()
@@ -445,6 +487,7 @@ namespace AdGuardTray.ViewModels
 
                 cancellationToken.ThrowIfCancellationRequested();
                 ApplyStatus(status);
+                IsAdGuardAvailable = true;
 
                 // Notify the already-open Overview immediately rather than
                 // waiting for its scheduled refresh.
@@ -458,6 +501,7 @@ namespace AdGuardTray.ViewModels
             }
             catch (Exception ex)
             {
+                IsAdGuardAvailable = false;
                 Message =
                     "Protection command failed: " +
                     ex.Message;

@@ -8,7 +8,6 @@
 
       <Files Include="!(bindpath.publish)\**">
         <Exclude Files="!(bindpath.publish)\AdGuardTray.exe" />
-        <Exclude Files="!(bindpath.publish)\**\*.pdb" />
       </Files>
 
       <Component Id="MainExecutable"
@@ -16,35 +15,45 @@
 
         <File Id="AdGuardTrayExecutable"
               Source="!(bindpath.publish)\AdGuardTray.exe"
-              KeyPath="yes">
-
-          <Shortcut Id="StartMenuShortcut"
-                    Directory="APPLICATIONPROGRAMSFOLDER"
-                    Name="AdGuardTray"
-                    Description="Manage your GL.iNet router and AdGuard Home"
-                    WorkingDirectory="INSTALLFOLDER"
-                    Advertise="no" />
-
-          <Shortcut Id="DesktopShortcut"
-                    Directory="DesktopFolder"
-                    Name="AdGuardTray"
-                    Description="Manage your GL.iNet router and AdGuard Home"
-                    WorkingDirectory="INSTALLFOLDER"
-                    Advertise="no" />
-
-        </File>
+              KeyPath="yes" />
 
       </Component>
 
-      <Component Id="StartMenuFolderCleanup"
-                 Directory="APPLICATIONPROGRAMSFOLDER">
+      <Component Id="StartMenuShortcutComponent"
+                 Directory="ApplicationProgramsFolder">
+
+        <Shortcut Id="StartMenuShortcut"
+                  Name="RouterPilot"
+                  Description="Manage your GL.iNet router and AdGuard Home"
+                  Target="[INSTALLFOLDER]AdGuardTray.exe"
+                  WorkingDirectory="INSTALLFOLDER"
+                  Advertise="no" />
 
         <RemoveFolder Id="RemoveStartMenuFolder"
                       On="uninstall" />
 
-        <RegistryValue Root="HKLM"
-                       Key="Software\TCDemo777\AdGuardTray"
-                       Name="Installed"
+        <RegistryValue Root="HKCU"
+                       Key="Software\TCDemo777\RouterPilot"
+                       Name="StartMenuShortcut"
+                       Type="integer"
+                       Value="1"
+                       KeyPath="yes" />
+
+      </Component>
+
+      <Component Id="DesktopShortcutComponent"
+                 Directory="DesktopFolder">
+
+        <Shortcut Id="DesktopShortcut"
+                  Name="RouterPilot"
+                  Description="Manage your GL.iNet router and AdGuard Home"
+                  Target="[INSTALLFOLDER]AdGuardTray.exe"
+                  WorkingDirectory="INSTALLFOLDER"
+                  Advertise="no" />
+
+        <RegistryValue Root="HKCU"
+                       Key="Software\TCDemo777\RouterPilot"
+                       Name="DesktopShortcut"
                        Type="integer"
                        Value="1"
                        KeyPath="yes" />

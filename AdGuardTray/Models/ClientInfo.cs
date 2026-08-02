@@ -14,6 +14,8 @@ namespace AdGuardTray.Models
         public string MacAddress { get; set; } = "-";
         public int TotalQueries { get; set; }
         public int BlockedQueries { get; set; }
+        public AdGuardAvailabilityState AdGuardDataAvailability { get; set; } =
+            AdGuardAvailabilityState.Unavailable;
 
         public double BlockRate =>
             TotalQueries == 0
@@ -27,24 +29,33 @@ namespace AdGuardTray.Models
         public bool QueryLogAvailable { get; set; } = true;
 
         public string LastSeenDisplay =>
-            QueryLogAvailable
+            AdGuardDataAvailability != AdGuardAvailabilityState.Available
+                ? "Unavailable"
+                : QueryLogAvailable
                 ? LastSeen
                 : "Query log disabled";
 
+        public string TotalQueriesDisplay =>
+            AdGuardDataAvailability == AdGuardAvailabilityState.Available
+                ? TotalQueries.ToString("N0")
+                : "N/A";
+
         public string BlockedQueriesDisplay =>
-            QueryLogAvailable
-                ? BlockedQueries.ToString()
-                : "—";
+            AdGuardDataAvailability == AdGuardAvailabilityState.Available
+                ? BlockedQueries.ToString("N0")
+                : "N/A";
 
         public string BlockRateDisplay =>
-            QueryLogAvailable
+            AdGuardDataAvailability == AdGuardAvailabilityState.Available
                 ? $"{BlockRate:F1}%"
-                : "—";
+                : "N/A";
 
         public string ActivityAvailabilityToolTip =>
-            QueryLogAvailable
+            AdGuardDataAvailability != AdGuardAvailabilityState.Available
+                ? "DNS activity is unavailable; router connection details remain available."
+                : QueryLogAvailable
                 ? "Live values from the AdGuard Home query log."
-                : "Enable query logging in About > Diagnostics to collect blocked and last-seen activity.";
+                : "AdGuard query logging is disabled; router connection details remain available.";
 
         // Presentation metadata populated by ClientsViewModel.
         public string DeviceIcon { get; set; } = "●";

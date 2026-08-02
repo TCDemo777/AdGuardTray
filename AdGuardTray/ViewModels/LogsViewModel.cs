@@ -17,6 +17,7 @@ namespace AdGuardTray.ViewModels
         // from creating thousands of row containers during initial navigation.
         private const int MaxVisibleEntries = 1500;
         private readonly IRouterManagerProvider _routerManagerProvider;
+        private readonly AdGuardAvailabilityService _adGuardAvailabilityService;
         private readonly DispatcherTimer _refreshTimer;
 
         private readonly List<QueryLogEntry> _allEntries =
@@ -46,9 +47,26 @@ namespace AdGuardTray.ViewModels
                 ? "Resume"
                 : "Pause";
 
-        public LogsViewModel(IRouterManagerProvider routerManagerProvider)
+        public string DnsQueriesDisplay =>
+            _adGuardAvailabilityService.IsAvailable ? Entries.Count.ToString("N0") : "N/A";
+
+        public string DnsSourceDisplay =>
+            _adGuardAvailabilityService.IsAvailable ? "AdGuard Home" : "N/A";
+
+        public string EmptyStateTitle =>
+            _adGuardAvailabilityService.IsAvailable ? "No DNS requests" : "DNS queries unavailable";
+
+        public string EmptyStateMessage =>
+            _adGuardAvailabilityService.IsAvailable
+                ? "AdGuard Home query activity will appear here."
+                : "DNS query information requires AdGuard Home.";
+
+        public LogsViewModel(
+            IRouterManagerProvider routerManagerProvider,
+            AdGuardAvailabilityService adGuardAvailabilityService)
         {
             _routerManagerProvider = routerManagerProvider;
+            _adGuardAvailabilityService = adGuardAvailabilityService;
 
             _refreshTimer =
                 new DispatcherTimer
@@ -87,6 +105,17 @@ namespace AdGuardTray.ViewModels
 
             IsLoading =
                 true;
+
+            RefreshAvailabilityDisplays();
+
+            if (!_adGuardAvailabilityService.IsAvailable)
+            {
+                _allEntries.Clear();
+                Entries.Clear();
+                StatusMessage = "DNS query information requires AdGuard Home.";
+                IsLoading = false;
+                return;
+            }
 
             StatusMessage =
                 "Loading query log...";
@@ -142,6 +171,8 @@ namespace AdGuardTray.ViewModels
                     _ =>
                         $"{_allEntries.Count} query-log entries loaded."
                 };
+
+            RefreshAvailabilityDisplays();
         }
 
         [RelayCommand]
@@ -234,6 +265,14 @@ namespace AdGuardTray.ViewModels
                         $"{_allEntries.Count:N0} entries.";
                 }
             }
+        }
+
+        private void RefreshAvailabilityDisplays()
+        {
+            OnPropertyChanged(nameof(DnsQueriesDisplay));
+            OnPropertyChanged(nameof(DnsSourceDisplay));
+            OnPropertyChanged(nameof(EmptyStateTitle));
+            OnPropertyChanged(nameof(EmptyStateMessage));
         }
 
         private bool VisibleEntriesMatch(

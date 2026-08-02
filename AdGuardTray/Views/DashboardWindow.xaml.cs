@@ -29,6 +29,7 @@ namespace AdGuardTray.Views
         private readonly AdGuardProtectionNotificationTracker _protectionNotificationTracker;
         private readonly RefreshCoordinator _refreshCoordinator;
         private readonly AdGuardServiceScheduleService _scheduleService;
+        private readonly AdGuardAvailabilityService _adGuardAvailabilityService;
         private readonly SemaphoreSlim _routerManagerUsageGate = new(1, 1);
         private bool _refreshInProgress;
         private bool _trafficRefreshInProgress;
@@ -77,6 +78,8 @@ namespace AdGuardTray.Views
                 .GetRequiredService<IRouterManagerProvider>();
             _scheduleService = ((App)Application.Current).Services
                 .GetRequiredService<AdGuardServiceScheduleService>();
+            _adGuardAvailabilityService = ((App)Application.Current).Services
+                .GetRequiredService<AdGuardAvailabilityService>();
             NotificationButton.DataContext = _notificationService;
 
             _settingsService =
@@ -221,138 +224,36 @@ namespace AdGuardTray.Views
                 _viewModel.UpdateStorageUsage(
                     info.StorageUsage);
 
-                await RefreshWifiNetworksAsync(router, cancellationToken);
+                // Router and AdGuard work are independent. Start both groups
+                // together, then apply each successful result separately.
+                Task wifiTask = RefreshWifiNetworksAsync(router, cancellationToken);
+                Task<NetworkInfo> networkTask = router.GetNetworkInfoAsync();
+                Task adGuardTask = RefreshAdGuardAsync(router, cancellationToken);
 
-                AdGuardStatus adGuard =
-                    await router.GetAdGuardStatusAsync();
-
-                cancellationToken.ThrowIfCancellationRequested();
-                if (adGuard.ServiceStatus.StartsWith(
-                    "SSH_",
-                    StringComparison.OrdinalIgnoreCase))
-                {
-                    await ShowConnectionErrorAsync(
-                        adGuard.ServiceStatus);
-
-                    return;
-                }
-
-                _viewModel.AdGuardRunning =
-                    adGuard.IsRunning;
-
-                _viewModel.AdGuardVersion =
-                    adGuard.Version;
-
-                _viewModel.AdGuardProcess =
-                    adGuard.Process;
-
-                _viewModel.AdGuardService =
-                    adGuard.ServiceStatus;
-
-                // These requests use the pooled AdGuard HTTP client and are
-                // independent, so run them together instead of serially.
-                Task<AdGuardStatistics> statisticsTask =
-                    router.GetAdGuardStatisticsAsync();
-
-                Task<List<QueryLogEntry>> rankingTask =
-                    router.GetQueryLogAsync();
-
-                Task<AdGuardProtectionStatus> protectionTask =
-                    router.GetAdGuardProtectionStatusAsync();
-
-                Task allAdGuardTasks = Task.WhenAll(
-                    statisticsTask,
-                    rankingTask,
-                    protectionTask);
-
+                NetworkInfo? network = null;
+                Exception? networkFailure = null;
                 try
                 {
-                    AdGuardProtectionStatus protectionStatus =
-                        await protectionTask;
-
-                    cancellationToken.ThrowIfCancellationRequested();
-                    await _protectionNotificationTracker.ProcessProtectionStateAsync(
-                        protectionStatus.IsEnabled,
-                        ProtectionStateSource.Refresh);
-
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    // Protection state is authoritative from /control/status.
-                    // Keep processing it before applying the other results.
-                    _viewModel.AdGuardProtectionEnabled =
-                        protectionStatus.IsEnabled;
-
-                    _viewModel.AdGuardProtectionPaused =
-                        protectionStatus.IsPaused;
-
-                    _viewModel.AdGuardProtectionStatusKnown =
-                        true;
-
-                    _viewModel.AdGuardProtectionRemaining =
-                        protectionStatus.IsPaused
-                            ? FormatProtectionRemaining(
-                                protectionStatus.RemainingPause)
-                            : "";
-
-                    await allAdGuardTasks;
+                    network = await networkTask;
                 }
-                catch
+                catch (Exception ex)
                 {
-                    await ObserveTaskAsync(allAdGuardTasks);
-                    throw;
+                    networkFailure = ex;
                 }
 
-                cancellationToken.ThrowIfCancellationRequested();
-
-                AdGuardStatistics statistics =
-                    await statisticsTask;
-
-                List<QueryLogEntry> rankingEntries =
-                    await rankingTask;
-
-                _viewModel.UpdateAdGuardStatistics(
-                    statistics);
-
-                // Several AdGuard Home builds omit ranking arrays from
-                // /control/stats. Build those Analytics lists from the
-                // current query-log window whenever the stats lists are empty.
-                _viewModel.UpdateRankingsFromQueryLog(
-                    rankingEntries,
-                    onlyWhenEmpty: false);
-
-                if (statistics.TotalQueries < 0 ||
-                    statistics.BlockedQueries < 0)
+                // Both independent groups are always observed, even when the
+                // router network request fails.
+                await Task.WhenAll(wifiTask, adGuardTask);
+                if (networkFailure is not null)
                 {
-                    _viewModel.AdGuardQueries =
-                        "-";
-
-                    _viewModel.AdGuardBlocked =
-                        "-";
-
-                    _viewModel.AdGuardBlockRate =
-                        "-";
-                }
-                else
-                {
-                    _viewModel.AdGuardQueries =
-                        statistics.TotalQueries
-                            .ToString("N0");
-
-                    _viewModel.AdGuardBlocked =
-                        statistics.BlockedQueries
-                            .ToString("N0");
-
-                    _viewModel.AdGuardBlockRate =
-                        statistics.BlockPercentage
-                            .ToString("0.0") + "%";
+                    throw networkFailure;
                 }
 
-                NetworkInfo network =
-                    await router.GetNetworkInfoAsync();
+                Debug.Assert(network is not null);
 
                 cancellationToken.ThrowIfCancellationRequested();
                 _viewModel.InternetConnected =
-                    network.Connected;
+                    network!.Connected;
 
                 _viewModel.WanIp =
                     network.WanIp;
@@ -369,10 +270,10 @@ namespace AdGuardTray.Views
                 _viewModel.Latency =
                     network.Latency;
 
-                _viewModel.StatusMessage =
-                    statistics.TotalQueries < 0
-                        ? "Connected - AdGuard statistics unavailable"
-                        : "Connected";
+                _viewModel.StatusMessage = _viewModel.AdGuardAvailability ==
+                    AdGuardAvailabilityState.Available
+                        ? "Connected"
+                        : "Connected - AdGuard Home unavailable";
 
                 await UpdateRouterConnectivityAsync(isOnline: true);
 
@@ -413,6 +314,134 @@ namespace AdGuardTray.Views
                 _refreshInProgress = false;
             }
         }
+
+        private async Task RefreshAdGuardAsync(
+            RouterManager router,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                AdGuardStatus serviceStatus = await router.GetAdGuardStatusAsync();
+                cancellationToken.ThrowIfCancellationRequested();
+
+                _viewModel.AdGuardRunning = serviceStatus.IsRunning;
+                _viewModel.AdGuardVersion = serviceStatus.Version;
+                _viewModel.AdGuardProcess = serviceStatus.Process;
+                _viewModel.AdGuardService = serviceStatus.ServiceStatus;
+
+                if (!serviceStatus.IsRunning)
+                {
+                    MarkAdGuardUnavailable(AdGuardAvailabilityState.Unavailable);
+                    return;
+                }
+
+                Task<AdGuardRefreshResult<AdGuardStatistics>> statisticsTask =
+                    CaptureAdGuardResultAsync(router.GetAdGuardStatisticsAsync(), cancellationToken);
+                Task<AdGuardRefreshResult<List<QueryLogEntry>>> rankingTask =
+                    CaptureAdGuardResultAsync(router.GetQueryLogAsync(), cancellationToken);
+                Task<AdGuardRefreshResult<AdGuardProtectionStatus>> protectionTask =
+                    CaptureAdGuardResultAsync(router.GetAdGuardProtectionStatusAsync(), cancellationToken);
+
+                await Task.WhenAll(statisticsTask, rankingTask, protectionTask);
+                cancellationToken.ThrowIfCancellationRequested();
+
+                AdGuardRefreshResult<AdGuardStatistics> statistics = await statisticsTask;
+                AdGuardRefreshResult<List<QueryLogEntry>> rankings = await rankingTask;
+                AdGuardRefreshResult<AdGuardProtectionStatus> protection = await protectionTask;
+
+                if (protection.Value is { } protectionStatus)
+                {
+                    await _protectionNotificationTracker.ProcessProtectionStateAsync(
+                        protectionStatus.IsEnabled,
+                        ProtectionStateSource.Refresh);
+                    cancellationToken.ThrowIfCancellationRequested();
+                    _viewModel.AdGuardProtectionEnabled = protectionStatus.IsEnabled;
+                    _viewModel.AdGuardProtectionPaused = protectionStatus.IsPaused;
+                    _viewModel.AdGuardProtectionStatusKnown = true;
+                    _viewModel.AdGuardProtectionRemaining = protectionStatus.IsPaused
+                        ? FormatProtectionRemaining(protectionStatus.RemainingPause)
+                        : string.Empty;
+                }
+
+                if (statistics.Value is { } statisticsValue)
+                {
+                    _viewModel.UpdateAdGuardStatistics(statisticsValue);
+                    _viewModel.AdGuardQueries = statisticsValue.TotalQueries < 0
+                        ? "-"
+                        : statisticsValue.TotalQueries.ToString("N0");
+                    _viewModel.AdGuardBlocked = statisticsValue.BlockedQueries < 0
+                        ? "-"
+                        : statisticsValue.BlockedQueries.ToString("N0");
+                    _viewModel.AdGuardBlockRate = statisticsValue.TotalQueries < 0 ||
+                                                  statisticsValue.BlockedQueries < 0
+                        ? "-"
+                        : statisticsValue.BlockPercentage.ToString("0.0") + "%";
+                }
+
+                if (rankings.Value is { } rankingEntries)
+                {
+                    _viewModel.UpdateRankingsFromQueryLog(rankingEntries, onlyWhenEmpty: false);
+                }
+
+                Exception? failure = protection.Error ?? statistics.Error ?? rankings.Error;
+                if (failure is null)
+                {
+                    _viewModel.AdGuardAvailability = AdGuardAvailabilityState.Available;
+                    _adGuardAvailabilityService.SetState(AdGuardAvailabilityState.Available);
+                    return;
+                }
+
+                MarkAdGuardUnavailable(ClassifyAdGuardFailure(failure));
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                MarkAdGuardUnavailable(ClassifyAdGuardFailure(ex));
+            }
+        }
+
+        private void MarkAdGuardUnavailable(AdGuardAvailabilityState state)
+        {
+            _viewModel.AdGuardAvailability = state;
+            _adGuardAvailabilityService.SetState(state);
+            _viewModel.AdGuardRunning = false;
+            _viewModel.ClearAdGuardStatistics();
+        }
+
+        private static AdGuardAvailabilityState ClassifyAdGuardFailure(Exception exception)
+        {
+            string message = exception.Message;
+            return message.Contains("401", StringComparison.OrdinalIgnoreCase) ||
+                   message.Contains("403", StringComparison.OrdinalIgnoreCase) ||
+                   message.Contains("auth", StringComparison.OrdinalIgnoreCase)
+                ? AdGuardAvailabilityState.AuthenticationFailed
+                : AdGuardAvailabilityState.Unavailable;
+        }
+
+        private static async Task<AdGuardRefreshResult<T>> CaptureAdGuardResultAsync<T>(
+            Task<T> task,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                T value = await task;
+                cancellationToken.ThrowIfCancellationRequested();
+                return new AdGuardRefreshResult<T>(value, null);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                return new AdGuardRefreshResult<T>(default, ex);
+            }
+        }
+
+        private sealed record AdGuardRefreshResult<T>(T? Value, Exception? Error);
 
         private async Task RefreshWifiNetworksAsync(
             RouterManager router,
