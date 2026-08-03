@@ -16,6 +16,8 @@ namespace AdGuardTray
         private TrayManager? _trayManager;
         private bool _trayNoticeShown;
         private ServiceProvider? _services;
+        private SingleInstanceCoordinator? _singleInstance;
+        private bool _activationRequestedDuringStartup;
 
         public IServiceProvider Services => _services
             ?? throw new InvalidOperationException("Application services are not available.");
@@ -25,6 +27,27 @@ namespace AdGuardTray
         protected override async void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
+
+            try
+            {
+                if (!SingleInstanceCoordinator.TryAcquire(
+                        RequestDashboardActivation,
+                        out _singleInstance))
+                {
+                    Shutdown();
+                    return;
+                }
+            }
+            catch (Exception)
+            {
+                MessageBox.Show(
+                    "RouterPilot could not verify whether another instance is running.",
+                    "RouterPilot",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                Shutdown();
+                return;
+            }
 
             var serviceCollection = new ServiceCollection();
             serviceCollection.AddSingleton<SettingsService>();
@@ -111,7 +134,33 @@ namespace AdGuardTray
                 ExitApplication);
 
             MainWindow = _dashboardWindow;
+            bool activateAfterStartup = _activationRequestedDuringStartup;
+            _activationRequestedDuringStartup = false;
             ShowDashboard();
+
+            if (activateAfterStartup)
+                Dispatcher.BeginInvoke(ShowDashboard);
+        }
+
+        private void RequestDashboardActivation()
+        {
+            if (Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished)
+                return;
+
+            Dispatcher.BeginInvoke(() =>
+            {
+                if (IsExitRequested)
+                    return;
+
+                if (_dashboardWindow is null)
+                {
+                    _activationRequestedDuringStartup = true;
+                    return;
+                }
+
+                _activationRequestedDuringStartup = false;
+                ShowDashboard();
+            });
         }
 
         public void HideDashboard()
@@ -206,12 +255,20 @@ namespace AdGuardTray
                 _services = null;
             }
 
+            if (_singleInstance is not null)
+            {
+                await _singleInstance.DisposeAsync();
+                _singleInstance = null;
+            }
+
             Shutdown();
         }
 
         protected override void OnExit(ExitEventArgs e)
         {
             _trayManager?.Dispose();
+            _singleInstance?.Dispose();
+            _singleInstance = null;
             base.OnExit(e);
         }
 
