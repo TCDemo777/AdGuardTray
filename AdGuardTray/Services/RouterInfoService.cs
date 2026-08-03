@@ -1,4 +1,7 @@
 using System;
+using System.Diagnostics;
+using System.Globalization;
+using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using AdGuardTray.Models;
@@ -8,6 +11,9 @@ namespace AdGuardTray.Services
     public class RouterInfoService
     {
         private readonly GLInetSshService _ssh;
+        private readonly object _cpuSnapshotLock = new();
+        private CpuTickSnapshot? _previousCpuSnapshot;
+        private double? _lastCpuUsagePercent;
 
 
         public RouterInfoService(GLInetSshService ssh)
@@ -128,51 +134,66 @@ namespace AdGuardTray.Services
 
             try
             {
-                string cpu =
+                string cpuSample =
                     await _ssh.RunCommandAsync(
-                        "top -bn1 | grep CPU");
+                        "awk '/^cpu / { print; exit }' /proc/stat; " +
+                        "(getconf _NPROCESSORS_ONLN 2>/dev/null || " +
+                        "grep -c '^processor' /proc/cpuinfo) | head -n1");
 
+                Debug.WriteLine(
+                    $"Router CPU sample raw: {ToSingleLine(cpuSample)}");
 
-                int idleIndex =
-                    cpu.IndexOf("idle");
-
-
-                if (idleIndex > 0)
+                if (!TryParseCpuSample(
+                        cpuSample,
+                        out CpuTickSnapshot currentSnapshot,
+                        out int? logicalProcessorCount))
                 {
-                    string idleText =
-                        cpu.Substring(
-                            0,
-                            idleIndex);
-
-
-                    string[] parts =
-                        idleText.Split(
-                            ' ',
-                            StringSplitOptions.RemoveEmptyEntries);
-
-
-                    foreach (string part in parts)
-                    {
-                        if (part.EndsWith("%"))
-                        {
-                            if (double.TryParse(
-                                part.Replace("%", ""),
-                                out double idle))
-                            {
-                                info.CpuUsage =
-                                    Math.Round(
-                                        100 - idle,
-                                        1) + "%";
-                            }
-
-                            break;
-                        }
-                    }
+                    Debug.WriteLine("Router CPU sample parsing failed.");
+                    ApplyLastCpuUsage(info);
                 }
+                else
+                {
+                    info.LogicalProcessorCount = logicalProcessorCount;
+                    double? calculatedUsage = null;
+
+                    lock (_cpuSnapshotLock)
+                    {
+                        if (_previousCpuSnapshot is CpuTickSnapshot previous &&
+                            currentSnapshot.TotalTicks >= previous.TotalTicks &&
+                            currentSnapshot.IdleTicks >= previous.IdleTicks)
+                        {
+                            ulong totalDelta =
+                                currentSnapshot.TotalTicks - previous.TotalTicks;
+                            ulong idleDelta =
+                                currentSnapshot.IdleTicks - previous.IdleTicks;
+
+                            if (totalDelta > 0 && idleDelta <= totalDelta)
+                            {
+                                calculatedUsage = Math.Clamp(
+                                    (1d - idleDelta / (double)totalDelta) * 100d,
+                                    0d,
+                                    100d);
+                                _lastCpuUsagePercent = calculatedUsage;
+                            }
+                        }
+
+                        _previousCpuSnapshot = currentSnapshot;
+
+                        if (calculatedUsage is null)
+                            calculatedUsage = _lastCpuUsagePercent;
+                    }
+
+                    ApplyCpuUsage(info, calculatedUsage);
+                }
+
+                Debug.WriteLine(
+                    $"Router CPU parsed: cores={info.LogicalProcessorCount?.ToString(CultureInfo.InvariantCulture) ?? "unknown"}, " +
+                    $"usage={info.CpuUsage}");
             }
             catch
             {
-                info.CpuUsage = "-";
+                Debug.WriteLine("Router CPU sampling command failed.");
+                ApplyLastCpuUsage(info);
             }
 
 
@@ -210,12 +231,46 @@ namespace AdGuardTray.Services
             {
                 string loadAverage =
                     await _ssh.RunCommandAsync(
-                        "awk '{print $1 \" / \" $2 \" / \" $3}' /proc/loadavg");
+                        "cat /proc/loadavg");
 
-                info.LoadAverage =
-                    string.IsNullOrWhiteSpace(loadAverage)
-                        ? "-"
-                        : loadAverage.Trim();
+                Debug.WriteLine(
+                    $"Router load average raw: {ToSingleLine(loadAverage)}");
+
+                string[] loadParts = loadAverage.Split(
+                    (char[]?)null,
+                    StringSplitOptions.RemoveEmptyEntries);
+
+                if (loadParts.Length >= 3 &&
+                    double.TryParse(
+                        loadParts[0],
+                        NumberStyles.Float,
+                        CultureInfo.InvariantCulture,
+                        out double load1) &&
+                    double.TryParse(
+                        loadParts[1],
+                        NumberStyles.Float,
+                        CultureInfo.InvariantCulture,
+                        out double load5) &&
+                    double.TryParse(
+                        loadParts[2],
+                        NumberStyles.Float,
+                        CultureInfo.InvariantCulture,
+                        out double load15))
+                {
+                    info.LoadAverage1Minute = load1;
+                    info.LoadAverage = string.Create(
+                        CultureInfo.InvariantCulture,
+                        $"{load1:0.##} / {load5:0.##} / {load15:0.##}");
+
+                    Debug.WriteLine(
+                        $"Router load average parsed: oneMinute={load1.ToString("0.##", CultureInfo.InvariantCulture)}, " +
+                        $"cores={info.LogicalProcessorCount?.ToString(CultureInfo.InvariantCulture) ?? "unknown"}");
+                }
+                else
+                {
+                    info.LoadAverage = "-";
+                    Debug.WriteLine("Router load average parsing failed.");
+                }
             }
             catch
             {
@@ -338,6 +393,113 @@ namespace AdGuardTray.Services
                 ? $"{megabytes / 1024d:0.0} GB"
                 : $"{megabytes:0} MB";
         }
+
+        private void ApplyLastCpuUsage(RouterInfo info)
+        {
+            double? lastUsage;
+            lock (_cpuSnapshotLock)
+                lastUsage = _lastCpuUsagePercent;
+
+            ApplyCpuUsage(info, lastUsage);
+        }
+
+        private static void ApplyCpuUsage(
+            RouterInfo info,
+            double? usagePercent)
+        {
+            if (usagePercent is not double usage ||
+                !double.IsFinite(usage) ||
+                usage < 0 || usage > 100)
+            {
+                info.CpuUsagePercent = null;
+                info.CpuUsage = "-";
+                return;
+            }
+
+            double rounded = Math.Round(usage, 1);
+            info.CpuUsagePercent = rounded;
+            info.CpuUsage =
+                rounded.ToString("0.#", CultureInfo.InvariantCulture) + "%";
+        }
+
+        private static bool TryParseCpuSample(
+            string output,
+            out CpuTickSnapshot snapshot,
+            out int? logicalProcessorCount)
+        {
+            snapshot = default;
+            logicalProcessorCount = null;
+
+            string[] lines = output.Split(
+                new[] { '\r', '\n' },
+                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+            string? cpuLine = lines.FirstOrDefault(
+                line => line.StartsWith("cpu ", StringComparison.Ordinal));
+            if (cpuLine is null)
+                return false;
+
+            string[] fields = cpuLine.Split(
+                (char[]?)null,
+                StringSplitOptions.RemoveEmptyEntries);
+            if (fields.Length < 5)
+                return false;
+
+            // Linux accounts guest time inside user/nice, so sum through
+            // steal only and count idle plus iowait as idle time.
+            int tickFieldCount = Math.Min(fields.Length - 1, 8);
+            var ticks = new ulong[tickFieldCount];
+            for (int index = 0; index < tickFieldCount; index++)
+            {
+                if (!ulong.TryParse(
+                        fields[index + 1],
+                        NumberStyles.None,
+                        CultureInfo.InvariantCulture,
+                        out ticks[index]))
+                {
+                    return false;
+                }
+            }
+
+            ulong totalTicks = 0;
+            foreach (ulong tick in ticks)
+                totalTicks += tick;
+
+            ulong idleTicks = ticks[3];
+            if (ticks.Length > 4)
+                idleTicks += ticks[4];
+
+            if (totalTicks == 0 || idleTicks > totalTicks)
+                return false;
+
+            foreach (string line in lines)
+            {
+                if (int.TryParse(
+                        line,
+                        NumberStyles.Integer,
+                        CultureInfo.InvariantCulture,
+                        out int cores) && cores > 0)
+                {
+                    logicalProcessorCount = cores;
+                    break;
+                }
+            }
+
+            snapshot = new CpuTickSnapshot(totalTicks, idleTicks);
+            return true;
+        }
+
+        private static string ToSingleLine(string value)
+        {
+            return value
+                .Replace('\r', ' ')
+                .Replace('\n', ' ')
+                .Trim();
+        }
+
+        private readonly record struct CpuTickSnapshot(
+            ulong TotalTicks,
+            ulong IdleTicks);
 
     }
 }

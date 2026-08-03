@@ -132,7 +132,7 @@
                     FooterText="{Binding CpuUsage}"
                     IconBackground="{DynamicResource Brush.WarningSubtle}"
                     IconGlyph="&#xE950;"
-                    Subtitle="Processor load"
+                    Subtitle="Processor utilisation"
                     Title="CPU"
                     Value="{Binding CpuHealthText}" />
 

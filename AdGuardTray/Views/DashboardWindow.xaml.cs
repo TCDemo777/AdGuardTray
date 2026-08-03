@@ -212,6 +212,9 @@ namespace AdGuardTray.Views
                 _viewModel.CpuUsage =
                     info.CpuUsage;
 
+                Debug.WriteLine(
+                    $"Dashboard CPU assigned: {info.CpuUsage}");
+
                 _viewModel.Temperature =
                     info.Temperature;
 

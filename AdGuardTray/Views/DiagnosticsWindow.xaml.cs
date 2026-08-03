@@ -135,9 +135,17 @@ Uptime
 ------
 {info.Uptime}
 
-CPU
----
+CPU utilisation
+---------------
 {info.CpuUsage}
+
+Logical processors
+------------------
+{info.LogicalProcessorCount?.ToString() ?? "-"}
+
+Load average (1 / 5 / 15 minutes)
+---------------------------------
+{info.LoadAverage}
 
 Memory
 ------

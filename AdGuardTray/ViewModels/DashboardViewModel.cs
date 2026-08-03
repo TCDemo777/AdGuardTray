@@ -72,7 +72,7 @@ namespace AdGuardTray.ViewModels
 
         public string CpuHealthText =>
             CpuPercentage >= 90
-                ? "High load"
+                ? "High usage"
                 : CpuPercentage >= 70
                     ? "Elevated"
                     : CpuPercentage > 0
@@ -1069,9 +1069,14 @@ namespace AdGuardTray.ViewModels
         {
             if (double.TryParse(
                 value.Replace("%", ""),
+                System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture,
                 out double result))
             {
-                CpuPercentage = result;
+                CpuPercentage =
+                    double.IsFinite(result) && result >= 0 && result <= 100
+                        ? result
+                        : 0;
             }
             else
             {
