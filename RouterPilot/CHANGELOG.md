@@ -1,5 +1,32 @@
 # RouterPilot Changelog
 
+## [1.7.0] - 2026-08-05
+
+### Added
+- Completed the internal RouterPilot rebrand, including `RouterPilot.exe`, `RouterPilot.sln` and RouterPilot namespaces.
+- Added automatic copy-based migration of supported legacy `%LocalAppData%\AdGuardTray` data into `%LocalAppData%\RouterPilot`.
+- Added per-user single-instance application protection.
+- Improved the DNS Activity page and added a configurable Clients auto-scroll option.
+
+### Changed
+- Standardised Connected, Active, Pending, Paused, Disabled, N/A and Error status vocabulary.
+- Improved Overview, Analytics, Network, Protection and Clients layouts.
+- Moved Resource Health Details to Analytics and limited DNS Activity to the newest 200 entries.
+- Improved Protection and scheduled-service organisation.
+
+### Fixed
+- Corrected router CPU utilisation using `/proc/stat` deltas.
+- Restored Analytics DNS Summary presentation and corrected the StatisticCard XAML regression.
+- Corrected client selection and auto-scroll behaviour.
+- Improved MSI packaging and installer reliability.
+- Preserved router monitoring when AdGuard Home is unavailable and restored AdGuard-unavailable presentation.
+- Restored Wi-Fi discovery and resolved UI alignment regressions.
+
+### Internal
+- RouterPilot application data now uses `%LocalAppData%\RouterPilot` while safely retaining legacy files untouched.
+- Completed RouterPilot executable and project identity updates.
+- Retained stable single-instance mutex identities and the existing WiX UpgradeCode.
+
 ## [1.6.1] - 2026-08-02
 
 ### Added
