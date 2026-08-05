@@ -129,12 +129,12 @@
                     Grid.Column="6"
                     Height="146"
                     AccentBrush="{Binding CpuHealthColour}"
-                    FooterText="{Binding CpuUsage}"
+                    FooterText="{Binding CpuHealthText}"
                     IconBackground="{DynamicResource Brush.WarningSubtle}"
                     IconGlyph="&#xE950;"
                     Subtitle="Processor utilisation"
                     Title="CPU"
-                    Value="{Binding CpuHealthText}" />
+                    Value="{Binding CpuUsageDisplay}" />
 
                 <controls:StatisticCard
                     Grid.Column="8"
@@ -278,7 +278,7 @@
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Style="{StaticResource Overview.DetailLabel}" Text="CPU usage" />
-                                    <TextBlock Grid.Column="1" Style="{StaticResource Overview.DetailValue}" Text="{Binding CpuUsage}" />
+                                    <TextBlock Grid.Column="1" Style="{StaticResource Overview.DetailValue}" Text="{Binding CpuUsageDisplay}" />
                                 </Grid>
                                 <ProgressBar
                                     Style="{StaticResource Overview.ProgressBar}"

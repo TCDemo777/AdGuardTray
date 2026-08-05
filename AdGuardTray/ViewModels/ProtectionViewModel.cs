@@ -33,7 +33,8 @@ namespace AdGuardTray.ViewModels
         private bool _isBusy;
         private bool _isAdGuardAvailable = true;
         private bool _isInitialising;
-        private string _statusText = "Loading...";
+        private RouterPilotStatus _protectionStatus = RouterPilotStatus.Pending;
+        private string _statusText = RouterPilotStatusPresentation.Pending;
         private string _statusDetail = "Reading AdGuard Home settings.";
         private string _remaining = "";
         private string _message = "";
@@ -144,7 +145,7 @@ namespace AdGuardTray.ViewModels
                         _adGuardAvailabilityService.SetState(AdGuardAvailabilityState.Unavailable);
                     }
 
-                    StatusText = "N/A";
+                    SetProtectionStatus(RouterPilotStatus.NotAvailable);
                     StatusDetail = "AdGuard Home is unavailable. Router monitoring remains active.";
                     Remaining = string.Empty;
                     TotalQueriesText = "N/A";
@@ -161,6 +162,7 @@ namespace AdGuardTray.ViewModels
             ? string.Empty
             : "AdGuard Home is unavailable. Router monitoring remains active.";
         public string StatusText { get => _statusText; private set => SetProperty(ref _statusText, value); }
+        public string StatusColour => RouterPilotStatusPresentation.Colour(_protectionStatus);
         public string StatusDetail { get => _statusDetail; private set => SetProperty(ref _statusDetail, value); }
         public string Remaining { get => _remaining; private set => SetProperty(ref _remaining, value); }
         public string Message { get => _message; private set => SetProperty(ref _message, value); }
@@ -712,9 +714,19 @@ namespace AdGuardTray.ViewModels
 
         private void ApplyStatus(AdGuardProtectionStatus status)
         {
-            if (status.IsEnabled) { StatusText = "Enabled"; StatusDetail = "DNS filtering and protection are active."; Remaining = ""; }
-            else if (status.IsPaused) { StatusText = "Paused"; StatusDetail = "Protection is temporarily paused."; Remaining = "Remaining: " + FormatRemaining(status.RemainingPause); }
-            else { StatusText = "Disabled"; StatusDetail = "Protection is disabled until manually enabled."; Remaining = ""; }
+            if (status.IsEnabled) { SetProtectionStatus(RouterPilotStatus.Active); StatusDetail = "DNS filtering and protection are active."; Remaining = ""; }
+            else if (status.IsPaused) { SetProtectionStatus(RouterPilotStatus.Pending); StatusDetail = "Protection is temporarily paused."; Remaining = "Remaining: " + FormatRemaining(status.RemainingPause); }
+            else { SetProtectionStatus(RouterPilotStatus.Disabled); StatusDetail = "Protection is disabled until manually enabled."; Remaining = ""; }
+        }
+
+        private void SetProtectionStatus(RouterPilotStatus status)
+        {
+            if (_protectionStatus == status)
+                return;
+
+            _protectionStatus = status;
+            StatusText = RouterPilotStatusPresentation.Text(status);
+            OnPropertyChanged(nameof(StatusColour));
         }
 
         private void DetermineProfile()

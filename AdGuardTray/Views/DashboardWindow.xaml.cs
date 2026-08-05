@@ -212,6 +212,9 @@ namespace AdGuardTray.Views
                 _viewModel.CpuUsage =
                     info.CpuUsage;
 
+                _viewModel.CpuUtilisationPending =
+                    info.CpuUtilisationPending;
+
                 Debug.WriteLine(
                     $"Dashboard CPU assigned: {info.CpuUsage}");
 
@@ -772,6 +775,9 @@ namespace AdGuardTray.Views
 
             _viewModel.CpuUsage =
                 "-";
+
+            _viewModel.CpuUtilisationPending =
+                false;
 
             _viewModel.MemoryUsage =
                 "-";

@@ -12,9 +12,9 @@ namespace AdGuardTray.Models
 
         public string StateText =>
             IsEnabled
-                ? "Protection enabled"
+                ? RouterPilotStatusPresentation.Active
                 : IsPaused
-                    ? "Protection paused"
-                    : "Protection disabled";
+                    ? RouterPilotStatusPresentation.Pending
+                    : RouterPilotStatusPresentation.Disabled;
     }
 }

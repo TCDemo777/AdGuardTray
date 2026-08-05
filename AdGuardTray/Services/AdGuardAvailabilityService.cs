@@ -13,7 +13,10 @@ public sealed class AdGuardAvailabilityService : ObservableObject
 
     public bool IsAvailable => State == AdGuardAvailabilityState.Available;
 
-    public string DisplayText => IsAvailable ? "Available" : "N/A";
+    public string DisplayText => RouterPilotStatusPresentation.Text(
+        IsAvailable
+            ? RouterPilotStatus.Active
+            : RouterPilotStatus.NotAvailable);
 
     public void SetState(AdGuardAvailabilityState state)
     {

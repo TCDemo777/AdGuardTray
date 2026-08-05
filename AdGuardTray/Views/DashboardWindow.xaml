@@ -135,7 +135,7 @@
                     <Button x:Name="LogsButton"
                             Style="{StaticResource SidebarNavigationButton}"
                             Background="Transparent"
-                            Content="Logs"
+                            Content="DNS Activity"
                             Click="Logs_Click"/>
 
                     <Button x:Name="NotificationButton"

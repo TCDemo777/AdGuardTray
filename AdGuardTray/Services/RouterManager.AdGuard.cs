@@ -1387,7 +1387,7 @@ namespace AdGuardTray.Services
         //
 
         public async Task<List<QueryLogEntry>>
-            GetQueryLogAsync()
+            GetQueryLogAsync(int limit = 500)
         {
             try
             {
@@ -1397,7 +1397,7 @@ namespace AdGuardTray.Services
                 AdGuardQueryLogResponse response =
                     await RequestAdGuardQueryLogAsync(
                         token,
-                        500);
+                        limit);
 
                 if (response.RequiresNewToken)
                 {
@@ -1409,7 +1409,7 @@ namespace AdGuardTray.Services
                     response =
                         await RequestAdGuardQueryLogAsync(
                             token,
-                            500);
+                            limit);
                 }
 
                 if (!response.IsSuccess)

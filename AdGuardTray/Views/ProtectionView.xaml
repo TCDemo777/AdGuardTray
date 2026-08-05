@@ -65,7 +65,7 @@
             <Style.Triggers>
                 <MultiDataTrigger>
                     <MultiDataTrigger.Conditions>
-                        <Condition Binding="{Binding StatusText}" Value="Enabled"/>
+                        <Condition Binding="{Binding StatusText}" Value="Active"/>
                         <Condition Binding="{Binding ControlsEnabled}" Value="True"/>
                     </MultiDataTrigger.Conditions>
                     <Setter Property="IsEnabled" Value="True"/>
@@ -228,7 +228,7 @@
                             <TextBlock Margin="0,8,0,0"
                                        FontSize="22"
                                        FontWeight="SemiBold"
-                                       Foreground="{DynamicResource Brush.TextPrimary}"
+                                       Foreground="{Binding StatusColour}"
                                        Text="{Binding StatusText}"/>
                             <TextBlock Margin="0,5,0,0"
                                        Style="{DynamicResource Text.Muted}"
@@ -816,82 +816,8 @@
                 </Border>
                 </DataTemplate>
 
-                <!-- Recent DNS activity -->
                 <DataTemplate x:Key="ProtectionTab.DnsManagement">
                 <StackPanel>
-                <Border Margin="0,0,0,16" Style="{DynamicResource Card}">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel>
-                                <TextBlock Style="{DynamicResource Text.SectionTitle}" Text="Recent DNS activity"/>
-                                <TextBlock Margin="0,5,0,0" Style="{DynamicResource Text.Secondary}"
-                                           Text="Search the latest allowed and blocked requests handled by AdGuard Home."/>
-                            </StackPanel>
-                            <Button Grid.Column="1" MinWidth="96" Height="36"
-                                    Style="{DynamicResource Button.Secondary}"
-                                    Content="Refresh" Command="{Binding RefreshQueryLogCommand}"/>
-                        </Grid>
-
-                        <Grid Grid.Row="1" Margin="0,16,0,12">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBox Height="36" Padding="10,6"
-                                     Style="{StaticResource Protection.Input}"
-                                     Text="{Binding QueryLogSearch, UpdateSourceTrigger=PropertyChanged}"
-                                     ToolTip="Search by domain, client, address or status"/>
-                            <CheckBox Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center"
-                                      Style="{StaticResource Protection.Option}"
-                                      Content="Blocked only"
-                                      IsChecked="{Binding ShowBlockedQueriesOnly}"/>
-                        </Grid>
-
-                        <StackPanel Grid.Row="2">
-                            <TextBlock Margin="0,0,0,8" Style="{DynamicResource Text.Muted}"
-                                       Text="{Binding QueryLogStatus}"/>
-                            <DataGrid Height="300" ItemsSource="{Binding QueryLogView}"
-                                      AutoGenerateColumns="False" IsReadOnly="True"
-                                      CanUserAddRows="False" CanUserDeleteRows="False"
-                                      HeadersVisibility="Column" GridLinesVisibility="Horizontal"
-                                      Background="{DynamicResource Brush.SurfaceMuted}"
-                                      Foreground="{DynamicResource Brush.TextPrimary}"
-                                      BorderBrush="{DynamicResource Brush.Border}"
-                                      HorizontalGridLinesBrush="{DynamicResource Brush.Border}"
-                                      RowBackground="{DynamicResource Brush.Surface}"
-                                      AlternatingRowBackground="{DynamicResource Brush.SurfaceMuted}">
-                                <DataGrid.RowStyle>
-                                    <Style TargetType="DataGridRow">
-                                        <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}"/>
-                                        <Setter Property="ToolTip" Value="{Binding ClientAddress}"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsBlocked}" Value="True">
-                                                <Setter Property="Foreground" Value="{DynamicResource Brush.Danger}"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </DataGrid.RowStyle>
-                                <DataGrid.Columns>
-                                    <DataGridTextColumn Header="TIME" Binding="{Binding Time}" Width="120"/>
-                                    <DataGridTextColumn Header="CLIENT" Binding="{Binding Client}" Width="190"/>
-                                    <DataGridTextColumn Header="DOMAIN" Binding="{Binding Domain}" Width="*"/>
-                                    <DataGridTextColumn Header="STATUS" Binding="{Binding Status}" Width="105"/>
-                                </DataGrid.Columns>
-                            </DataGrid>
-                        </StackPanel>
-                    </Grid>
-                </Border>
-
                 <!-- Rules and rewrites -->
                 <Grid Margin="0,0,0,16">
                     <Grid.ColumnDefinitions>

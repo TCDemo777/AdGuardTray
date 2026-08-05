@@ -30,7 +30,7 @@ namespace AdGuardTray.Models
 
         public string LastSeenDisplay =>
             AdGuardDataAvailability != AdGuardAvailabilityState.Available
-                ? "Unavailable"
+                ? RouterPilotStatusPresentation.NotAvailable
                 : QueryLogAvailable
                 ? LastSeen
                 : "Query log disabled";
@@ -38,17 +38,17 @@ namespace AdGuardTray.Models
         public string TotalQueriesDisplay =>
             AdGuardDataAvailability == AdGuardAvailabilityState.Available
                 ? TotalQueries.ToString("N0")
-                : "N/A";
+                : RouterPilotStatusPresentation.NotAvailable;
 
         public string BlockedQueriesDisplay =>
             AdGuardDataAvailability == AdGuardAvailabilityState.Available
                 ? BlockedQueries.ToString("N0")
-                : "N/A";
+                : RouterPilotStatusPresentation.NotAvailable;
 
         public string BlockRateDisplay =>
             AdGuardDataAvailability == AdGuardAvailabilityState.Available
                 ? $"{BlockRate:F1}%"
-                : "N/A";
+                : RouterPilotStatusPresentation.NotAvailable;
 
         public string ActivityAvailabilityToolTip =>
             AdGuardDataAvailability != AdGuardAvailabilityState.Available

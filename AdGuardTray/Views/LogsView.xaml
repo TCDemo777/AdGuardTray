@@ -74,18 +74,20 @@
         </Style>
     </UserControl.Resources>
 
+    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
     <Grid Margin="24">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="18"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- Header -->
         <Grid>
             <StackPanel>
                 <TextBlock Style="{DynamicResource Text.PageTitle}"
-                           Text="Logs"/>
+                           Text="DNS Activity"/>
                 <TextBlock Margin="0,5,0,0"
                            Style="{DynamicResource Text.Secondary}"
                            Text="Live AdGuard Home DNS requests, clients and filtering outcomes."/>
@@ -96,7 +98,7 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="16"/>
-                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
                 <!-- Summary -->
@@ -130,7 +132,8 @@
                             <TextBlock Style="{DynamicResource Text.CardCaption}"
                                        Text="LIVE UPDATES"/>
                             <TextBlock Style="{StaticResource Logs.SummaryValue}"
-                                       Text="{Binding PauseButtonText}"/>
+                                       Foreground="{Binding LiveUpdatesStatusColour}"
+                                       Text="{Binding LiveUpdatesStatus}"/>
                             <TextBlock Margin="0,5,0,0"
                                        Style="{DynamicResource Text.Muted}"
                                        Text="Refreshes every 3 seconds"/>
@@ -175,7 +178,7 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="16"/>
-                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="14"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
@@ -247,7 +250,7 @@
                                       RowHeaderWidth="0"
                                       SelectionMode="Single"
                                       SelectionUnit="FullRow"
-                                      VerticalScrollBarVisibility="Auto"
+                                      VerticalScrollBarVisibility="Disabled"
                                       HorizontalScrollBarVisibility="Disabled"
                                       EnableRowVirtualization="True"
                                       EnableColumnVirtualization="True"
@@ -376,4 +379,5 @@
                 </Border>
         </Grid>
     </Grid>
+    </ScrollViewer>
 </UserControl>

@@ -50,6 +50,9 @@ namespace AdGuardTray.ViewModels
         private double cpuPercentage;
 
         [ObservableProperty]
+        private bool cpuUtilisationPending;
+
+        [ObservableProperty]
         private string memoryUsage = "-";
 
         [ObservableProperty]
@@ -77,7 +80,9 @@ namespace AdGuardTray.ViewModels
                     ? "Elevated"
                     : CpuPercentage > 0
                         ? "Healthy"
-                        : "Unavailable";
+                        : CpuUtilisationPending
+                            ? RouterPilotStatusPresentation.Pending
+                            : RouterPilotStatusPresentation.NotAvailable;
 
         public string CpuHealthColour =>
             CpuPercentage >= 90
@@ -86,7 +91,16 @@ namespace AdGuardTray.ViewModels
                     ? "#B26A00"
                     : CpuPercentage > 0
                         ? "#16803C"
-                        : "#687386";
+                        : RouterPilotStatusPresentation.Colour(
+                            CpuUtilisationPending
+                                ? RouterPilotStatus.Pending
+                                : RouterPilotStatus.NotAvailable);
+
+        public string CpuUsageDisplay => CpuUtilisationPending
+            ? RouterPilotStatusPresentation.Pending
+            : CpuPercentage >= 0 && CpuUsage != "-"
+                ? CpuUsage
+                : RouterPilotStatusPresentation.NotAvailable;
 
         public string MemoryHealthText =>
             MemoryPercentage >= 90
@@ -95,7 +109,7 @@ namespace AdGuardTray.ViewModels
                     ? "Elevated"
                     : MemoryPercentage > 0
                         ? "Healthy"
-                        : "Unavailable";
+                        : RouterPilotStatusPresentation.NotAvailable;
 
         public string MemoryHealthColour =>
             MemoryPercentage >= 90
@@ -113,7 +127,7 @@ namespace AdGuardTray.ViewModels
                     ? "Elevated"
                     : StoragePercentage > 0
                         ? "Healthy"
-                        : "Unavailable";
+                        : RouterPilotStatusPresentation.NotAvailable;
 
         public string StorageHealthColour =>
             StoragePercentage >= 90
@@ -234,7 +248,7 @@ namespace AdGuardTray.ViewModels
         private string wifi24Clients = "0 clients";
 
         [ObservableProperty]
-        private string wifi24Status = "Unavailable";
+        private string wifi24Status = RouterPilotStatusPresentation.NotAvailable;
 
         [ObservableProperty]
         private string wifi5Ssid = "-";
@@ -246,7 +260,7 @@ namespace AdGuardTray.ViewModels
         private string wifi5Clients = "0 clients";
 
         [ObservableProperty]
-        private string wifi5Status = "Unavailable";
+        private string wifi5Status = RouterPilotStatusPresentation.NotAvailable;
 
         [ObservableProperty]
         private string wanInterface = "-";
@@ -387,33 +401,44 @@ namespace AdGuardTray.ViewModels
         //
 
         public string RouterStatusText =>
-            RouterConnected
-                ? "Connected"
-                : "Disconnected";
+            RouterPilotStatusPresentation.Text(
+                RouterConnected
+                    ? RouterPilotStatus.Connected
+                    : RouterPilotStatus.Error);
 
         public string RouterStatusColour =>
-            RouterConnected
-                ? "#16803C"
-                : "#C62828";
+            RouterPilotStatusPresentation.Colour(
+                RouterConnected
+                    ? RouterPilotStatus.Connected
+                    : RouterPilotStatus.Error);
 
-        public string AdGuardStatusText => AdGuardAvailability switch
+        private RouterPilotStatus AdGuardStatus => AdGuardAvailability switch
         {
-            AdGuardAvailabilityState.Available => AdGuardRunning ? "Running" : "Stopped",
-            _ => "N/A"
+            AdGuardAvailabilityState.Available when AdGuardRunning =>
+                RouterPilotStatus.Active,
+            AdGuardAvailabilityState.Available or
+            AdGuardAvailabilityState.AuthenticationFailed => RouterPilotStatus.Error,
+            _ => RouterPilotStatus.NotAvailable
         };
+
+        public string AdGuardStatusText =>
+            RouterPilotStatusPresentation.Text(AdGuardStatus);
 
         public bool IsAdGuardAvailable =>
             AdGuardAvailability == AdGuardAvailabilityState.Available;
 
-        public string AdGuardVersionDisplay => IsAdGuardAvailable ? AdGuardVersion : "N/A";
-        public string AdGuardServiceDisplay => IsAdGuardAvailable ? AdGuardService : "N/A";
-        public string AdGuardQueriesDisplay => IsAdGuardAvailable ? AdGuardQueries : "N/A";
-        public string AdGuardBlockedDisplay => IsAdGuardAvailable ? AdGuardBlocked : "N/A";
-        public string AdGuardBlockRateDisplay => IsAdGuardAvailable ? AdGuardBlockRate : "N/A";
-        public string AdGuardLiveStatusText => IsAdGuardAvailable ? "LIVE STATISTICS" : "N/A";
-        public string TopClientsEmptyText => IsAdGuardAvailable ? "No client ranking data yet." : "N/A";
-        public string TopBlockedDomainsEmptyText => IsAdGuardAvailable ? "No blocked-domain data yet." : "N/A";
-        public string TopQueriedDomainsEmptyText => IsAdGuardAvailable ? "No requested-domain data yet." : "N/A";
+        public string AdGuardVersionDisplay => IsAdGuardAvailable ? AdGuardVersion : RouterPilotStatusPresentation.NotAvailable;
+        public string AdGuardServiceDisplay => IsAdGuardAvailable ? AdGuardStatusText : RouterPilotStatusPresentation.NotAvailable;
+        public string AdGuardQueriesDisplay => IsAdGuardAvailable ? AdGuardQueries : RouterPilotStatusPresentation.NotAvailable;
+        public string AdGuardBlockedDisplay => IsAdGuardAvailable ? AdGuardBlocked : RouterPilotStatusPresentation.NotAvailable;
+        public string AdGuardBlockRateDisplay => IsAdGuardAvailable ? AdGuardBlockRate : RouterPilotStatusPresentation.NotAvailable;
+        public string AdGuardLiveStatusText => RouterPilotStatusPresentation.Text(
+            IsAdGuardAvailable
+                ? RouterPilotStatus.Active
+                : RouterPilotStatus.NotAvailable);
+        public string TopClientsEmptyText => IsAdGuardAvailable ? "No client ranking data yet." : RouterPilotStatusPresentation.NotAvailable;
+        public string TopBlockedDomainsEmptyText => IsAdGuardAvailable ? "No blocked-domain data yet." : RouterPilotStatusPresentation.NotAvailable;
+        public string TopQueriedDomainsEmptyText => IsAdGuardAvailable ? "No requested-domain data yet." : RouterPilotStatusPresentation.NotAvailable;
 
         public string AdGuardAvailabilityMessage => AdGuardAvailability switch
         {
@@ -426,46 +451,43 @@ namespace AdGuardTray.ViewModels
         };
 
         public string AdGuardStatusColour =>
-            !IsAdGuardAvailable
-                ? "#687386"
-                : AdGuardRunning
-                    ? "#16803C"
-                    : "#C62828";
+            RouterPilotStatusPresentation.Colour(AdGuardStatus);
 
         public string AdGuardProtectionStatusText =>
             !IsAdGuardAvailable || !AdGuardProtectionStatusKnown
-                ? "N/A"
+                ? RouterPilotStatusPresentation.Text(RouterPilotStatus.NotAvailable)
                 : AdGuardProtectionEnabled
-                    ? "Protection enabled"
+                    ? RouterPilotStatusPresentation.Text(RouterPilotStatus.Active)
                     : AdGuardProtectionPaused
-                        ? "Protection paused"
-                        : "Protection disabled";
+                        ? RouterPilotStatusPresentation.Text(RouterPilotStatus.Pending)
+                        : RouterPilotStatusPresentation.Text(RouterPilotStatus.Disabled);
 
         public string AdGuardProtectionStatusColour =>
-            !AdGuardProtectionStatusKnown
-                ? "#687386"
+            !IsAdGuardAvailable || !AdGuardProtectionStatusKnown
+                ? RouterPilotStatusPresentation.Colour(RouterPilotStatus.NotAvailable)
                 : AdGuardProtectionEnabled
-                    ? "#16803C"
+                    ? RouterPilotStatusPresentation.Colour(RouterPilotStatus.Active)
                     : AdGuardProtectionPaused
-                        ? "#B26A00"
-                        : "#C62828";
+                        ? RouterPilotStatusPresentation.Colour(RouterPilotStatus.Pending)
+                        : RouterPilotStatusPresentation.Colour(RouterPilotStatus.Disabled);
 
         public string InternetStatusText =>
-            InternetConnected
-                ? "Connected"
-                : "Disconnected";
+            RouterPilotStatusPresentation.Text(
+                InternetConnected
+                    ? RouterPilotStatus.Connected
+                    : RouterPilotStatus.Error);
 
         public string InternetStatusColour =>
-            InternetConnected
-                ? "#16803C"
-                : "#C62828";
+            RouterPilotStatusPresentation.Colour(
+                InternetConnected
+                    ? RouterPilotStatus.Connected
+                    : RouterPilotStatus.Error);
 
         public string OverallStatusColour =>
-            RouterConnected &&
-            InternetConnected &&
-            AdGuardRunning
-                ? "#16803C"
-                : "#C62828";
+            RouterPilotStatusPresentation.Colour(
+                RouterConnected && InternetConnected && AdGuardRunning
+                    ? RouterPilotStatus.Active
+                    : RouterPilotStatus.Error);
 
 
 
@@ -493,12 +515,12 @@ namespace AdGuardTray.ViewModels
             Wifi24Ssid = radio24?.Ssid ?? "Not detected";
             Wifi24Channel = radio24 == null ? "-" : $"Channel {radio24.Channel}";
             Wifi24Clients = $"{networkList.Where(r => r.Band.StartsWith("2.4", StringComparison.OrdinalIgnoreCase)).Sum(r => r.ClientCount)} clients";
-            Wifi24Status = radio24?.Status ?? "Unavailable";
+            Wifi24Status = radio24?.StatusDisplay ?? RouterPilotStatusPresentation.NotAvailable;
 
             Wifi5Ssid = radio5?.Ssid ?? "Not detected";
             Wifi5Channel = radio5 == null ? "-" : $"Channel {radio5.Channel}";
             Wifi5Clients = $"{networkList.Where(r => r.Band.StartsWith("5", StringComparison.OrdinalIgnoreCase)).Sum(r => r.ClientCount)} clients";
-            Wifi5Status = radio5?.Status ?? "Unavailable";
+            Wifi5Status = radio5?.StatusDisplay ?? RouterPilotStatusPresentation.NotAvailable;
         }
 
         //
@@ -1082,6 +1104,8 @@ namespace AdGuardTray.ViewModels
             {
                 CpuPercentage = 0;
             }
+
+            OnPropertyChanged(nameof(CpuUsageDisplay));
         }
 
 
@@ -1278,6 +1302,13 @@ namespace AdGuardTray.ViewModels
         partial void OnCpuPercentageChanged(double value)
         {
             NotifyResourceHealthChanged();
+            OnPropertyChanged(nameof(CpuUsageDisplay));
+        }
+
+        partial void OnCpuUtilisationPendingChanged(bool value)
+        {
+            NotifyResourceHealthChanged();
+            OnPropertyChanged(nameof(CpuUsageDisplay));
         }
 
         partial void OnMemoryPercentageChanged(double value)

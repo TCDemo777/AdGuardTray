@@ -155,6 +155,7 @@ namespace AdGuardTray.Services
                 {
                     info.LogicalProcessorCount = logicalProcessorCount;
                     double? calculatedUsage = null;
+                    bool baselinePending = false;
 
                     lock (_cpuSnapshotLock)
                     {
@@ -176,6 +177,10 @@ namespace AdGuardTray.Services
                                 _lastCpuUsagePercent = calculatedUsage;
                             }
                         }
+                        else if (_lastCpuUsagePercent is null)
+                        {
+                            baselinePending = true;
+                        }
 
                         _previousCpuSnapshot = currentSnapshot;
 
@@ -183,6 +188,8 @@ namespace AdGuardTray.Services
                             calculatedUsage = _lastCpuUsagePercent;
                     }
 
+                    info.CpuUtilisationPending =
+                        baselinePending && calculatedUsage is null;
                     ApplyCpuUsage(info, calculatedUsage);
                 }
 

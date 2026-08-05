@@ -14,6 +14,8 @@ namespace AdGuardTray.Models
 
         public double? CpuUsagePercent { get; set; }
 
+        public bool CpuUtilisationPending { get; set; }
+
         public double? LoadAverage1Minute { get; set; }
 
         public int? LogicalProcessorCount { get; set; }

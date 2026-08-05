@@ -45,21 +45,23 @@ namespace AdGuardTray.Views
         private async void CheckForUpdates_Click(object sender, RoutedEventArgs e)
         {
             CheckForUpdatesButton.IsEnabled = false;
-            LatestVersionTextBlock.Text = "Checking GitHub Releases...";
+            LatestVersionTextBlock.Text =
+                RouterPilotStatusPresentation.Pending +
+                " — checking GitHub Releases...";
             try
             {
                 UpdateCheckResult result = await _updateService.CheckForUpdatesAsync(manual: true);
-                LatestVersionTextBlock.Text = result.LatestRelease is null
-                    ? result.Message
-                    : "Latest available version: " + result.LatestRelease.Version;
+                LatestVersionTextBlock.Text = FormatUpdateCheckResult(result);
                 LastUpdateCheckTextBlock.Text = result.CheckedAt is { } checkedAt
                     ? "Last checked: " + checkedAt.ToLocalTime().ToString("dd MMM yyyy HH:mm")
-                    : "Last checked: Never";
+                    : "Last checked: " + RouterPilotStatusPresentation.NotAvailable;
                 OpenReleaseNotesButton.IsEnabled = result.LatestRelease?.ReleaseNotesUrl is not null;
             }
             catch (OperationCanceledException)
             {
-                LatestVersionTextBlock.Text = "Update check cancelled.";
+                LatestVersionTextBlock.Text =
+                    RouterPilotStatusPresentation.NotAvailable +
+                    " — update check cancelled.";
             }
             finally { CheckForUpdatesButton.IsEnabled = true; }
         }
@@ -76,12 +78,29 @@ namespace AdGuardTray.Views
             AppSettings settings = _settingsService.Load();
             CurrentUpdateVersionTextBlock.Text = "Current version: " + GetApplicationVersion();
             LatestVersionTextBlock.Text = string.IsNullOrWhiteSpace(settings.LatestVersionSeen)
-                ? "Latest available version: Not checked yet"
+                ? "Latest available version: " + RouterPilotStatusPresentation.NotAvailable
                 : "Latest available version: " + settings.LatestVersionSeen;
             LastUpdateCheckTextBlock.Text = settings.LastSuccessfulUpdateCheckUtc is { } last
                 ? "Last checked: " + last.ToLocalTime().ToString("dd MMM yyyy HH:mm")
-                : "Last checked: Never";
+                : "Last checked: " + RouterPilotStatusPresentation.NotAvailable;
             OpenReleaseNotesButton.IsEnabled = !string.IsNullOrWhiteSpace(settings.LatestVersionSeen);
+        }
+
+        private static string FormatUpdateCheckResult(UpdateCheckResult result)
+        {
+            if (result.LatestRelease is not null)
+                return "Latest available version: " + result.LatestRelease.Version;
+
+            return result.Status switch
+            {
+                UpdateCheckStatus.Unavailable =>
+                    RouterPilotStatusPresentation.NotAvailable +
+                    " — " + result.Message,
+                UpdateCheckStatus.Skipped =>
+                    RouterPilotStatusPresentation.Pending +
+                    " — " + result.Message,
+                _ => result.Message
+            };
         }
 
         private Task<RouterManager> GetRouterManagerAsync()

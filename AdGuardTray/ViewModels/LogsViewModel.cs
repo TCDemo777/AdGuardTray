@@ -15,7 +15,7 @@ namespace AdGuardTray.ViewModels
     {
         // Keeping the on-screen collection bounded prevents the WPF DataGrid
         // from creating thousands of row containers during initial navigation.
-        private const int MaxVisibleEntries = 1500;
+        private const int MaxVisibleEntries = 200;
         private readonly IRouterManagerProvider _routerManagerProvider;
         private readonly AdGuardAvailabilityService _adGuardAvailabilityService;
         private readonly DispatcherTimer _refreshTimer;
@@ -46,6 +46,16 @@ namespace AdGuardTray.ViewModels
             IsPaused
                 ? "Resume"
                 : "Pause";
+
+        public string LiveUpdatesStatus => IsPaused
+            ? RouterPilotStatusPresentation.Pending
+            : RouterPilotStatusPresentation.Active;
+
+        public string LiveUpdatesStatusColour =>
+            RouterPilotStatusPresentation.Colour(
+                IsPaused
+                    ? RouterPilotStatus.Pending
+                    : RouterPilotStatus.Active);
 
         public string DnsQueriesDisplay =>
             _adGuardAvailabilityService.IsAvailable ? Entries.Count.ToString("N0") : "N/A";
@@ -126,7 +136,7 @@ namespace AdGuardTray.ViewModels
                     await _routerManagerProvider.GetRouterManagerAsync();
                 List<QueryLogEntry> entries =
                     await routerManager
-                        .GetQueryLogAsync();
+                        .GetQueryLogAsync(MaxVisibleEntries);
 
                 ApplyEntries(
                     entries);
@@ -183,6 +193,8 @@ namespace AdGuardTray.ViewModels
 
             OnPropertyChanged(
                 nameof(PauseButtonText));
+            OnPropertyChanged(nameof(LiveUpdatesStatus));
+            OnPropertyChanged(nameof(LiveUpdatesStatusColour));
 
             StatusMessage =
                 IsPaused
