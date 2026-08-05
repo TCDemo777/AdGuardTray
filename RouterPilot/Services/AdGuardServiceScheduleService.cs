@@ -29,14 +29,26 @@ public sealed class AdGuardServiceScheduleService : IAsyncDisposable
     public AdGuardServiceScheduleService(
         Dispatcher dispatcher, BlockedServiceMutationService mutations,
         NotificationService notifications, IClock clock)
+        : this(
+            dispatcher,
+            mutations,
+            notifications,
+            clock,
+            new ApplicationDataPathProvider())
+    {
+    }
+
+    public AdGuardServiceScheduleService(
+        Dispatcher dispatcher, BlockedServiceMutationService mutations,
+        NotificationService notifications, IClock clock,
+        ApplicationDataPathProvider applicationDataPaths)
     {
         _dispatcher = dispatcher;
         _mutations = mutations;
         _notifications = notifications;
         _clock = clock;
         _calculator = new(clock);
-        string folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AdGuardTray");
-        _path = Path.Combine(folder, "adguard-service-schedules.json");
+        _path = Path.Combine(applicationDataPaths.CurrentPath, "adguard-service-schedules.json");
         Schedules = new ReadOnlyObservableCollection<AdGuardServiceSchedule>(_items);
         Windows = new ReadOnlyObservableCollection<AdGuardServiceWindow>(_windows);
         AdvancedSchedules = new ReadOnlyObservableCollection<AdGuardServiceSchedule>(_advancedItems);

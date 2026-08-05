@@ -49,12 +49,18 @@ namespace RouterPilot
                 return;
             }
 
+            var applicationDataPaths = new ApplicationDataPathProvider();
+            applicationDataPaths.MigrateLegacyData();
+
             var serviceCollection = new ServiceCollection();
+            serviceCollection.AddSingleton(applicationDataPaths);
             serviceCollection.AddSingleton<SettingsService>();
             serviceCollection.AddSingleton<IRouterManagerProvider,
                 RouterManagerProvider>();
             serviceCollection.AddSingleton(
-                _ => new NotificationService(Dispatcher));
+                sp => new NotificationService(
+                    Dispatcher,
+                    sp.GetRequiredService<ApplicationDataPathProvider>()));
             serviceCollection.AddSingleton<UpdateService>();
             serviceCollection.AddSingleton<IClock, SystemClock>();
             serviceCollection.AddSingleton<BlockedServiceMutationService>();
@@ -65,7 +71,8 @@ namespace RouterPilot
                 Dispatcher,
                 sp.GetRequiredService<BlockedServiceMutationService>(),
                 sp.GetRequiredService<NotificationService>(),
-                sp.GetRequiredService<IClock>()));
+                sp.GetRequiredService<IClock>(),
+                sp.GetRequiredService<ApplicationDataPathProvider>()));
             serviceCollection.AddSingleton<AdGuardServiceScheduleViewModel>();
             serviceCollection.AddSingleton<AdGuardProtectionNotificationTracker>();
             serviceCollection.AddSingleton<AdGuardAvailabilityService>();
@@ -83,7 +90,9 @@ namespace RouterPilot
             await Services.GetRequiredService<AdGuardServiceScheduleService>()
                 .InitializeAsync();
 
-            AppSettings savedSettings = new SettingsService().Load();
+            AppSettings savedSettings = Services
+                .GetRequiredService<SettingsService>()
+                .Load();
             ThemeService.Initialize(savedSettings.Theme);
 
             if (!HasUsableSavedSettings())
@@ -272,11 +281,11 @@ namespace RouterPilot
             base.OnExit(e);
         }
 
-        private static bool HasUsableSavedSettings()
+        private bool HasUsableSavedSettings()
         {
             try
             {
-                var settingsService = new SettingsService();
+                var settingsService = Services.GetRequiredService<SettingsService>();
                 AppSettings settings = settingsService.Load();
 
                 if (string.IsNullOrWhiteSpace(settings.RouterHost) ||

@@ -20,12 +20,17 @@ public sealed class SettingsService
     private readonly string _settingsFolder;
     private readonly string _settingsFile;
 
-    public SettingsService(string? settingsFolder = null)
+    public SettingsService(string? settingsFolder)
+        : this(applicationDataPaths: null, settingsFolder)
     {
-        _settingsFolder = settingsFolder ?? Path.Combine(
-            Environment.GetFolderPath(
-                Environment.SpecialFolder.LocalApplicationData),
-            "AdGuardTray");
+    }
+
+    public SettingsService(
+        ApplicationDataPathProvider? applicationDataPaths = null,
+        string? settingsFolder = null)
+    {
+        _settingsFolder = settingsFolder ??
+            (applicationDataPaths ?? new ApplicationDataPathProvider()).CurrentPath;
 
         _settingsFile = Path.Combine(
             _settingsFolder,

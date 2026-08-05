@@ -16,11 +16,9 @@ namespace RouterPilot.Services
             WriteIndented = true
         };
 
-        public ClientProfileService()
+        public ClientProfileService(ApplicationDataPathProvider? applicationDataPaths = null)
         {
-            string folder = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "AdGuardTray");
+            string folder = (applicationDataPaths ?? new ApplicationDataPathProvider()).CurrentPath;
 
             Directory.CreateDirectory(folder);
             _filePath = Path.Combine(folder, "client-profiles.json");

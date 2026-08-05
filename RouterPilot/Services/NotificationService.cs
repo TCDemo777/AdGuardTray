@@ -43,13 +43,21 @@ public sealed class NotificationService : INotifyPropertyChanged, IAsyncDisposab
 
     public NotificationService(
         Dispatcher dispatcher,
+        string? dataFolder,
+        TimeSpan? deduplicationQuietPeriod = null)
+        : this(dispatcher, applicationDataPaths: null, dataFolder, deduplicationQuietPeriod)
+    {
+    }
+
+    public NotificationService(
+        Dispatcher dispatcher,
+        ApplicationDataPathProvider? applicationDataPaths = null,
         string? dataFolder = null,
         TimeSpan? deduplicationQuietPeriod = null)
     {
         _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
-        string folder = dataFolder ?? Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "AdGuardTray");
+        string folder = dataFolder ??
+            (applicationDataPaths ?? new ApplicationDataPathProvider()).CurrentPath;
         _storeFile = Path.Combine(folder, "notifications.json");
         DeduplicationQuietPeriod = deduplicationQuietPeriod ?? TimeSpan.FromMinutes(5);
         Notifications = new ReadOnlyObservableCollection<AppNotification>(
