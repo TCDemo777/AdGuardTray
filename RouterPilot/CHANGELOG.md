@@ -1,0 +1,326 @@
+# RouterPilot Changelog
+
+## [1.7.0] - 2026-08-05
+
+### Added
+- Completed the internal RouterPilot rebrand, including `RouterPilot.exe`, `RouterPilot.sln` and RouterPilot namespaces.
+- Added automatic copy-based migration of supported legacy `%LocalAppData%\AdGuardTray` data into `%LocalAppData%\RouterPilot`.
+- Added per-user single-instance application protection.
+- Improved the DNS Activity page and added a configurable Clients auto-scroll option.
+
+### Changed
+- Standardised Connected, Active, Pending, Paused, Disabled, N/A and Error status vocabulary.
+- Improved Overview, Analytics, Network, Protection and Clients layouts.
+- Moved Resource Health Details to Analytics and limited DNS Activity to the newest 200 entries.
+- Improved Protection and scheduled-service organisation.
+
+### Fixed
+- Corrected router CPU utilisation using `/proc/stat` deltas.
+- Restored Analytics DNS Summary presentation and corrected the StatisticCard XAML regression.
+- Corrected client selection and auto-scroll behaviour.
+- Improved MSI packaging and installer reliability.
+- Preserved router monitoring when AdGuard Home is unavailable and restored AdGuard-unavailable presentation.
+- Restored Wi-Fi discovery and resolved UI alignment regressions.
+
+### Internal
+- RouterPilot application data now uses `%LocalAppData%\RouterPilot` while safely retaining legacy files untouched.
+- Completed RouterPilot executable and project identity updates.
+- Retained stable single-instance mutex identities and the existing WiX UpgradeCode.
+
+## [1.6.1] - 2026-08-02
+
+### Added
+- Added first-class scheduled AdGuard allowed-time windows with Allow and Block actions managed as one setting.
+- Added advanced one-time, daily and selected-day single-action schedules.
+- Added internal Protection, Blocked Services and Schedules tabs to the Protection page.
+
+### Changed
+- Unified allowed-time-window creation, editing, duplication, enablement and deletion while preserving atomic paired actions.
+- Improved schedule editors with the complete shared AdGuard service catalogue and full-width responsive service selectors.
+- Simplified global protection actions to Enable and Disable.
+- Reordered the Network page so summary information and Quick Maintenance precede Wi-Fi and detailed network data.
+- Updated repository and release links for the renamed `TCDemo777/RouterPilot` GitHub repository.
+- Standardised unavailable AdGuard-derived values as theme-safe `N/A` states across RouterPilot.
+
+### Fixed
+- Kept router health, WAN, Wi-Fi, internet and router information refreshing when AdGuard Home is stopped or unavailable.
+- Kept router-derived clients visible while treating optional AdGuard DNS activity as unavailable.
+- Prevented stale protection, DNS statistics and rankings from appearing as current during AdGuard outages.
+- Corrected client-card `N/A` typography and alignment without changing card dimensions.
+- Restored GL.iNet physical and virtual-interface Wi-Fi discovery, including Main, Guest and IoT mapping.
+- Restored the complete blocked-service catalogue in the manual controls and both schedule editors.
+- Constrained About-page scrolling to the dashboard content region.
+- Corrected MSI harvesting so the installer packages the complete self-contained publish output and launches `AdGuardTray.exe` from the installed RouterPilot folder.
+- Standardised page spacing and corrected Protection, Network and schedule-editor layout regressions.
+
+### Internal
+- Separated router-authoritative refresh results from optional AdGuard status, statistics and client enrichment.
+- Preserved the last successful router and Wi-Fi data when optional subsystem refreshes fail.
+- Preserved the `AdGuardTray.exe` executable, internal namespaces and `%LocalAppData%\AdGuardTray` compatibility paths.
+- Synchronized application, assembly, file, informational and installer versions at 1.6.1.
+
+## [1.6.0] - 2026-08-01
+
+### Added
+- Added a SQLite historical data platform with schema versioning and repository-based access.
+- Added persistent device connection events and a recent-activity timeline in Client Details.
+- Added historical WAN usage charts with minute aggregation, range selection, downsampling and 30-day retention.
+- Added historical router CPU and memory charts using the existing health refresh data.
+- Added a seven-day Weekly Network Summary built from persisted history.
+- Added privacy-aware diagnostic ZIP export with redaction, database health information and optional device identifiers.
+- Added automatic GitHub Releases update checks and manual update controls on the About page.
+- Added a unified Network Timeline with filtering, searching, lazy loading and virtualized presentation.
+- Added deterministic Network Intelligence observations and device behaviour profiles.
+- Added scheduled AdGuard blocked-service controls for one-time, daily and selected-day changes.
+- Added paired allowed-time windows, Run Now, duplication and schedule execution notifications.
+
+### Changed
+- Extended Analytics with historical WAN, CPU and memory views while preserving the existing live charts.
+- Extended Client Details with persisted history, previous addresses and networks, and recent activity.
+- Reused existing refresh results for historical collection, insights and summaries without additional router polling.
+- Improved visual consistency, spacing, accessibility and light/dark theme presentation across RouterPilot.
+- Serialized manual and scheduled blocked-service mutations to preserve unrelated AdGuard service settings.
+
+### Fixed
+- Restored Wi-Fi network discovery on GL.iNet firmware that requires the UCI/hostapd compatibility path.
+- Preserved Main, Guest and IoT SSID mapping across physical and virtual hostapd interfaces.
+- Prevented duplicate device connection events and repeated schedule executions.
+- Improved shutdown flushing for pending historical aggregates and locally persisted services.
+- Improved missed schedule handling after sleep or suspension without executing stale occurrences.
+
+### Internal
+- Added application-scoped historical collectors and repositories with atomic, serialized persistence where applicable.
+- Added UTC-based retention and aggregation with local-time presentation at the UI boundary.
+- Added injectable clock-based schedule evaluation and a single RefreshCoordinator schedule task.
+- Preserved the internal `AdGuardTray` project, executable, repository and local-data folder names.
+- Synchronized application, assembly, file, informational and installer versions at 1.6.0.
+
+## [1.5.1] - 2026-08-01
+
+### Added
+- Rebranded the user-facing application as RouterPilot while retaining the internal AdGuardTray project, executable, settings folder and repository names.
+- Added the persistent Notification Centre with unread filtering and local JSON storage.
+- Added state-change notifications for router connectivity and AdGuard Home protection.
+- Added session-aware new-device detection without reconnect notification spam.
+- Added explicit WAN throughput axes, legends and tooltips, plus timestamp-aware DNS query-history presentation.
+
+### Changed
+- Stabilised the live WAN chart with persistent series and observable history collections.
+- Updated DNS history incrementally instead of rebuilding chart collections on every refresh.
+- Centralised recurring refresh scheduling through RefreshCoordinator with cancellation-safe task restarts.
+- Centralised RouterManager session ownership and replacement through the application service provider.
+- Standardised RouterPilot card spacing, typography, badges, buttons, empty states and light/dark theme presentation.
+
+### Fixed
+- Prevented stale traffic baselines and negative throughput values after restoring the dashboard from the notification area.
+- Prevented overlapping refresh loops during enable, disable, interval-change and shutdown operations.
+- Fixed router and AdGuard state-change notifications after manual or external changes.
+- Fixed static client-refresh event subscriptions and notification persistence races.
+- Ensured pending notification history and application-scoped services flush during awaited shutdown.
+
+### Internal
+- Preserved stable ObservableCollection instances and UI-thread-safe chart mutations.
+- Improved asynchronous disposal, cancellation propagation and refresh re-entry protection.
+- Encapsulated notification collections behind read-only observable views.
+- Kept release, assembly, file, informational and installer versions synchronized at 1.5.1.
+
+## [1.5.0] - 2026-08-01
+
+Version 1.5.0 introduces the RouterPilot product identity.
+
+### Changed
+- Updated user-facing application, dashboard, window, notification-area, About and diagnostics branding to RouterPilot.
+- Added the subtitle: Companion for GL.iNet Routers & AdGuard Home.
+- Preserved the `AdGuardTray.exe` executable name, settings paths, project structure and GitHub repository.
+- Updated package, assembly, file and informational versions to 1.5.0.
+
+## [1.4.0] - 2026-08-01
+
+Version 1.4.0 is a reliability, performance and multi-network compatibility release built on the 1.3 series.
+
+### Added
+- Central router and AdGuard Home endpoint configuration with configurable schemes and ports.
+- Automatic migration from the legacy `RouterIp` setting to `RouterHost`.
+- GL.iNet IoT and Guest Wi-Fi client mapping, including role-aware labels such as `2.4G_Iot`.
+- Additional wireless-client discovery using GL.iNet inventory, OpenWrt hostapd data, station tables and DHCP leases.
+- Reproducible Windows build metadata.
+- Dynamic About-page and diagnostics version reporting from assembly metadata.
+
+### Changed
+- Reused pooled HTTP connections for AdGuard Home control, client, statistics and query-log requests.
+- Reused a reconnecting SSH session instead of opening a new connection for every command.
+- Split `RouterManager` into router/network, AdGuard Home and operations partial implementation files while retaining its public API.
+- Reused one dashboard `RouterManager` instance and replaced it automatically when connection settings change.
+- Parallelised independent AdGuard Home dashboard requests.
+- Prevented overlapping full-dashboard and live-traffic refreshes.
+- Improved multi-SSID client matching by preserving network role and runtime-interface information.
+- Updated package, assembly, file and informational versions to 1.4.0.
+- Updated the About page and project documentation for the 1.4 release.
+
+### Fixed
+- Router address not being retained after saving settings.
+- Router address being cleared during settings migration.
+- Startup validation reading a different router property from the settings UI.
+- Connection failures caused by inconsistent settings and endpoint models.
+- Hard-coded router and AdGuard Home addresses throughout the application.
+- Dashboard close and minimise actions bypassing notification-area lifecycle management.
+- First-run setup creating an unmanaged dashboard without the tray manager.
+- Repeated HTTP-client creation and unnecessary TCP setup.
+- Repeated SSH connection setup during dashboard and traffic refreshes.
+- Wi-Fi clients being assigned to the first SSID on a band when firmware omitted the SSID.
+- GL-MT6000 2.4 GHz IoT clients being attached to the main 2.4 GHz network instead of the IoT SSID.
+- Shell-command escaping errors in wireless station diagnostics.
+- Malformed release project metadata and unresolved changelog merge markers.
+
+### Existing 1.4 interface improvements
+- Analytics v2 dashboard with responsive leaderboard-style rankings.
+- Proportional activity bars for top clients, requested domains and blocked domains.
+- Full-name tooltips and clearer request totals for ranked items.
+- Client Details v2 with compact summary cards, copy buttons, top-five domain leaderboards and clearer request badges.
+- Improved analytics spacing, typography, long-name handling and responsive layouts.
+
+## v1.3.1 — Client details and tray usability
+
+### Fixed
+- Restored Recent DNS Requests in the Client Details window by matching query-log entries against their separate client name and address fields.
+- Restored Top Requested Domains and Top Blocked Domains for the selected client.
+- Merged configured client IP and MAC identifiers that share the same AdGuard Home client name, allowing the MAC address to appear on a single client record.
+
+### Added
+- Added a notification-area context menu with Open Dashboard, Refresh Dashboard and Exit RouterPilot actions.
+- Added double-click support on the notification-area icon to restore the dashboard.
+- Added a one-time notification explaining that RouterPilot remains active after the dashboard is hidden.
+
+### Changed
+- Closing the dashboard with the X now hides it to the notification area instead of exiting.
+- Minimising the dashboard now hides it to the notification area.
+- Updated application, assembly and file versions to 1.3.1.
+
+## v1.3 — UI polish and historical changelog
+
+### Fixed
+- Restored vertical scrolling on Analytics.
+- Prevented the DNS Query History chart and ranking panels from being clipped.
+- Improved Top Clients rendering when a friendly name and IP address are both present.
+
+### Added
+- Added a tasteful Support Development section linked to GitHub Sponsors.
+- Added a repository Sponsor button through `.github/FUNDING.yml`.
+- Added GitHub Sponsors information and badge to the README.
+- Added Credits & Acknowledgements for GL.iNet, AdGuard Home, Microsoft and direct open-source dependencies.
+- Added GitHub, documentation, issue-reporting and local licence actions.
+- Added LICENSE and THIRD_PARTY_NOTICES.txt to release output.
+
+### Changed
+- Top Clients now displays friendly names and addresses on separate lines.
+- Clients opens sorted by **Blocked queries**, **Descending**.
+- Restyled Logs with a cleaner search area, alternating rows, hover states,
+  improved spacing and allowed/blocked status badges.
+- Rebuilt the changelog from the complete GitHub commit history.
+
+## v1.2 — Support diagnostics and client activity recovery
+
+### Added
+- Support area with About, Diagnostics, System, Logs and Changelog tabs.
+- Redacted router and AdGuard Home diagnostics.
+- One-click query-log repair while preserving retention and privacy settings.
+- Copy and ZIP export of diagnostic information.
+- Windows, .NET, architecture, memory and configured-router information.
+- In-session support logging and manual Clients refresh.
+
+### Fixed
+- Restored per-client query totals by merging `/control/stats` `top_clients`.
+- Added explicit unavailable states when query logging is disabled.
+- Preserved query-log data as the source for blocked counts and last-seen times.
+
+## 2026-07-28 — Logs, protection and layout stabilisation
+
+### Added
+- Live AdGuard Home log restoration and improved Protection status updates.
+- Refined Protection management controls and user feedback.
+
+### Fixed
+- Multiple live-log polling and refresh regressions.
+- Analytics scrolling, chart sizing and ranking layout regressions.
+- Blocked Services spacing and final layout issues.
+- Newest query-log page retrieval.
+- Missing Protection API paths in `RouterManager`.
+- Cumulative runtime changelog loading.
+- General view, analytics and log defects.
+
+## 2026-07-27 — Search, intelligence and application-wide polish
+
+### Added
+- Global search and domain-monitoring tools.
+- Client intelligence, details, favourites, manufacturer and device-type enrichment.
+- Client sorting and immediate sort refresh.
+- Reliable live log filters and polling.
+- Complete AdGuard Home protection-management suite.
+- Dedicated Protection view and navigation.
+- About page, branding and application polish.
+- Improved startup flow and router storage-health parsing.
+- Blocked Services management and dashboard integration.
+
+### Changed
+- Refined Network resource cards and analytics health presentation.
+- Populated Network page data.
+- Improved Settings, client details and dashboard presentation.
+- Moved AdGuard protection controls into their dedicated view.
+
+### Fixed
+- Dashboard protection state and health colours.
+- Analytics ranked-item compatibility.
+- Overview, Logs and Analytics layout issues.
+- Generated selected-sort property handling.
+- Client sorting responsiveness.
+- Live log polling reliability.
+
+## 2026-07-26 — Clients, logs and primary navigation
+
+### Added
+- Live AdGuard Home DNS query-log viewer.
+- Live AdGuard client statistics.
+- Clients model, view model, retrieval and complete page UI.
+- Settings page and settings navigation.
+- Logs page and navigation.
+- Clients page navigation.
+- Network page navigation.
+- Overview and Analytics navigation.
+- Analytics view and restored query-history chart.
+- Initial README project documentation.
+
+### Changed
+- Consolidated the Clients implementation through the main branch merge.
+
+## 2026-07-25 — Dashboard and analytics foundations
+
+### Added
+- Dashboard navigation shell.
+- Dashboard header actions.
+- LiveCharts query-history binding.
+- Query-history parsing from AdGuard Home.
+- Early graph implementations.
+- Router RPC hash authentication.
+- Initial dashboard statistics and data flow.
+
+## 2026-07-24 — Router and AdGuard connectivity
+
+### Added
+- Working GL.iNet router API access.
+- Working SSH connection and dashboard integration.
+- Settings-aware connection recovery.
+- AdGuard Home API connectivity.
+- Progressive RPC hash-authentication support.
+
+## 2026-07-23 — Application shell
+
+### Added
+- Successful router login page.
+- Working Windows tray application.
+
+## 2026-07-22 — Project creation
+
+### Added
+- Initial WPF project.
+- Base project files.
+- Repository attributes and ignore rules.

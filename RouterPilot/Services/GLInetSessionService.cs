@@ -1,0 +1,351 @@
+using CryptSharp;
+using System;
+using System.Net.Http;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace RouterPilot.Services
+{
+    public sealed class GLInetSessionService : IDisposable
+    {
+        private readonly HttpClient _httpClient;
+        private readonly string _rpcUrl;
+        private readonly string _username;
+        private readonly string _password;
+        private bool _disposed;
+
+    public GLInetSessionService(
+        string routerIp,
+        string username,
+        string password)
+        {
+            if (string.IsNullOrWhiteSpace(routerIp))
+            {
+                throw new ArgumentException(
+                    "Router IP cannot be empty.",
+                    nameof(routerIp));
+            }
+
+            if (string.IsNullOrWhiteSpace(username))
+            {
+                throw new ArgumentException(
+                    "Username cannot be empty.",
+                    nameof(username));
+            }
+
+            if (string.IsNullOrEmpty(password))
+            {
+                throw new ArgumentException(
+                    "Password cannot be empty.",
+                    nameof(password));
+            }
+
+            _username = username;
+            _password = password;
+
+            string normalisedRouterIp = routerIp
+                .Trim()
+                .TrimEnd('/');
+
+            if (!normalisedRouterIp.StartsWith(
+                    "http://",
+                    StringComparison.OrdinalIgnoreCase) &&
+                !normalisedRouterIp.StartsWith(
+                    "https://",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                normalisedRouterIp = "https://" + normalisedRouterIp;
+            }
+
+            _rpcUrl = normalisedRouterIp + "/rpc";
+            System.Diagnostics.Debug.WriteLine($"RPC URL = {_rpcUrl}");
+
+            HttpClientHandler handler = new()
+            {
+                UseCookies = false,
+                AllowAutoRedirect = false,
+
+                ServerCertificateCustomValidationCallback =
+        HttpClientHandler
+            .DangerousAcceptAnyServerCertificateValidator
+            };
+
+            _httpClient = new HttpClient(handler)
+            {
+                Timeout = TimeSpan.FromSeconds(10)
+            };
+        }
+
+        public async Task<string> GetAdminTokenAsync(
+            CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+
+            ChallengeResult challenge =
+                await GetChallengeAsync(cancellationToken);
+
+            string cryptPassword =
+                GenerateCryptPassword(
+                    _password,
+                    challenge.Algorithm,
+                    challenge.Salt);
+
+            string loginText =
+    $"{_username}:{cryptPassword}:{challenge.Nonce}";
+
+            string loginHash =
+                Convert.ToHexString(
+                    SHA256.HashData(
+                        Encoding.UTF8.GetBytes(loginText)))
+                    .ToLowerInvariant();
+
+            return await LoginAsync(
+                loginHash,
+                cancellationToken);
+        }
+
+        private async Task<ChallengeResult> GetChallengeAsync(
+            CancellationToken cancellationToken)
+        {
+            object request = new
+            {
+                jsonrpc = "2.0",
+                id = 1,
+                method = "challenge",
+                @params = new
+                {
+                    username = _username
+                }
+            };
+
+            using JsonDocument document =
+                await PostRpcAsync(
+                    request,
+                    cancellationToken);
+
+            JsonElement root =
+                document.RootElement;
+
+            ThrowIfRpcError(root);
+
+            if (!root.TryGetProperty(
+                    "result",
+                    out JsonElement result))
+            {
+                throw new InvalidOperationException(
+                    "The router challenge response did not contain a result.");
+            }
+
+            int algorithm =
+                result.GetProperty("alg").GetInt32();
+
+            string salt =
+                result.GetProperty("salt").GetString()
+                ?? throw new InvalidOperationException(
+                    "The router challenge did not return a salt.");
+
+            string nonce =
+                result.GetProperty("nonce").GetString()
+                ?? throw new InvalidOperationException(
+                    "The router challenge did not return a nonce.");
+
+            return new ChallengeResult(
+                algorithm,
+                salt,
+                nonce);
+        }
+
+        private async Task<string> LoginAsync(
+            string loginHash,
+            CancellationToken cancellationToken)
+        {
+            object request = new
+            {
+                jsonrpc = "2.0",
+                id = 2,
+                method = "login",
+                @params = new
+                {
+                    username = _username,
+                    hash = loginHash
+                }
+            };
+
+            using JsonDocument document =
+                await PostRpcAsync(
+                    request,
+                    cancellationToken);
+
+            JsonElement root =
+                document.RootElement;
+
+            ThrowIfRpcError(root);
+
+            if (!root.TryGetProperty(
+                    "result",
+                    out JsonElement result))
+            {
+                throw new InvalidOperationException(
+                    "The router login response did not contain a result.");
+            }
+
+            string? sid =
+                result.TryGetProperty(
+                    "sid",
+                    out JsonElement sidElement)
+                ? sidElement.GetString()
+                : null;
+
+            if (string.IsNullOrWhiteSpace(sid))
+            {
+                throw new InvalidOperationException(
+                    "The router accepted the login request but did not return a SID.");
+            }
+
+            return sid;
+        }
+
+        private async Task<JsonDocument> PostRpcAsync(
+            object request,
+            CancellationToken cancellationToken)
+        {
+            string json =
+                JsonSerializer.Serialize(request);
+
+            using StringContent content = new(
+                json,
+                Encoding.UTF8,
+                "application/json");
+
+            using HttpResponseMessage response =
+                await _httpClient.PostAsync(
+                    _rpcUrl,
+                    content,
+                    cancellationToken);
+
+            string responseText =
+                await response.Content.ReadAsStringAsync(
+                    cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new HttpRequestException(
+                    $"Router RPC returned HTTP {(int)response.StatusCode} " +
+                    $"{response.ReasonPhrase}. Response: {responseText}");
+            }
+
+            if (string.IsNullOrWhiteSpace(responseText))
+            {
+                throw new InvalidOperationException(
+                    "The router returned an empty RPC response.");
+            }
+
+            try
+            {
+                return JsonDocument.Parse(responseText);
+            }
+            catch (JsonException exception)
+            {
+                throw new InvalidOperationException(
+                    $"The router returned invalid JSON: {responseText}",
+                    exception);
+            }
+        }
+
+        private static string GenerateCryptPassword(
+    string password,
+    int algorithm,
+    string salt)
+        {
+            if (string.IsNullOrWhiteSpace(password))
+            {
+                throw new ArgumentException(
+                    "Password cannot be empty.",
+                    nameof(password));
+            }
+
+            if (string.IsNullOrWhiteSpace(salt))
+            {
+                throw new InvalidOperationException(
+                    "The router challenge returned an empty salt.");
+            }
+
+            string cleanSalt = salt
+                .Trim()
+                .Replace("\r", string.Empty)
+                .Replace("\n", string.Empty)
+                .Trim('$');
+
+            return algorithm switch
+            {
+                5 => Crypter.Sha256.Crypt(
+                    password,
+                    $"$5${cleanSalt}"),
+
+                6 => Crypter.Sha512.Crypt(
+                    password,
+                    $"$6${cleanSalt}"),
+
+                _ => throw new NotSupportedException(
+                    $"GL.iNet password algorithm {algorithm} is not supported.")
+            };
+        }
+
+        private static void ThrowIfRpcError(
+            JsonElement root)
+        {
+            if (!root.TryGetProperty(
+                    "error",
+                    out JsonElement error))
+            {
+                return;
+            }
+
+            int? code =
+                error.TryGetProperty(
+                    "code",
+                    out JsonElement codeElement)
+                ? codeElement.GetInt32()
+                : null;
+
+            string message =
+                error.TryGetProperty(
+                    "message",
+                    out JsonElement messageElement)
+                ? messageElement.GetString()
+                    ?? "Unknown RPC error"
+                : "Unknown RPC error";
+
+            throw new InvalidOperationException(
+                $"GL.iNet RPC error " +
+                $"{code?.ToString() ?? "unknown"}: {message}");
+        }
+
+        private void ThrowIfDisposed()
+        {
+            ObjectDisposedException.ThrowIf(
+                _disposed,
+                this);
+        }
+
+        public void Dispose()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            _httpClient.Dispose();
+        }
+
+        private sealed record ChallengeResult(
+            int Algorithm,
+            string Salt,
+            string Nonce);
+    }
+
+}

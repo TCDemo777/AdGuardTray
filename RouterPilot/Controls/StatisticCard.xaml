@@ -1,0 +1,126 @@
+<UserControl
+    x:Class="RouterPilot.Controls.StatisticCard"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    x:Name="Root"
+    MinWidth="150"
+    MinHeight="120">
+
+    <Border Style="{StaticResource Card}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock
+                    Grid.Column="0"
+                    FontSize="11"
+                    MaxHeight="30"
+                    Style="{StaticResource Text.CardCaption}"
+                    Text="{Binding Title, ElementName=Root}"
+                    TextTrimming="CharacterEllipsis"
+                    TextWrapping="Wrap" />
+
+                <Border
+                    Grid.Column="1"
+                    Width="28"
+                    Height="28"
+                    Margin="4,0,0,0"
+                    Background="{Binding IconBackground, ElementName=Root}"
+                    CornerRadius="8"
+                    Visibility="{Binding IconVisibility, ElementName=Root}">
+                    <TextBlock
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                        FontSize="13"
+                        Foreground="{Binding AccentBrush, ElementName=Root}"
+                        Text="{Binding IconGlyph, ElementName=Root}" />
+                </Border>
+            </Grid>
+
+            <StackPanel
+                Grid.Row="1"
+                Margin="0,4,0,3"
+                VerticalAlignment="Center">
+                <TextBlock
+                    FontSize="22"
+                    LineHeight="25"
+                    MaxHeight="54"
+                    Text="{Binding Value, ElementName=Root, TargetNullValue=N/A, FallbackValue=N/A}"
+                    TextTrimming="CharacterEllipsis"
+                    TextWrapping="Wrap"
+                    ToolTip="{Binding Value, ElementName=Root, TargetNullValue=N/A, FallbackValue=N/A}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource Text.CardValue}">
+                            <Setter Property="Foreground"
+                                    Value="{Binding ValueForeground, ElementName=Root}" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ValueForeground, ElementName=Root}" Value="{x:Null}">
+                                    <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Value, ElementName=Root}" Value="">
+                                    <Setter Property="Text" Value="N/A" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+
+                <TextBlock
+                    Margin="0,2,0,0"
+                    Style="{StaticResource Text.Secondary}"
+                    FontSize="11"
+                    MaxHeight="30"
+                    Text="{Binding Subtitle, ElementName=Root}"
+                    TextTrimming="CharacterEllipsis"
+                    TextWrapping="Wrap"
+                    Visibility="{Binding SubtitleVisibility, ElementName=Root}" />
+            </StackPanel>
+
+            <Grid Grid.Row="2" MinHeight="15">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Border
+                    Grid.Column="0"
+                    Padding="5,1"
+                    Background="{Binding BadgeBackground, ElementName=Root}"
+                    CornerRadius="10"
+                    Visibility="{Binding BadgeVisibility, ElementName=Root}">
+                    <TextBlock
+                        FontFamily="Segoe UI Variable Text, Segoe UI"
+                        FontSize="11"
+                        FontWeight="SemiBold"
+                        Foreground="{Binding BadgeForeground, ElementName=Root}"
+                        Text="{Binding BadgeText, ElementName=Root}" />
+                </Border>
+
+                <TextBlock
+                    Grid.Column="1"
+                    Margin="5,0,0,0"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Style="{StaticResource Text.Muted}"
+                    FontSize="11"
+                    MaxWidth="128"
+                    Text="{Binding FooterText, ElementName=Root}"
+                    TextAlignment="Right"
+                    TextTrimming="CharacterEllipsis"
+                    TextWrapping="Wrap"
+                    ToolTip="{Binding FooterText, ElementName=Root}"
+                    Visibility="{Binding FooterVisibility, ElementName=Root}" />
+            </Grid>
+        </Grid>
+    </Border>
+</UserControl>

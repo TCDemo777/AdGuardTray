@@ -1,0 +1,53 @@
+<UserControl x:Class="RouterPilot.Views.LoginView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Height="300"
+             Width="400">
+
+    <Grid Margin="20">
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+
+        <TextBlock Grid.Row="0"
+                   Text="AdGuard Home Address"
+                   FontSize="16"
+                   Margin="0,0,0,10"/>
+
+
+        <TextBox Grid.Row="1"
+                 x:Name="ServerAddressBox"
+                 Text="Router address or hostname"
+                 Height="30"
+                 Margin="0,0,0,10"/>
+
+
+        <Button Grid.Row="2"
+                Content="Connect"
+                Height="35"
+                Click="Connect_Click"
+                Margin="0,0,0,10"/>
+
+
+        <TextBlock Grid.Row="3"
+                   x:Name="ErrorText"
+                   Foreground="Red"
+                   TextWrapping="Wrap"/>
+
+
+        <Button Grid.Row="4"
+                Content="Copy Error"
+                Height="30"
+                Click="CopyErrorButton_Click"
+                Margin="0,10,0,0"/>
+
+
+    </Grid>
+
+</UserControl>

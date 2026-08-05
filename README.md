@@ -24,20 +24,20 @@ Companion for GL.iNet Routers & AdGuard Home
 - Light, dark and system theme support
 - Notification-area integration with close-to-tray behaviour
 
-## What’s new in 1.6.1
+## What’s new in 1.7.0
 
-Version 1.6.1 improves AdGuard service scheduling, separates router monitoring from optional AdGuard enrichment and resolves installer, Wi-Fi discovery and layout regressions.
+Version 1.7.0 completes RouterPilot’s internal rebrand, improves monitoring and status presentation, and adds safer application startup and data migration.
 
-- Added scheduled AdGuard allowed-time windows and advanced single-action schedules
-- Added Protection, Blocked Services and Schedules tabs to the Protection page
-- Unified paired allowed-time-window creation and editing as one user-facing setting
-- Improved schedule service selection using the complete shared AdGuard service catalogue
-- Kept router health, WAN, Wi-Fi and connected-client monitoring available when AdGuard Home is offline
-- Standardised unavailable AdGuard-derived values as clear, theme-safe `N/A` states
-- Restored GL.iNet Wi-Fi discovery, Guest/IoT mapping and transient-failure data retention
-- Corrected the self-contained MSI payload and launch path
+- Renamed the solution, executable, projects and namespaces to RouterPilot
+- Added automatic copy-based migration from legacy AdGuardTray application data
+- Added per-user single-instance protection
+- Improved DNS Activity, Analytics, Overview, Network, Protection and Clients presentation
+- Added a configurable Clients auto-scroll-to-top option
+- Standardised Connected, Active, Pending, Paused, Disabled, N/A and Error status vocabulary
+- Improved CPU utilisation reporting and AdGuard-unavailable handling
+- Preserved GL.iNet Wi-Fi discovery, Guest/IoT mapping and reliable installer packaging
 
-The public repository is now [TCDemo777/RouterPilot](https://github.com/TCDemo777/RouterPilot). For compatibility, the executable, project and namespaces remain `AdGuardTray`, and local settings and data remain under `%LocalAppData%\AdGuardTray`.
+The public repository is [TCDemo777/RouterPilot](https://github.com/TCDemo777/RouterPilot). RouterPilot now uses `%LocalAppData%\RouterPilot`; on first startup it safely copies supported legacy files from `%LocalAppData%\AdGuardTray` without changing or deleting the legacy folder.
 
 ## Requirements
 
@@ -55,14 +55,18 @@ The public repository is now [TCDemo777/RouterPilot](https://github.com/TCDemo77
 4. Keep **Remember password securely** enabled for automatic startup.
 5. Open the dashboard from the notification-area icon.
 
-User settings are stored under `%LocalAppData%\AdGuardTray`. Passwords are protected for the current Windows user.
+User settings are stored under `%LocalAppData%\RouterPilot`. Passwords are protected for the current Windows user. Existing supported settings, notification, client-profile and AdGuard schedule files are copied automatically from `%LocalAppData%\AdGuardTray` when no RouterPilot replacement exists.
+
+Release assets are published as `RouterPilot-1.7.0-x64.msi` and `RouterPilot-1.7.0-win-x64.zip`.
 
 ## Building from source
 
 ```powershell
-dotnet restore .\AdGuardTray\AdGuardTray.csproj
-dotnet build .\AdGuardTray\AdGuardTray.csproj -c Release
+dotnet restore .\RouterPilot.sln
+dotnet build .\RouterPilot.sln -c Release
 ```
+
+The application executable is `RouterPilot.exe`.
 
 ## Support and diagnostics
 
