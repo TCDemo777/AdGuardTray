@@ -55,12 +55,25 @@
                     FontSize="22"
                     LineHeight="25"
                     MaxHeight="54"
-                    Style="{StaticResource Text.CardValue}"
-                    Foreground="{Binding ValueForeground, ElementName=Root}"
-                    Text="{Binding Value, ElementName=Root}"
+                    Text="{Binding Value, ElementName=Root, TargetNullValue=N/A, FallbackValue=N/A}"
                     TextTrimming="CharacterEllipsis"
                     TextWrapping="Wrap"
-                    ToolTip="{Binding Value, ElementName=Root}" />
+                    ToolTip="{Binding Value, ElementName=Root, TargetNullValue=N/A, FallbackValue=N/A}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource Text.CardValue}">
+                            <Setter Property="Foreground"
+                                    Value="{Binding ValueForeground, ElementName=Root}" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ValueForeground, ElementName=Root}" Value="{x:Null}">
+                                    <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Value, ElementName=Root}" Value="">
+                                    <Setter Property="Text" Value="N/A" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
 
                 <TextBlock
                     Margin="0,2,0,0"

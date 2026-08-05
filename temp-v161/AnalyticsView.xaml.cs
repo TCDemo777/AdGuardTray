@@ -1,6 +1,6 @@
 using System.Windows.Controls;
 
-namespace RouterPilot.Views
+namespace AdGuardTray.Views
 {
     public partial class AnalyticsView : UserControl
     {
