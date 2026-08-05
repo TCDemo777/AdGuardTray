@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -167,6 +168,85 @@ namespace RouterPilot.Views
             MouseButtonEventArgs e)
         {
             OpenSelectedClient();
+        }
+
+        private void ClientsGrid_PreviewMouseLeftButtonUp(
+            object sender,
+            MouseButtonEventArgs e)
+        {
+            if (ItemsControl.ContainerFromElement(
+                    ClientsGrid,
+                    e.OriginalSource as DependencyObject) is ListBoxItem item &&
+                item.DataContext is ClientInfo client)
+            {
+                ActivateClient(client);
+            }
+        }
+
+        private void ClientsGrid_PreviewKeyDown(
+            object sender,
+            KeyEventArgs e)
+        {
+            if ((e.Key is Key.Enter or Key.Space) &&
+                ClientsGrid.SelectedItem is ClientInfo client)
+            {
+                ActivateClient(client);
+                e.Handled = true;
+            }
+        }
+
+        private void ActivateClient(ClientInfo client)
+        {
+            string selectedKey = GetClientSelectionKey(client);
+
+            // Use the item from the activated card rather than whichever
+            // container happens to hold selection during virtualised layout.
+            _viewModel.SelectedClient = client;
+            ClientsGrid.SelectedItem = client;
+
+            if (AutoScrollToTopCheckBox.IsChecked != true)
+            {
+                return;
+            }
+
+            Dispatcher.BeginInvoke(
+                new Action(() =>
+                {
+                    if (_viewModel.SelectedClient is not null &&
+                        string.Equals(
+                            GetClientSelectionKey(_viewModel.SelectedClient),
+                            selectedKey,
+                            StringComparison.OrdinalIgnoreCase))
+                    {
+                        ClientsPageScrollViewer.ScrollToTop();
+                    }
+                }),
+                DispatcherPriority.ContextIdle);
+        }
+
+        private void ClientsGrid_RequestBringIntoView(
+            object sender,
+            RequestBringIntoViewEventArgs e)
+        {
+            // Reapplying SelectedItem after a refresh must not pull the outer
+            // page back down to the selected card.
+            if (ItemsControl.ContainerFromElement(
+                    ClientsGrid,
+                    e.OriginalSource as DependencyObject) is ListBoxItem)
+            {
+                e.Handled = true;
+            }
+        }
+
+        private static string GetClientSelectionKey(ClientInfo client)
+        {
+            string macAddress = string.Concat(
+                (client.MacAddress ?? string.Empty)
+                .Where(char.IsLetterOrDigit));
+
+            return !string.IsNullOrEmpty(macAddress)
+                ? macAddress.ToUpperInvariant()
+                : client.IpAddress ?? string.Empty;
         }
 
         private void OpenSelectedClient()

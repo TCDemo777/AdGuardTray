@@ -89,7 +89,7 @@
                 </Grid.ColumnDefinitions>
                 <TextBlock
                     Style="{StaticResource Text.SectionTitle}"
-                    Text="Live network activity" />
+                    Text="Live Network Activity" />
                 <Border
                     Grid.Column="1"
                     Background="{DynamicResource Brush.SurfaceMuted}"
@@ -278,7 +278,7 @@
             <TextBlock
                 Margin="0,0,0,12"
                 Style="{StaticResource Text.SectionTitle}"
-                Text="DNS summary" />
+                Text="DNS Summary" />
 
             <WrapPanel Margin="0,0,-12,12">
                 <controls:StatisticCard

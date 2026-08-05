@@ -96,6 +96,7 @@
                     Grid.Column="0"
                     Height="146"
                     AccentBrush="{Binding RouterStatusColour}"
+                    ValueForeground="{Binding RouterStatusColour}"
                     FooterText="{Binding RouterModel}"
                     IconBackground="{DynamicResource Brush.PrimarySubtle}"
                     IconGlyph="&#xE968;"
@@ -107,7 +108,7 @@
                     Grid.Column="2"
                     Height="146"
                     AccentBrush="{Binding AdGuardStatusColour}"
-                    FooterText="{Binding AdGuardVersionDisplay}"
+                    ValueForeground="{Binding AdGuardStatusColour}"
                     IconBackground="{DynamicResource Brush.SuccessSubtle}"
                     IconGlyph="&#xE72E;"
                     Subtitle="DNS filtering"
@@ -118,6 +119,7 @@
                     Grid.Column="4"
                     Height="146"
                     AccentBrush="{Binding InternetStatusColour}"
+                    ValueForeground="{Binding InternetStatusColour}"
                     FooterText="{Binding Latency}"
                     IconBackground="{DynamicResource Brush.PrimarySubtle}"
                     IconGlyph="&#xE774;"
@@ -134,6 +136,7 @@
                     IconGlyph="&#xE950;"
                     Subtitle="Processor utilisation"
                     Title="CPU"
+                    ValueForeground="{Binding CpuHealthColour}"
                     Value="{Binding CpuUsageDisplay}" />
 
                 <controls:StatisticCard
@@ -145,7 +148,8 @@
                     IconGlyph="&#xE7F8;"
                     Subtitle="Memory usage"
                     Title="MEMORY"
-                    Value="{Binding MemoryHealthText}" />
+                    ValueForeground="{Binding MemoryHealthColour}"
+                    Value="{Binding MemoryUsage}" />
             </Grid>
 
             <!-- Main details -->

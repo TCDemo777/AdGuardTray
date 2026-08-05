@@ -27,6 +27,13 @@ public partial class StatisticCard : UserControl
             typeof(StatisticCard),
             new PropertyMetadata(string.Empty, OnOptionalTextChanged));
 
+    public static readonly DependencyProperty ValueForegroundProperty =
+        DependencyProperty.Register(
+            nameof(ValueForeground),
+            typeof(Brush),
+            typeof(StatisticCard),
+            new PropertyMetadata(null));
+
     public static readonly DependencyProperty IconGlyphProperty =
         DependencyProperty.Register(
             nameof(IconGlyph),
@@ -138,6 +145,12 @@ public partial class StatisticCard : UserControl
     {
         get => (string)GetValue(SubtitleProperty);
         set => SetValue(SubtitleProperty, value);
+    }
+
+    public Brush ValueForeground
+    {
+        get => (Brush)GetValue(ValueForegroundProperty);
+        set => SetValue(ValueForegroundProperty, value);
     }
 
     public string IconGlyph
