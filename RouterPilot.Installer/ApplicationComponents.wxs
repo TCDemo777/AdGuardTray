@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Fragment>
+
+    <ComponentGroup Id="ApplicationComponents"
+                    Directory="INSTALLFOLDER">
+
+      <Files Include="!(bindpath.publish)\**">
+        <Exclude Files="!(bindpath.publish)\RouterPilot.exe" />
+      </Files>
+
+      <Component Id="MainExecutable"
+                 Directory="INSTALLFOLDER">
+
+        <File Id="RouterPilotExecutable"
+              Source="!(bindpath.publish)\RouterPilot.exe"
+              KeyPath="yes" />
+
+      </Component>
+
+      <Component Id="StartMenuShortcutComponent"
+                 Directory="ApplicationProgramsFolder">
+
+        <Shortcut Id="StartMenuShortcut"
+                  Name="RouterPilot"
+                  Description="Manage your GL.iNet router and AdGuard Home"
+                  Target="[INSTALLFOLDER]RouterPilot.exe"
+                  WorkingDirectory="INSTALLFOLDER"
+                  Advertise="no" />
+
+        <RemoveFolder Id="RemoveStartMenuFolder"
+                      On="uninstall" />
+
+        <RegistryValue Root="HKCU"
+                       Key="Software\TCDemo777\RouterPilot"
+                       Name="StartMenuShortcut"
+                       Type="integer"
+                       Value="1"
+                       KeyPath="yes" />
+
+      </Component>
+
+      <Component Id="DesktopShortcutComponent"
+                 Directory="DesktopFolder">
+
+        <Shortcut Id="DesktopShortcut"
+                  Name="RouterPilot"
+                  Description="Manage your GL.iNet router and AdGuard Home"
+                  Target="[INSTALLFOLDER]RouterPilot.exe"
+                  WorkingDirectory="INSTALLFOLDER"
+                  Advertise="no" />
+
+        <RegistryValue Root="HKCU"
+                       Key="Software\TCDemo777\RouterPilot"
+                       Name="DesktopShortcut"
+                       Type="integer"
+                       Value="1"
+                       KeyPath="yes" />
+
+      </Component>
+
+    </ComponentGroup>
+
+  </Fragment>
+</Wix>

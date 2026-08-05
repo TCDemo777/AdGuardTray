@@ -1,0 +1,381 @@
+<UserControl x:Class="RouterPilot.Views.NetworkView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{DynamicResource Brush.WindowBackground}">
+    <UserControl.Resources>
+        <Style x:Key="Network.Label"
+               TargetType="TextBlock">
+            <Setter Property="Margin" Value="0,10,0,2"/>
+            <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}"/>
+        </Style>
+
+        <Style x:Key="Network.Value"
+               TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        </Style>
+
+        <Style x:Key="Network.HealthBadge"
+               TargetType="Border">
+            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="Background" Value="{DynamicResource Brush.SurfaceMuted}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="Network.ProgressBar"
+               TargetType="ProgressBar">
+            <Setter Property="Height" Value="8"/>
+            <Setter Property="Minimum" Value="0"/>
+            <Setter Property="Maximum" Value="100"/>
+            <Setter Property="Background" Value="{DynamicResource Brush.SurfaceMuted}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Brush.Primary}"/>
+        </Style>
+
+        <Style x:Key="Network.MetricLabel"
+               TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="18"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Grid>
+            <StackPanel>
+                <TextBlock Style="{DynamicResource Text.PageTitle}"
+                           Text="Network"/>
+                <TextBlock Margin="0,5,0,0"
+                           Style="{DynamicResource Text.Secondary}"
+                           Text="WAN connectivity, DNS configuration, router information and system resources."/>
+            </StackPanel>
+        </Grid>
+
+        <ScrollViewer Grid.Row="2"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <StackPanel>
+
+                <!-- Top summary -->
+                <Grid Margin="0,0,0,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0" Style="{DynamicResource Card.Compact}">
+                        <StackPanel>
+                            <TextBlock Style="{DynamicResource Text.CardCaption}"
+                                       Text="INTERNET"/>
+                            <TextBlock Margin="0,8,0,0"
+                                       FontSize="21"
+                                       FontWeight="SemiBold"
+                                       Foreground="{Binding InternetStatusColour}"
+                                       Text="{Binding InternetStatusText}"/>
+                            <TextBlock Margin="0,5,0,0"
+                                       Style="{DynamicResource Text.Muted}"
+                                       Text="{Binding WanIp}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="2" Style="{DynamicResource Card.Compact}">
+                        <StackPanel>
+                            <TextBlock Style="{DynamicResource Text.CardCaption}"
+                                       Text="LATENCY"/>
+                            <TextBlock Margin="0,8,0,0"
+                                       FontSize="21"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource Brush.TextPrimary}"
+                                       Text="{Binding Latency}"/>
+                            <TextBlock Margin="0,5,0,0"
+                                       Style="{DynamicResource Text.Muted}"
+                                       Text="Gateway response"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="4" Style="{DynamicResource Card.Compact}">
+                        <StackPanel>
+                            <TextBlock Style="{DynamicResource Text.CardCaption}"
+                                       Text="DNS SERVICE"/>
+                            <TextBlock Margin="0,8,0,0"
+                                       FontSize="21"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource Brush.TextPrimary}"
+                                       Text="{Binding AdGuardServiceDisplay}"/>
+                            <TextBlock Margin="0,5,0,0"
+                                       Style="{DynamicResource Text.Muted}"
+                                       Text="{Binding AdGuardVersionDisplay}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="6" Style="{DynamicResource Card.Compact}">
+                        <StackPanel>
+                            <TextBlock Style="{DynamicResource Text.CardCaption}"
+                                       Text="ROUTER"/>
+                            <TextBlock Margin="0,8,0,0"
+                                       MaxHeight="42"
+                                       FontSize="16"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource Brush.TextPrimary}"
+                                       TextWrapping="Wrap"
+                                       TextTrimming="CharacterEllipsis"
+                                       ToolTip="{Binding RouterModel}"
+                                       Text="{Binding RouterModel}"/>
+                            <TextBlock Margin="0,5,0,0"
+                                       Style="{DynamicResource Text.Muted}"
+                                       Text="{Binding Hostname}"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- Quick maintenance and Wi-Fi networks -->
+                <Grid Margin="0,0,0,16">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="16"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="2" Style="{DynamicResource Card}">
+                        <StackPanel>
+                            <Grid Margin="0,0,0,14">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Style="{DynamicResource Text.SectionTitle}" Text="Wi-Fi networks"/>
+                                    <TextBlock Margin="0,5,0,0" Style="{DynamicResource Text.Secondary}"
+                                               Text="Configured wireless networks and the clients associated with each SSID."/>
+                                </StackPanel>
+                                <Border Grid.Column="1" Style="{StaticResource Network.HealthBadge}">
+                                    <TextBlock FontSize="11" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource Brush.Success}"
+                                               Text="{Binding WifiNetworks.Count, StringFormat={}{0} networks}"/>
+                                </Border>
+                            </Grid>
+
+                            <ItemsControl ItemsSource="{Binding WifiNetworks}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Margin="0,0,0,12"
+                                                Padding="16"
+                                                Background="{DynamicResource Brush.SurfaceMuted}"
+                                                BorderBrush="{DynamicResource Brush.Border}"
+                                                BorderThickness="1"
+                                                CornerRadius="10">
+                                            <StackPanel>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel>
+                                                        <TextBlock FontSize="17" FontWeight="SemiBold"
+                                                                   Foreground="{DynamicResource Brush.TextPrimary}"
+                                                                   Text="{Binding Ssid}"/>
+                                                        <TextBlock Margin="0,4,0,0" Style="{DynamicResource Text.Muted}">
+                                                            <Run Text="{Binding Band}"/><Run Text="  •  Channel "/><Run Text="{Binding Channel}"/>
+                                                        </TextBlock>
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+                                                        <TextBlock HorizontalAlignment="Right" FontWeight="SemiBold"
+                                                                   Foreground="{Binding StatusColour}"
+                                                                   Text="{Binding StatusDisplay}"/>
+                                                        <TextBlock Margin="0,4,0,0" HorizontalAlignment="Right"
+                                                                   Style="{DynamicResource Text.Muted}"
+                                                                   Text="{Binding ClientCount, StringFormat={}{0} connected}"/>
+                                                    </StackPanel>
+                                                </Grid>
+
+                                                <Grid Margin="0,12,0,10">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel Grid.Column="0">
+                                                        <TextBlock Style="{StaticResource Network.Label}" Text="INTERFACE"/>
+                                                        <TextBlock Style="{StaticResource Network.Value}" Text="{Binding Interface}"/>
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="1">
+                                                        <TextBlock Style="{StaticResource Network.Label}" Text="RADIO"/>
+                                                        <TextBlock Style="{StaticResource Network.Value}" Text="{Binding Radio}"/>
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="2">
+                                                        <TextBlock Style="{StaticResource Network.Label}" Text="SECURITY"/>
+                                                        <TextBlock Style="{StaticResource Network.Value}" Text="{Binding Security}"/>
+                                                    </StackPanel>
+                                                </Grid>
+
+                                                <TextBlock Margin="0,4,0,8" FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource Brush.TextPrimary}"
+                                                           Text="Connected clients"/>
+                                                <ItemsControl ItemsSource="{Binding Clients}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Grid Margin="0,3">
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="1.4*"/>
+                                                                    <ColumnDefinition Width="*"/>
+                                                                    <ColumnDefinition Width="1.35*"/>
+                                                                    <ColumnDefinition Width="Auto"/>
+                                                                </Grid.ColumnDefinitions>
+                                                                <TextBlock Grid.Column="0" Text="{Binding Name}" TextTrimming="CharacterEllipsis"
+                                                                           Foreground="{DynamicResource Brush.TextPrimary}"/>
+                                                                <TextBlock Grid.Column="1" Text="{Binding IpAddress}"
+                                                                           Foreground="{DynamicResource Brush.TextSecondary}"/>
+                                                                <TextBlock Grid.Column="2" Text="{Binding MacAddress}"
+                                                                           Foreground="{DynamicResource Brush.TextMuted}"/>
+                                                                <TextBlock Grid.Column="3" Text="{Binding Signal}"
+                                                                           Foreground="{DynamicResource Brush.TextMuted}"/>
+                                                            </Grid>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Row="0" Style="{DynamicResource Card}">
+                        <StackPanel>
+                            <TextBlock Style="{DynamicResource Text.SectionTitle}" Text="Quick maintenance"/>
+                            <TextBlock Margin="0,5,0,14" Style="{DynamicResource Text.Secondary}"
+                                       Text="Safely restart wireless services or reconnect the internet uplink."/>
+                            <WrapPanel>
+                                <Button MinWidth="132" Margin="0,0,8,8" Padding="16,9"
+                                        Click="RestartWifi_Click" Content="Restart Wi-Fi"/>
+                                <Button MinWidth="132" Margin="0,0,0,8" Padding="16,9"
+                                        Click="ReconnectWan_Click" Content="Reconnect WAN"/>
+                            </WrapPanel>
+                            <TextBlock x:Name="MaintenanceStatusText" Margin="0,8,0,0"
+                                       Style="{DynamicResource Text.Muted}" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- Network information -->
+                <Grid Margin="0,0,0,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="16"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="16"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0" Style="{DynamicResource Card}">
+                        <StackPanel>
+                            <TextBlock Style="{DynamicResource Text.SectionTitle}"
+                                       Text="Internet"/>
+                            <TextBlock Margin="0,5,0,6"
+                                       Style="{DynamicResource Text.Secondary}"
+                                       Text="WAN connection and upstream gateway."/>
+
+                            <TextBlock Style="{StaticResource Network.Label}"
+                                       Text="WAN ADDRESS"/>
+                            <TextBlock Style="{StaticResource Network.Value}"
+                                       Text="{Binding WanIp}"/>
+
+                            <TextBlock Style="{StaticResource Network.Label}"
+                                       Text="GATEWAY"/>
+                            <TextBlock Style="{StaticResource Network.Value}"
+                                       Text="{Binding Gateway}"/>
+
+                            <TextBlock Style="{StaticResource Network.Label}"
+                                       Text="LATENCY"/>
+                            <TextBlock Style="{StaticResource Network.Value}"
+                                       Text="{Binding Latency}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="4" Style="{DynamicResource Card}">
+                        <StackPanel>
+                            <TextBlock Style="{DynamicResource Text.SectionTitle}"
+                                       Text="DNS"/>
+                            <TextBlock Margin="0,5,0,6"
+                                       Style="{DynamicResource Text.Secondary}"
+                                       Text="Upstream and advertised resolver details."/>
+
+                            <TextBlock Style="{StaticResource Network.Label}"
+                                       Text="EXTERNAL DNS"/>
+                            <TextBlock Style="{StaticResource Network.Value}"
+                                       Text="{Binding ExternalDns}"/>
+
+                            <TextBlock Style="{StaticResource Network.Label}"
+                                       Text="ADVERTISED DNS"/>
+                            <TextBlock Style="{StaticResource Network.Value}"
+                                       Text="{Binding AdvertisedDns}"/>
+
+                            <TextBlock Style="{StaticResource Network.Label}"
+                                       Text="ADGUARD SERVICE"/>
+                            <TextBlock Style="{StaticResource Network.Value}"
+                                       Text="{Binding AdGuardServiceDisplay}"/>
+
+                            <TextBlock Style="{StaticResource Network.Label}"
+                                       Text="VERSION"/>
+                            <TextBlock Style="{StaticResource Network.Value}"
+                                       Text="{Binding AdGuardVersionDisplay}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="2" Style="{DynamicResource Card}">
+                        <StackPanel>
+                            <TextBlock Style="{DynamicResource Text.SectionTitle}"
+                                       Text="Router"/>
+                            <TextBlock Margin="0,5,0,6"
+                                       Style="{DynamicResource Text.Secondary}"
+                                       Text="Router identity and runtime information."/>
+
+                            <TextBlock Style="{StaticResource Network.Label}"
+                                       Text="MODEL"/>
+                            <TextBlock Style="{StaticResource Network.Value}"
+                                       Text="{Binding RouterModel}"/>
+
+                            <TextBlock Style="{StaticResource Network.Label}"
+                                       Text="HOSTNAME"/>
+                            <TextBlock Style="{StaticResource Network.Value}"
+                                       Text="{Binding Hostname}"/>
+
+                            <TextBlock Style="{StaticResource Network.Label}"
+                                       Text="FIRMWARE"/>
+                            <TextBlock Style="{StaticResource Network.Value}"
+                                       Text="{Binding FirmwareVersion}"/>
+
+                            <TextBlock Style="{StaticResource Network.Label}"
+                                       Text="UPTIME"/>
+                            <TextBlock Style="{StaticResource Network.Value}"
+                                       Text="{Binding Uptime}"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

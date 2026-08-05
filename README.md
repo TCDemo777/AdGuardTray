@@ -37,7 +37,7 @@ Version 1.6.1 improves AdGuard service scheduling, separates router monitoring f
 - Restored GL.iNet Wi-Fi discovery, Guest/IoT mapping and transient-failure data retention
 - Corrected the self-contained MSI payload and launch path
 
-The public repository is now [TCDemo777/RouterPilot](https://github.com/TCDemo777/RouterPilot). For compatibility, the executable, project and namespaces remain `AdGuardTray`, and local settings and data remain under `%LocalAppData%\AdGuardTray`.
+The public repository is [TCDemo777/RouterPilot](https://github.com/TCDemo777/RouterPilot). For compatibility, local settings and data remain under `%LocalAppData%\AdGuardTray`.
 
 ## Requirements
 
@@ -60,8 +60,8 @@ User settings are stored under `%LocalAppData%\AdGuardTray`. Passwords are prote
 ## Building from source
 
 ```powershell
-dotnet restore .\AdGuardTray\AdGuardTray.csproj
-dotnet build .\AdGuardTray\AdGuardTray.csproj -c Release
+dotnet restore .\RouterPilot\RouterPilot.csproj
+dotnet build .\RouterPilot\RouterPilot.csproj -c Release
 ```
 
 ## Support and diagnostics

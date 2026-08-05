@@ -1,0 +1,20 @@
+using System;
+
+namespace RouterPilot.Models
+{
+    public class AdGuardProtectionStatus
+    {
+        public bool IsEnabled { get; set; }
+
+        public bool IsPaused { get; set; }
+
+        public TimeSpan RemainingPause { get; set; }
+
+        public string StateText =>
+            IsEnabled
+                ? RouterPilotStatusPresentation.Active
+                : IsPaused
+                    ? RouterPilotStatusPresentation.Pending
+                    : RouterPilotStatusPresentation.Disabled;
+    }
+}
