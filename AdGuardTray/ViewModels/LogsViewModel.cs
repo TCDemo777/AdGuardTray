@@ -48,13 +48,13 @@ namespace AdGuardTray.ViewModels
                 : "Pause";
 
         public string LiveUpdatesStatus => IsPaused
-            ? RouterPilotStatusPresentation.Pending
+            ? "Paused"
             : RouterPilotStatusPresentation.Active;
 
         public string LiveUpdatesStatusColour =>
             RouterPilotStatusPresentation.Colour(
                 IsPaused
-                    ? RouterPilotStatus.Pending
+                    ? RouterPilotStatus.Disabled
                     : RouterPilotStatus.Active);
 
         public string DnsQueriesDisplay =>

@@ -290,6 +290,8 @@
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding IsBlocked}"
                                                                              Value="True">
+                                                                    <Setter Property="Background"
+                                                                            Value="{DynamicResource Brush.DangerSubtle}"/>
                                                                     <Setter Property="BorderBrush"
                                                                             Value="{DynamicResource Brush.Danger}"/>
                                                                 </DataTrigger>
@@ -299,7 +301,6 @@
 
                                                     <TextBlock FontSize="11"
                                                                FontWeight="SemiBold"
-                                                               Foreground="{DynamicResource Brush.Primary}"
                                                                Text="{Binding Status}">
                                                         <TextBlock.Style>
                                                             <Style TargetType="TextBlock">
