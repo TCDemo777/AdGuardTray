@@ -896,8 +896,11 @@ namespace RouterPilot.Views
             object sender,
             RoutedEventArgs e)
         {
-            PageContent.Content =
-                new AnalyticsView();
+            var analyticsView = new AnalyticsView
+            {
+                DataContext = _viewModel
+            };
+            PageContent.Content = analyticsView;
 
             SelectNavigationButton(
                 AnalyticsButton);

@@ -44,7 +44,10 @@
         </Style>
     </UserControl.Resources>
 
-    <ScrollViewer Background="{DynamicResource Brush.WindowBackground}">
+    <ScrollViewer
+        x:Name="AnalyticsScrollViewer"
+        Background="{DynamicResource Brush.WindowBackground}"
+        RequestBringIntoView="AnalyticsScrollViewer_RequestBringIntoView">
         <StackPanel Margin="24">
 
             <!-- Heading -->
@@ -82,12 +85,13 @@
             </Grid>
 
             <!-- Live network activity -->
-            <Grid Margin="0,0,0,12">
+            <Grid x:Name="LiveNetworkActivitySection" Margin="0,0,0,12">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <TextBlock
+                    x:Name="LiveNetworkActivityHeading"
                     Style="{StaticResource Text.SectionTitle}"
                     Text="Live Network Activity" />
                 <Border
@@ -270,6 +274,7 @@
 
             <!-- Summary -->
             <TextBlock
+                x:Name="DnsSummaryHeading"
                 Margin="0,0,0,12"
                 Style="{StaticResource Text.Secondary}"
                 Foreground="{DynamicResource Brush.Warning}"
@@ -280,7 +285,7 @@
                 Style="{StaticResource Text.SectionTitle}"
                 Text="DNS Summary" />
 
-            <WrapPanel Margin="0,0,-12,12">
+            <WrapPanel x:Name="DnsSummarySection" Margin="0,0,-12,12">
                 <controls:StatisticCard
                     Width="250"
                     Margin="0,0,12,12"
