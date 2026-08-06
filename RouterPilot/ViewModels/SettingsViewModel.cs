@@ -12,7 +12,6 @@ namespace RouterPilot.ViewModels
         public event EventHandler? SettingsSaved;
         private readonly SettingsService _settingsService;
         private readonly IRouterManagerProvider _routerManagerProvider;
-        private readonly IToastNotificationService _toastNotificationService;
         private readonly NotificationService _notificationService;
         public AdGuardAvailabilityService AdGuardAvailability { get; }
 
@@ -174,13 +173,11 @@ namespace RouterPilot.ViewModels
             SettingsService settingsService,
             IRouterManagerProvider routerManagerProvider,
             AdGuardAvailabilityService adGuardAvailability,
-            IToastNotificationService toastNotificationService,
             NotificationService notificationService)
         {
             _settingsService = settingsService;
             _routerManagerProvider = routerManagerProvider;
             AdGuardAvailability = adGuardAvailability;
-            _toastNotificationService = toastNotificationService;
             _notificationService = notificationService;
             _notificationService.PropertyChanged += (_, _) => RefreshNotificationSummary();
 
@@ -360,17 +357,45 @@ namespace RouterPilot.ViewModels
 
         private async System.Threading.Tasks.Task TestWindowsNotificationAsync()
         {
-            ToastDeliveryResult result = await _toastNotificationService.SendAsync(
-                "RouterPilot test notification",
-                "Windows notifications are working.");
-
-            StatusMessage = result switch
+            NotificationPreferences preferences = new()
             {
-                ToastDeliveryResult.Delivered => "Test Windows notification sent.",
-                ToastDeliveryResult.PlatformUnsupported => "Windows notifications are not supported on this platform.",
-                ToastDeliveryResult.RegistrationUnavailable => "Windows notification registration is unavailable.",
-                _ => "Windows notification could not be sent."
+                Enabled = NotificationsEnabled,
+                NotificationCentreEnabled = NotificationCentreEnabled,
+                WindowsToastsEnabled = WindowsToastsEnabled,
+                QuietHoursEnabled = QuietHoursEnabled,
+                QuietHoursStart = TimeOnly.TryParse(QuietHoursStart, out TimeOnly start) ? start : new TimeOnly(22, 0),
+                QuietHoursEnd = TimeOnly.TryParse(QuietHoursEnd, out TimeOnly end) ? end : new TimeOnly(7, 0)
             };
+
+            if (!preferences.Enabled)
+            {
+                StatusMessage = "Notifications are disabled.";
+                return;
+            }
+
+            if (!preferences.NotificationCentreEnabled && !preferences.WindowsToastsEnabled)
+            {
+                StatusMessage = "No notification delivery channel is enabled.";
+                return;
+            }
+
+            bool delivered = await _notificationService.AddAsync(
+                new AppNotification
+                {
+                    Title = "RouterPilot test notification",
+                    Message = "Notification delivery is working.",
+                    Severity = NotificationSeverity.Information,
+                    Category = NotificationCategory.System,
+                    EventType = NotificationEventType.General,
+                    DeduplicationKey = "RouterPilot-TestNotification-" + Guid.NewGuid()
+                },
+                preferences);
+
+            StatusMessage = preferences.WindowsToastsEnabled && preferences.IsQuietHours(DateTimeOffset.Now)
+                ? "Test notification added. Windows toast suppressed by quiet hours."
+                : delivered
+                    ? "Test notification sent."
+                    : "Test notification could not be delivered.";
         }
 
         private string? Validate()

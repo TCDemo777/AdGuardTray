@@ -230,6 +230,7 @@ public sealed class AdGuardServiceScheduleService : IAsyncDisposable
                 Title = "Scheduled service change completed",
                 Message = $"{names} {(schedule.Action == AdGuardServiceScheduleAction.Allow ? "is now allowed" : "is now blocked")}.",
                 Severity = NotificationSeverity.Success, Category = NotificationCategory.AdGuard,
+                EventType = NotificationEventType.ScheduleSucceeded,
                 DeduplicationKey = $"AdGuardSchedule:{schedule.Id}:{occurrenceUtc.UtcTicks}:{(runNow ? "manual" : "scheduled")}" 
             });
         }
@@ -245,6 +246,7 @@ public sealed class AdGuardServiceScheduleService : IAsyncDisposable
                 Title = "Scheduled service change failed",
                 Message = "RouterPilot could not update the scheduled AdGuard services.",
                 Severity = NotificationSeverity.Warning, Category = NotificationCategory.AdGuard,
+                EventType = NotificationEventType.ScheduleFailed,
                 DeduplicationKey = $"AdGuardScheduleFailed:{schedule.Id}:{occurrenceUtc.UtcTicks}"
             });
             if (runNow) throw;

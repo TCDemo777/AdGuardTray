@@ -328,9 +328,24 @@ public sealed class BackupRestoreService : IBackupRestoreService
         await using FileStream stream = new(archivePath, FileMode.Open, FileAccess.Read, FileShare.Read);
         using ZipArchive archive = new(stream, ZipArchiveMode.Read);
         Dictionary<string, ZipArchiveEntry> entries = ValidateArchiveEntries(archive);
+        if (!entries.Remove("manifest.json", out ZipArchiveEntry? manifestEntry))
+            throw new InvalidDataException("The backup manifest is missing.");
+
+        RouterPilotBackupManifest manifest = await ReadManifestAsync(manifestEntry, cancellationToken)
+            .ConfigureAwait(false);
+        ValidateManifest(manifest, entries);
+        Dictionary<string, string> expectedHashes = manifest.Files.ToDictionary(
+            item => item.FileName,
+            item => item.Sha256,
+            StringComparer.Ordinal);
+
         Dictionary<string, byte[]> files = new(StringComparer.Ordinal);
         foreach (string name in selected)
         {
+            string actualHash = await ComputeHashAsync(entries[name], cancellationToken).ConfigureAwait(false);
+            if (!string.Equals(actualHash, expectedHashes[name], StringComparison.OrdinalIgnoreCase))
+                throw new InvalidDataException($"The backup hash for {name} does not match.");
+
             await using Stream input = entries[name].Open();
             using MemoryStream output = new();
             await input.CopyToAsync(output, cancellationToken).ConfigureAwait(false);

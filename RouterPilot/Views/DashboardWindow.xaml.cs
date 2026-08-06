@@ -869,6 +869,9 @@ namespace RouterPilot.Views
                     ? NotificationSeverity.Success
                     : NotificationSeverity.Error,
                 Category = NotificationCategory.Router,
+                EventType = isOnline
+                    ? NotificationEventType.RouterRestored
+                    : NotificationEventType.RouterOffline,
                 DeduplicationKey = isOnline
                     ? "RouterOnline"
                     : "RouterOffline"

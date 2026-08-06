@@ -118,11 +118,15 @@ public sealed class NotificationService : INotifyPropertyChanged, IAsyncDisposab
         return loaded.Count;
     }
 
-    public async Task<bool> AddAsync(AppNotification notification)
+    public Task<bool> AddAsync(AppNotification notification) => AddAsync(notification, preferencesOverride: null);
+
+    public async Task<bool> AddAsync(
+        AppNotification notification,
+        NotificationPreferences? preferencesOverride)
     {
         ArgumentNullException.ThrowIfNull(notification);
 
-        NotificationDeliveryChannels channels = GetDeliveryChannels(notification);
+        NotificationDeliveryChannels channels = GetDeliveryChannels(notification, preferencesOverride);
         if (!channels.HasAny)
         {
             return false;
@@ -179,16 +183,18 @@ public sealed class NotificationService : INotifyPropertyChanged, IAsyncDisposab
         return storedInCentre || toastDelivered;
     }
 
-    private NotificationDeliveryChannels GetDeliveryChannels(AppNotification notification)
+    private NotificationDeliveryChannels GetDeliveryChannels(
+        AppNotification notification,
+        NotificationPreferences? preferencesOverride = null)
     {
-        if (_settingsService is null)
+        if (_settingsService is null && preferencesOverride is null)
         {
             return new NotificationDeliveryChannels(
                 NotificationCentre: true,
                 WindowsToast: false);
         }
 
-        NotificationPreferences preferences = _settingsService.Load().NotificationPreferences
+        NotificationPreferences preferences = preferencesOverride ?? _settingsService!.Load().NotificationPreferences
             ?? new NotificationPreferences();
 
         if (!preferences.Enabled || !preferences.IsEnabled(notification.EventType))
