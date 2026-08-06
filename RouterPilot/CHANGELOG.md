@@ -1,5 +1,32 @@
 # RouterPilot Changelog
 
+## [1.8.0] - 2026-08-06
+
+### Added
+- Added the Maintenance Centre with supported Restart Wi-Fi, Restart AdGuard Home, Reconnect WAN, Reboot Router, Refresh All and diagnostics actions.
+- Added shared maintenance history with action outcomes and safe user-facing messages.
+- Added Windows notification delivery, Notification Centre and Windows-delivery preferences, quiet hours and Send Test Notification.
+- Added portable RouterPilot `.rpb` backups with a manifest, SHA-256 validation and selective restore.
+- Added automatic pre-restore backups, staged replacement and restore rollback protection.
+
+### Changed
+- Unified diagnostics execution and history between the About page and Maintenance Centre.
+- Improved Maintenance summaries, action-result presentation, backup metadata and restore preview validation feedback.
+- Improved notification preferences and About-page actions while retaining dynamic assembly version display.
+- Applied consistent Pending, Active and Error state presentation to maintenance workflows.
+
+### Fixed
+- Fixed diagnostics launched from Maintenance bypassing the shared diagnostics history.
+- Fixed AdGuard Home restart state and wording so completion is verified before success is reported.
+- Fixed notification test delivery so it respects current global, channel and quiet-hours preferences.
+- Fixed router and scheduled-service notifications to use stable event types for preference routing.
+- Hardened restore processing by revalidating selected archive content immediately before replacement.
+
+### Internal
+- Added application-scoped maintenance-operation locking, diagnostics execution and backup/restore services.
+- Added stable Windows toast identity `TCDemo777.RouterPilot` while preserving RouterManagerProvider and RefreshCoordinator ownership.
+- Preserved atomic backup creation, restore integrity checks, path-traversal protection, RouterPilot data paths and legacy AdGuardTray migration.
+
 ## [1.7.0] - 2026-08-05
 
 ### Added

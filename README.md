@@ -18,24 +18,25 @@ Companion for GL.iNet Routers & AdGuard Home
 - Live and historical WAN throughput, DNS, CPU and memory charts
 - Network Timeline, Router Insights, weekly summaries and deterministic network intelligence
 - Persistent Notification Centre with router, AdGuard and new-device events
+- Configurable Windows notifications, Notification Centre delivery and quiet hours
+- Maintenance Centre with safe router actions, shared action history and diagnostics
+- Portable `.rpb` Backup & Restore with manifest validation and pre-restore backups
 - Router diagnostics, safe diagnostic export, ping, traceroute and DNS lookup tools
 - Automatic GitHub release update checks
 - Secure password storage using Windows user-scoped encryption
 - Light, dark and system theme support
 - Notification-area integration with close-to-tray behaviour
 
-## What’s new in 1.7.0
+## What's new in 1.8.0
 
-Version 1.7.0 completes RouterPilot’s internal rebrand, improves monitoring and status presentation, and adds safer application startup and data migration.
+Version 1.8.0 adds local maintenance, configurable Windows notifications and safe portable backup and restore while preserving RouterPilot's existing router and AdGuard Home monitoring.
 
-- Renamed the solution, executable, projects and namespaces to RouterPilot
-- Added automatic copy-based migration from legacy AdGuardTray application data
-- Added per-user single-instance protection
-- Improved DNS Activity, Analytics, Overview, Network, Protection and Clients presentation
-- Added a configurable Clients auto-scroll-to-top option
-- Standardised Connected, Active, Pending, Paused, Disabled, N/A and Error status vocabulary
-- Improved CPU utilisation reporting and AdGuard-unavailable handling
-- Preserved GL.iNet Wi-Fi discovery, Guest/IoT mapping and reliable installer packaging
+- Added the Maintenance Centre with supported, confirmation-gated router actions and shared maintenance history
+- Added verified AdGuard Home restart handling and a shared diagnostics workflow for About and Maintenance
+- Added Windows notification delivery, channel preferences, quiet hours and Send Test Notification
+- Added `.rpb` configuration backups with manifests, SHA-256 validation, selective restore and automatic pre-restore backups
+- Improved maintenance, notification-preference, backup/restore and About-page presentation
+- Preserved RouterPilot data migration, GL.iNet Wi-Fi discovery and AdGuard-independent router monitoring
 
 The public repository is [TCDemo777/RouterPilot](https://github.com/TCDemo777/RouterPilot). RouterPilot now uses `%LocalAppData%\RouterPilot`; on first startup it safely copies supported legacy files from `%LocalAppData%\AdGuardTray` without changing or deleting the legacy folder.
 
@@ -57,7 +58,9 @@ The public repository is [TCDemo777/RouterPilot](https://github.com/TCDemo777/Ro
 
 User settings are stored under `%LocalAppData%\RouterPilot`. Passwords are protected for the current Windows user. Existing supported settings, notification, client-profile and AdGuard schedule files are copied automatically from `%LocalAppData%\AdGuardTray` when no RouterPilot replacement exists.
 
-Release assets are published as `RouterPilot-1.7.0-x64.msi` and `RouterPilot-1.7.0-win-x64.zip`.
+Release assets are published as `RouterPilot-1.8.0-x64.msi` and `RouterPilot-1.8.0-win-x64.zip`.
+
+When upgrading from v1.7.0, install the MSI or replace the portable application files. Existing `%LocalAppData%\RouterPilot` data remains in place. Backup files use the portable `.rpb` format and can be created or restored from Maintenance.
 
 ## Building from source
 
