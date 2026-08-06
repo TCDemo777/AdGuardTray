@@ -151,6 +151,9 @@ namespace RouterPilot.ViewModels
             AdGuardAvailabilityState.Unavailable;
 
         [ObservableProperty]
+        private AdGuardMaintenanceState adGuardMaintenanceState;
+
+        [ObservableProperty]
         private bool adGuardProtectionEnabled;
 
         [ObservableProperty]
@@ -412,17 +415,25 @@ namespace RouterPilot.ViewModels
                     ? RouterPilotStatus.Connected
                     : RouterPilotStatus.Error);
 
-        private RouterPilotStatus AdGuardStatus => AdGuardAvailability switch
+        private RouterPilotStatus AdGuardStatus => AdGuardMaintenanceState switch
         {
-            AdGuardAvailabilityState.Available when AdGuardRunning =>
-                RouterPilotStatus.Active,
-            AdGuardAvailabilityState.Available or
-            AdGuardAvailabilityState.AuthenticationFailed => RouterPilotStatus.Error,
-            _ => RouterPilotStatus.NotAvailable
+            AdGuardMaintenanceState.Restarting => RouterPilotStatus.Pending,
+            AdGuardMaintenanceState.Failed => RouterPilotStatus.Error,
+            _ => AdGuardAvailability switch
+            {
+                AdGuardAvailabilityState.Available when AdGuardRunning => RouterPilotStatus.Active,
+                AdGuardAvailabilityState.Available or AdGuardAvailabilityState.AuthenticationFailed => RouterPilotStatus.Error,
+                _ => RouterPilotStatus.NotAvailable
+            }
         };
 
         public string AdGuardStatusText =>
             RouterPilotStatusPresentation.Text(AdGuardStatus);
+
+        public string AdGuardStatusSubtitle =>
+            AdGuardMaintenanceState == AdGuardMaintenanceState.Restarting
+                ? "Restarting AdGuard Home"
+                : "DNS filtering";
 
         public bool IsAdGuardAvailable =>
             AdGuardAvailability == AdGuardAvailabilityState.Available;
@@ -1159,6 +1170,14 @@ namespace RouterPilot.ViewModels
             OnPropertyChanged(nameof(TopClientsEmptyText));
             OnPropertyChanged(nameof(TopBlockedDomainsEmptyText));
             OnPropertyChanged(nameof(TopQueriedDomainsEmptyText));
+            RefreshStatusIndicators();
+        }
+
+        partial void OnAdGuardMaintenanceStateChanged(AdGuardMaintenanceState value)
+        {
+            OnPropertyChanged(nameof(IsAdGuardAvailable));
+            OnPropertyChanged(nameof(AdGuardAvailabilityMessage));
+            OnPropertyChanged(nameof(AdGuardStatusSubtitle));
             RefreshStatusIndicators();
         }
 

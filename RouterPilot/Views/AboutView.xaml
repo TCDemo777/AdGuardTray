@@ -58,9 +58,9 @@
         <StackPanel>
             <TextBlock Style="{DynamicResource Text.PageTitle}"
                        Text="About"/>
-            <TextBlock Margin="0,5,0,0"
+                    <TextBlock Margin="0,5,0,0"
                        Style="{DynamicResource Text.Secondary}"
-                       Text="Application information, diagnostics, live support activity and release history"/>
+                       Text="Desktop management for GL.iNet routers"/>
         </StackPanel>
 
         <TabControl Grid.Row="2"
@@ -162,6 +162,10 @@
                                                 Padding="14,6"
                                                 Click="OpenLicense_Click"
                                                 Content="Licence"/>
+                                        <Button Margin="0,0,8,8"
+                                                Padding="14,6"
+                                                Click="OpenThirdPartyNotices_Click"
+                                                Content="Third-Party Notices"/>
                                     </WrapPanel>
 
                                     <Border Margin="0,12,0,0" Padding="14"

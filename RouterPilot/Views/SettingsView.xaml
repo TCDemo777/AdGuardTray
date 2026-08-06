@@ -244,6 +244,48 @@
                                 </Border>
                             </StackPanel>
                         </Border>
+
+                        <Border Margin="0,16,0,0" Style="{DynamicResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{DynamicResource Text.SectionTitle}" Text="Notification Preferences"/>
+                                <TextBlock Margin="0,5,0,14" Style="{DynamicResource Text.Secondary}"
+                                           Text="Control Notification Centre entries. Quiet hours affect Windows toasts only."/>
+                                <Border Margin="0,0,0,14" Padding="12" CornerRadius="8"
+                                        Background="{DynamicResource Brush.SurfaceMuted}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Style="{DynamicResource Text.CardCaption}" Text="STORED ENTRIES"/>
+                                            <TextBlock Margin="0,3,0,0" FontWeight="SemiBold" Text="{Binding StoredNotificationCount}"/>
+                                            <TextBlock Margin="0,6,0,0" Style="{DynamicResource Text.CardCaption}" Text="MOST RECENT"/>
+                                            <TextBlock Margin="0,3,0,0" Style="{DynamicResource Text.Secondary}" Text="{Binding MostRecentNotificationTime}"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1">
+                                            <TextBlock Style="{DynamicResource Text.CardCaption}" Text="DELIVERY"/>
+                                            <TextBlock Margin="0,3,0,0" Style="{DynamicResource Text.Secondary}" TextWrapping="Wrap" Text="{Binding ActiveDeliveryChannels}"/>
+                                            <TextBlock Margin="0,6,0,0" Style="{DynamicResource Text.CardCaption}" Text="QUIET HOURS"/>
+                                            <TextBlock Margin="0,3,0,0" Style="{DynamicResource Text.Secondary}" Text="{Binding QuietHoursStatus}"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                                <CheckBox Content="Enable notifications" IsChecked="{Binding NotificationsEnabled}"/>
+                                <CheckBox Margin="0,8,0,0" Content="Notification Centre entries" IsChecked="{Binding NotificationCentreEnabled}"/>
+                                <CheckBox Margin="0,8,0,0" Content="Windows toast notifications" IsChecked="{Binding WindowsToastsEnabled}"/>
+                                <CheckBox Margin="0,8,0,0" Content="Enable quiet hours" IsChecked="{Binding QuietHoursEnabled}"/>
+                                <Grid Margin="0,10,0,0">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="130"/><ColumnDefinition Width="12"/><ColumnDefinition Width="130"/></Grid.ColumnDefinitions>
+                                    <TextBox Grid.Column="0" Style="{StaticResource Settings.Input}" Text="{Binding QuietHoursStart, UpdateSourceTrigger=PropertyChanged}" ToolTip="Quiet hours start (HH:mm)"/>
+                                    <TextBox Grid.Column="2" Style="{StaticResource Settings.Input}" Text="{Binding QuietHoursEnd, UpdateSourceTrigger=PropertyChanged}" ToolTip="Quiet hours end (HH:mm)"/>
+                                </Grid>
+                                <Button Margin="0,14,0,0"
+                                        MinWidth="190"
+                                        Height="38"
+                                        HorizontalAlignment="Left"
+                                        Style="{DynamicResource Button.Secondary}"
+                                        Command="{Binding TestWindowsNotificationCommand}"
+                                        Content="Send Test Notification"/>
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
                 </Grid>
             </StackPanel>

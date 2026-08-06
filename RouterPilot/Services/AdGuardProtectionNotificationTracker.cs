@@ -60,6 +60,9 @@ public sealed class AdGuardProtectionNotificationTracker
                 ? NotificationSeverity.Success
                 : NotificationSeverity.Warning,
             Category = NotificationCategory.AdGuard,
+            EventType = isEnabled
+                ? NotificationEventType.ProtectionEnabled
+                : NotificationEventType.ProtectionDisabled,
             DeduplicationKey = isEnabled
                 ? "AdGuardProtectionEnabled"
                 : "AdGuardProtectionDisabled"

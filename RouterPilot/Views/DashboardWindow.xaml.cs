@@ -26,10 +26,12 @@ namespace RouterPilot.Views
         private readonly SettingsService _settingsService;
         private readonly NotificationService _notificationService;
         private readonly NotificationCentreViewModel _notificationCentreViewModel;
+        private readonly MaintenanceViewModel _maintenanceViewModel;
         private readonly AdGuardProtectionNotificationTracker _protectionNotificationTracker;
         private readonly RefreshCoordinator _refreshCoordinator;
         private readonly AdGuardServiceScheduleService _scheduleService;
         private readonly AdGuardAvailabilityService _adGuardAvailabilityService;
+        private readonly AdGuardMaintenanceStateService _adGuardMaintenanceStateService;
         private readonly SemaphoreSlim _routerManagerUsageGate = new(1, 1);
         private bool _refreshInProgress;
         private bool _trafficRefreshInProgress;
@@ -72,6 +74,8 @@ namespace RouterPilot.Views
                 .Services.GetRequiredService<NotificationService>();
             _notificationCentreViewModel = ((App)Application.Current)
                 .Services.GetRequiredService<NotificationCentreViewModel>();
+            _maintenanceViewModel = ((App)Application.Current)
+                .Services.GetRequiredService<MaintenanceViewModel>();
             _protectionNotificationTracker = ((App)Application.Current)
                 .Services.GetRequiredService<AdGuardProtectionNotificationTracker>();
             _routerManagerProvider = ((App)Application.Current).Services
@@ -80,6 +84,16 @@ namespace RouterPilot.Views
                 .GetRequiredService<AdGuardServiceScheduleService>();
             _adGuardAvailabilityService = ((App)Application.Current).Services
                 .GetRequiredService<AdGuardAvailabilityService>();
+            _adGuardMaintenanceStateService = ((App)Application.Current).Services
+                .GetRequiredService<AdGuardMaintenanceStateService>();
+            _viewModel.AdGuardMaintenanceState = _adGuardMaintenanceStateService.State;
+            _adGuardMaintenanceStateService.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(AdGuardMaintenanceStateService.State))
+                {
+                    _viewModel.AdGuardMaintenanceState = _adGuardMaintenanceStateService.State;
+                }
+            };
             NotificationButton.DataContext = _notificationService;
 
             _settingsService =
@@ -394,6 +408,10 @@ namespace RouterPilot.Views
                 {
                     _viewModel.AdGuardAvailability = AdGuardAvailabilityState.Available;
                     _adGuardAvailabilityService.SetState(AdGuardAvailabilityState.Available);
+                    if (_adGuardMaintenanceStateService.State == AdGuardMaintenanceState.Failed)
+                    {
+                        _adGuardMaintenanceStateService.CompleteRestart();
+                    }
                     return;
                 }
 
@@ -851,6 +869,9 @@ namespace RouterPilot.Views
                     ? NotificationSeverity.Success
                     : NotificationSeverity.Error,
                 Category = NotificationCategory.Router,
+                EventType = isOnline
+                    ? NotificationEventType.RouterRestored
+                    : NotificationEventType.RouterOffline,
                 DeduplicationKey = isOnline
                     ? "RouterOnline"
                     : "RouterOffline"
@@ -915,6 +936,18 @@ namespace RouterPilot.Views
 
             SelectNavigationButton(
                 NetworkButton);
+        }
+
+        private void Maintenance_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            PageContent.Content = new MaintenanceView(
+                _maintenanceViewModel,
+                _viewModel,
+                RefreshNowAsync);
+
+            SelectNavigationButton(MaintenanceButton);
         }
 
         private void Clients_Click(
@@ -988,6 +1021,7 @@ namespace RouterPilot.Views
                 ProtectionButton,
                 AnalyticsButton,
                 NetworkButton,
+                MaintenanceButton,
                 ClientsButton,
                 LogsButton,
                 NotificationButton,

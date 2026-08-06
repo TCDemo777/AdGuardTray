@@ -40,6 +40,8 @@ public sealed class NotificationService : INotifyPropertyChanged, IAsyncDisposab
     private Task? _pendingSaveTask;
     private Task? _disposeTask;
     private bool _disposalStarted;
+    private readonly SettingsService? _settingsService;
+    private readonly IToastNotificationService? _toastNotificationService;
 
     public NotificationService(
         Dispatcher dispatcher,
@@ -53,13 +55,17 @@ public sealed class NotificationService : INotifyPropertyChanged, IAsyncDisposab
         Dispatcher dispatcher,
         ApplicationDataPathProvider? applicationDataPaths = null,
         string? dataFolder = null,
-        TimeSpan? deduplicationQuietPeriod = null)
+        TimeSpan? deduplicationQuietPeriod = null,
+        SettingsService? settingsService = null,
+        IToastNotificationService? toastNotificationService = null)
     {
         _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
         string folder = dataFolder ??
             (applicationDataPaths ?? new ApplicationDataPathProvider()).CurrentPath;
         _storeFile = Path.Combine(folder, "notifications.json");
         DeduplicationQuietPeriod = deduplicationQuietPeriod ?? TimeSpan.FromMinutes(5);
+        _settingsService = settingsService;
+        _toastNotificationService = toastNotificationService;
         Notifications = new ReadOnlyObservableCollection<AppNotification>(
             _notifications);
     }
@@ -74,23 +80,9 @@ public sealed class NotificationService : INotifyPropertyChanged, IAsyncDisposab
 
     public async Task InitializeAsync()
     {
-        List<AppNotification> loaded = await LoadAsync().ConfigureAwait(false);
+        int loadedCount = await ReloadAsync().ConfigureAwait(false);
 
-        await _dispatcher.InvokeAsync(() =>
-        {
-            _notifications.Clear();
-            foreach (AppNotification notification in loaded
-                         .OrderByDescending(item => item.Timestamp)
-                         .Take(MaximumNotifications))
-            {
-                _notifications.Add(notification);
-                RememberDeduplication(notification);
-            }
-
-            OnPropertyChanged(nameof(UnreadCount));
-        });
-
-        if (loaded.Count == 0)
+        if (loadedCount == 0)
         {
             await AddAsync(new AppNotification
             {
@@ -103,25 +95,125 @@ public sealed class NotificationService : INotifyPropertyChanged, IAsyncDisposab
         }
     }
 
-    public async Task<bool> AddAsync(AppNotification notification)
+    /// <summary>Reloads persisted history after an explicit data restore without creating a welcome item.</summary>
+    public async Task<int> ReloadAsync()
+    {
+        List<AppNotification> loaded = await LoadAsync().ConfigureAwait(false);
+
+        await _dispatcher.InvokeAsync(() =>
+        {
+            _notifications.Clear();
+            _deduplicationTimes.Clear();
+            foreach (AppNotification notification in loaded
+                         .OrderByDescending(item => item.Timestamp)
+                         .Take(MaximumNotifications))
+            {
+                _notifications.Add(notification);
+                RememberDeduplication(notification);
+            }
+
+            OnPropertyChanged(nameof(UnreadCount));
+        });
+
+        return loaded.Count;
+    }
+
+    public Task<bool> AddAsync(AppNotification notification) => AddAsync(notification, preferencesOverride: null);
+
+    public async Task<bool> AddAsync(
+        AppNotification notification,
+        NotificationPreferences? preferencesOverride)
     {
         ArgumentNullException.ThrowIfNull(notification);
+
+        NotificationDeliveryChannels channels = GetDeliveryChannels(notification, preferencesOverride);
+        if (!channels.HasAny)
+        {
+            return false;
+        }
 
         if (!TryReserveDeduplication(notification))
             return false;
 
-        await _dispatcher.InvokeAsync(() =>
+        bool storedInCentre = false;
+        if (channels.NotificationCentre)
         {
-            _notifications.Insert(0, notification);
-            while (_notifications.Count > MaximumNotifications)
-                _notifications.RemoveAt(_notifications.Count - 1);
+            try
+            {
+                await _dispatcher.InvokeAsync(() =>
+                {
+                    _notifications.Insert(0, notification);
+                    while (_notifications.Count > MaximumNotifications)
+                        _notifications.RemoveAt(_notifications.Count - 1);
 
-            RememberDeduplication(notification);
-            OnPropertyChanged(nameof(UnreadCount));
-            QueueSave();
-        });
+                    RememberDeduplication(notification);
+                    OnPropertyChanged(nameof(UnreadCount));
+                    QueueSave();
+                });
 
-        return true;
+                storedInCentre = true;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Unable to add Notification Centre entry: {ex.GetType().Name}");
+            }
+        }
+
+        bool toastDelivered = false;
+        if (channels.WindowsToast && _toastNotificationService is not null)
+        {
+            try
+            {
+                ToastDeliveryResult result = await _toastNotificationService
+                    .SendAsync(notification.Title, notification.Message)
+                    .ConfigureAwait(false);
+                toastDelivered = result == ToastDeliveryResult.Delivered;
+
+                if (!toastDelivered)
+                {
+                    Debug.WriteLine($"Windows toast delivery result: {result}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Windows toast dispatch failed: {ex.GetType().Name}");
+            }
+        }
+
+        return storedInCentre || toastDelivered;
+    }
+
+    private NotificationDeliveryChannels GetDeliveryChannels(
+        AppNotification notification,
+        NotificationPreferences? preferencesOverride = null)
+    {
+        if (_settingsService is null && preferencesOverride is null)
+        {
+            return new NotificationDeliveryChannels(
+                NotificationCentre: true,
+                WindowsToast: false);
+        }
+
+        NotificationPreferences preferences = preferencesOverride ?? _settingsService!.Load().NotificationPreferences
+            ?? new NotificationPreferences();
+
+        if (!preferences.Enabled || !preferences.IsEnabled(notification.EventType))
+        {
+            return default;
+        }
+
+        return new NotificationDeliveryChannels(
+            NotificationCentre: preferences.NotificationCentreEnabled,
+            WindowsToast: _toastNotificationService is not null &&
+                preferences.WindowsToastsEnabled &&
+                !preferences.IsQuietHours(DateTimeOffset.Now));
+    }
+
+    private readonly record struct NotificationDeliveryChannels(
+        bool NotificationCentre,
+        bool WindowsToast)
+    {
+        public bool HasAny => NotificationCentre || WindowsToast;
     }
 
     public Task MarkReadAsync(AppNotification? notification) =>

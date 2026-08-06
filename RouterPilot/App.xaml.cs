@@ -55,12 +55,24 @@ namespace RouterPilot
             var serviceCollection = new ServiceCollection();
             serviceCollection.AddSingleton(applicationDataPaths);
             serviceCollection.AddSingleton<SettingsService>();
+            serviceCollection.AddSingleton<IToastNotificationService, WindowsToastNotificationService>();
             serviceCollection.AddSingleton<IRouterManagerProvider,
                 RouterManagerProvider>();
             serviceCollection.AddSingleton(
                 sp => new NotificationService(
                     Dispatcher,
+                    sp.GetRequiredService<ApplicationDataPathProvider>(),
+                    settingsService: sp.GetRequiredService<SettingsService>(),
+                    toastNotificationService: sp.GetRequiredService<IToastNotificationService>()));
+            serviceCollection.AddSingleton(
+                sp => new MaintenanceHistoryService(
+                    Dispatcher,
                     sp.GetRequiredService<ApplicationDataPathProvider>()));
+            serviceCollection.AddSingleton(sp => new DiagnosticsHistoryService(Dispatcher));
+            serviceCollection.AddSingleton<DiagnosticsExecutionService>();
+            serviceCollection.AddSingleton<IBackupRestoreService, BackupRestoreService>();
+            serviceCollection.AddSingleton<MaintenanceOperationService>();
+            serviceCollection.AddSingleton<MaintenanceViewModel>();
             serviceCollection.AddSingleton<UpdateService>();
             serviceCollection.AddSingleton<IClock, SystemClock>();
             serviceCollection.AddSingleton<BlockedServiceMutationService>();
@@ -76,6 +88,7 @@ namespace RouterPilot
             serviceCollection.AddSingleton<AdGuardServiceScheduleViewModel>();
             serviceCollection.AddSingleton<AdGuardProtectionNotificationTracker>();
             serviceCollection.AddSingleton<AdGuardAvailabilityService>();
+            serviceCollection.AddSingleton<AdGuardMaintenanceStateService>();
             serviceCollection.AddSingleton<NewDeviceNotificationTracker>();
             serviceCollection.AddSingleton<NotificationCentreViewModel>();
             serviceCollection.AddTransient<ClientsViewModel>();
@@ -86,6 +99,8 @@ namespace RouterPilot
             _services = serviceCollection.BuildServiceProvider();
 
             await Services.GetRequiredService<NotificationService>()
+                .InitializeAsync();
+            await Services.GetRequiredService<MaintenanceHistoryService>()
                 .InitializeAsync();
             await Services.GetRequiredService<AdGuardServiceScheduleService>()
                 .InitializeAsync();
@@ -212,6 +227,13 @@ namespace RouterPilot
 
         private async void ExitApplication()
         {
+            await ExitApplicationAsync();
+        }
+
+        public Task RestartAsync() => ExitApplicationAsync(Environment.ProcessPath);
+
+        private async Task ExitApplicationAsync(string? restartPath = null)
+        {
             IsExitRequested = true;
             _trayManager?.Dispose();
             _trayManager = null;
@@ -234,6 +256,21 @@ namespace RouterPilot
                 catch (Exception ex)
                 {
                     Debug.WriteLine($"Unable to flush AdGuard service schedules during shutdown: {ex}");
+                }
+
+                try
+                {
+                    await _services
+                        .GetRequiredService<MaintenanceHistoryService>()
+                        .FlushAsync();
+                }
+                catch (OperationCanceledException)
+                {
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(
+                        $"Unable to flush maintenance history during shutdown: {ex}");
                 }
 
                 try
@@ -268,6 +305,14 @@ namespace RouterPilot
             {
                 await _singleInstance.DisposeAsync();
                 _singleInstance = null;
+            }
+
+            if (!string.IsNullOrWhiteSpace(restartPath))
+            {
+                Process.Start(new ProcessStartInfo(restartPath)
+                {
+                    UseShellExecute = true
+                });
             }
 
             Shutdown();

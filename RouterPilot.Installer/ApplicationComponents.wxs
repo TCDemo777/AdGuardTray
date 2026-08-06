@@ -27,7 +27,10 @@
                   Description="Manage your GL.iNet router and AdGuard Home"
                   Target="[INSTALLFOLDER]RouterPilot.exe"
                   WorkingDirectory="INSTALLFOLDER"
-                  Advertise="no" />
+                  Advertise="no">
+          <ShortcutProperty Key="System.AppUserModel.ID"
+                            Value="TCDemo777.RouterPilot" />
+        </Shortcut>
 
         <RemoveFolder Id="RemoveStartMenuFolder"
                       On="uninstall" />

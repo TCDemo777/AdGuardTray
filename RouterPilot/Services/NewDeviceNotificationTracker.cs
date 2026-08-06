@@ -78,6 +78,7 @@ public sealed class NewDeviceNotificationTracker
                 Message = $"{deviceName} joined {networkName}{ipSuffix}",
                 Severity = NotificationSeverity.Information,
                 Category = NotificationCategory.Device,
+                EventType = NotificationEventType.NewDeviceDetected,
                 DeduplicationKey = $"NewDevice:{mac}"
             });
         }
