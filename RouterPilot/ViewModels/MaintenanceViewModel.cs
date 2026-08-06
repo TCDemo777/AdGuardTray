@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using RouterPilot.Models;
@@ -11,6 +12,8 @@ namespace RouterPilot.ViewModels;
 public sealed partial class MaintenanceViewModel : ObservableObject
 {
     private readonly MaintenanceOperationService _operations;
+    private readonly IBackupRestoreService _backupRestoreService;
+    private readonly MaintenanceHistoryService _historyService;
     private DashboardViewModel _dashboard;
 
     [ObservableProperty]
@@ -24,10 +27,14 @@ public sealed partial class MaintenanceViewModel : ObservableObject
 
     public MaintenanceViewModel(
         MaintenanceOperationService operations,
-        MaintenanceHistoryService historyService)
+        MaintenanceHistoryService historyService,
+        IBackupRestoreService backupRestoreService)
     {
         _operations = operations;
+        _backupRestoreService = backupRestoreService;
+        _historyService = historyService;
         History = historyService.Entries;
+        _historyService.Changed += HistoryService_Changed;
         Actions = new ObservableCollection<MaintenanceActionItem>(
         [
             new(MaintenanceAction.RestartWifi, "Restart Wi-Fi", "Restarts the router wireless interfaces."),
@@ -39,6 +46,7 @@ public sealed partial class MaintenanceViewModel : ObservableObject
         ]);
 
         _dashboard = new DashboardViewModel();
+        UpdateActionHistory();
     }
 
     public DashboardViewModel Dashboard => _dashboard;
@@ -46,6 +54,43 @@ public sealed partial class MaintenanceViewModel : ObservableObject
     public ReadOnlyObservableCollection<MaintenanceHistoryEntry> History { get; }
 
     public ObservableCollection<MaintenanceActionItem> Actions { get; }
+
+    public string BackupFolder => _backupRestoreService.BackupFolder;
+
+    public bool CanManageBackups => !IsBusy;
+
+    public string LastBackupDate => History
+        .FirstOrDefault(item => item.Action == MaintenanceAction.CreateBackup)?.TimestampDisplay ?? RouterPilotStatusPresentation.NotAvailable;
+
+    public string LastBackupResult => History
+        .FirstOrDefault(item => item.Action == MaintenanceAction.CreateBackup)?.OutcomeDisplay ?? RouterPilotStatusPresentation.NotAvailable;
+
+    public string LastBackupDestination => History
+        .FirstOrDefault(item => item.Action == MaintenanceAction.CreateBackup)?.OutputPath ?? BackupFolder;
+
+    public string LastBackupSize => History
+        .FirstOrDefault(item => item.Action == MaintenanceAction.CreateBackup)?.OutputSizeBytes is long size
+            ? FormatFileSize(size)
+            : RouterPilotStatusPresentation.NotAvailable;
+
+    public string HealthSummary => IsBusy
+        ? RouterPilotStatusPresentation.Pending
+        : _dashboard.RouterConnected && _dashboard.InternetConnected && _dashboard.IsAdGuardAvailable
+            ? "Healthy"
+            : "Attention Required";
+
+    public string HealthSummaryDetail => IsBusy
+        ? "A maintenance operation is running."
+        : HealthSummary == "Healthy"
+            ? "All currently monitored services are operational."
+            : "One or more monitored services need attention.";
+
+    public string HealthSummaryColour => RouterPilotStatusPresentation.Colour(
+        IsBusy
+            ? RouterPilotStatus.Pending
+            : HealthSummary == "Healthy"
+                ? RouterPilotStatus.Active
+                : RouterPilotStatus.Error);
 
     public string WifiStatusText => _dashboard.RouterConnected
         ? RouterPilotStatusPresentation.Active
@@ -67,7 +112,64 @@ public sealed partial class MaintenanceViewModel : ObservableObject
         {
             MaintenanceOperationResult result = await _operations.ExecuteAsync(action.Action, refreshAll);
             LastResult = result.Message;
-            action.LastResult = result.Outcome.ToString();
+            UpdateActionHistory();
+        }
+        finally
+        {
+            ActiveOperation = string.Empty;
+            IsBusy = false;
+            OnPropertyChanged(nameof(LastBackupDate));
+            OnPropertyChanged(nameof(LastBackupResult));
+            OnPropertyChanged(nameof(LastBackupDestination));
+            OnPropertyChanged(nameof(LastBackupSize));
+            UpdateAvailability();
+        }
+    }
+
+    public async Task<MaintenanceOperationResult?> CreateBackupAsync(string destinationPath)
+    {
+        if (IsBusy)
+            return null;
+
+        IsBusy = true;
+        ActiveOperation = "Create Backup";
+        UpdateAvailability();
+        try
+        {
+            MaintenanceOperationResult result = await _operations.CreateBackupAsync(destinationPath);
+            LastResult = result.Message;
+            return result;
+        }
+        finally
+        {
+            ActiveOperation = string.Empty;
+            IsBusy = false;
+            OnPropertyChanged(nameof(LastBackupDate));
+            OnPropertyChanged(nameof(LastBackupResult));
+            OnPropertyChanged(nameof(LastBackupDestination));
+            OnPropertyChanged(nameof(LastBackupSize));
+            UpdateAvailability();
+        }
+    }
+
+    public Task<BackupInspection> InspectBackupAsync(string archivePath) =>
+        _backupRestoreService.InspectAsync(archivePath);
+
+    public async Task<MaintenanceOperationResult?> RestoreBackupAsync(
+        BackupInspection inspection,
+        IReadOnlyCollection<string> selectedFiles)
+    {
+        if (IsBusy)
+            return null;
+
+        IsBusy = true;
+        ActiveOperation = "Restore Backup";
+        UpdateAvailability();
+        try
+        {
+            MaintenanceOperationResult result = await _operations.RestoreBackupAsync(inspection, selectedFiles);
+            LastResult = result.Message;
+            return result;
         }
         finally
         {
@@ -98,11 +200,48 @@ public sealed partial class MaintenanceViewModel : ObservableObject
         {
             OnPropertyChanged(nameof(WifiStatusText));
             OnPropertyChanged(nameof(WifiStatusColour));
+            OnPropertyChanged(nameof(HealthSummary));
+            OnPropertyChanged(nameof(HealthSummaryDetail));
+            OnPropertyChanged(nameof(HealthSummaryColour));
             UpdateAvailability();
         }
     }
 
-    partial void OnIsBusyChanged(bool value) => UpdateAvailability();
+    partial void OnIsBusyChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanManageBackups));
+        OnPropertyChanged(nameof(HealthSummary));
+        OnPropertyChanged(nameof(HealthSummaryDetail));
+        OnPropertyChanged(nameof(HealthSummaryColour));
+        UpdateAvailability();
+    }
+
+    private void HistoryService_Changed(object? sender, EventArgs e)
+    {
+        UpdateActionHistory();
+        OnPropertyChanged(nameof(LastBackupDate));
+        OnPropertyChanged(nameof(LastBackupResult));
+        OnPropertyChanged(nameof(LastBackupDestination));
+        OnPropertyChanged(nameof(LastBackupSize));
+    }
+
+    private void UpdateActionHistory()
+    {
+        foreach (MaintenanceActionItem action in Actions)
+        {
+            MaintenanceHistoryEntry? latest = History.FirstOrDefault(item => item.Action == action.Action);
+            action.LastRun = latest?.TimestampDisplay ?? RouterPilotStatusPresentation.NotAvailable;
+            action.LastResult = latest?.OutcomeDisplay ?? RouterPilotStatusPresentation.NotAvailable;
+            action.LastResultColour = latest?.OutcomeColour ?? RouterPilotStatusPresentation.Colour(RouterPilotStatus.NotAvailable);
+        }
+    }
+
+    private static string FormatFileSize(long bytes) => bytes switch
+    {
+        < 1024 => bytes + " B",
+        < 1024 * 1024 => $"{bytes / 1024d:0.0} KB",
+        _ => $"{bytes / (1024d * 1024d):0.0} MB"
+    };
 
     private void UpdateAvailability()
     {
@@ -157,4 +296,10 @@ public sealed partial class MaintenanceActionItem : ObservableObject
 
     [ObservableProperty]
     private string lastResult = RouterPilotStatusPresentation.NotAvailable;
+
+    [ObservableProperty]
+    private string lastRun = RouterPilotStatusPresentation.NotAvailable;
+
+    [ObservableProperty]
+    private string lastResultColour = RouterPilotStatusPresentation.Colour(RouterPilotStatus.NotAvailable);
 }

@@ -62,6 +62,12 @@ public sealed class AdGuardServiceScheduleService : IAsyncDisposable
 
     public async Task InitializeAsync()
     {
+        await ReloadAsync();
+    }
+
+    /// <summary>Reloads schedules after an explicit data restore.</summary>
+    public async Task ReloadAsync()
+    {
         List<AdGuardServiceSchedule> loaded = [];
         try
         {
@@ -72,6 +78,9 @@ public sealed class AdGuardServiceScheduleService : IAsyncDisposable
 
         await _dispatcher.InvokeAsync(() =>
         {
+            _items.Clear();
+            _windows.Clear();
+            _advancedItems.Clear();
             foreach (AdGuardServiceSchedule item in loaded)
             {
                 Normalize(item);

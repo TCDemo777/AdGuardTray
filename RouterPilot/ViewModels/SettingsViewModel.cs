@@ -13,6 +13,7 @@ namespace RouterPilot.ViewModels
         private readonly SettingsService _settingsService;
         private readonly IRouterManagerProvider _routerManagerProvider;
         private readonly IToastNotificationService _toastNotificationService;
+        private readonly NotificationService _notificationService;
         public AdGuardAvailabilityService AdGuardAvailability { get; }
 
         private string _routerIp = "";
@@ -145,12 +146,23 @@ namespace RouterPilot.ViewModels
             private set => SetProperty(ref _hasUnsavedChanges, value);
         }
 
-        public bool NotificationsEnabled { get => _notificationsEnabled; set { if (SetProperty(ref _notificationsEnabled, value)) MarkChanged(); } }
-        public bool NotificationCentreEnabled { get => _notificationCentreEnabled; set { if (SetProperty(ref _notificationCentreEnabled, value)) MarkChanged(); } }
-        public bool WindowsToastsEnabled { get => _windowsToastsEnabled; set { if (SetProperty(ref _windowsToastsEnabled, value)) MarkChanged(); } }
-        public bool QuietHoursEnabled { get => _quietHoursEnabled; set { if (SetProperty(ref _quietHoursEnabled, value)) MarkChanged(); } }
-        public string QuietHoursStart { get => _quietHoursStart; set { if (SetProperty(ref _quietHoursStart, value)) MarkChanged(); } }
-        public string QuietHoursEnd { get => _quietHoursEnd; set { if (SetProperty(ref _quietHoursEnd, value)) MarkChanged(); } }
+        public bool NotificationsEnabled { get => _notificationsEnabled; set { if (SetProperty(ref _notificationsEnabled, value)) { MarkChanged(); RefreshNotificationSummary(); } } }
+        public bool NotificationCentreEnabled { get => _notificationCentreEnabled; set { if (SetProperty(ref _notificationCentreEnabled, value)) { MarkChanged(); RefreshNotificationSummary(); } } }
+        public bool WindowsToastsEnabled { get => _windowsToastsEnabled; set { if (SetProperty(ref _windowsToastsEnabled, value)) { MarkChanged(); RefreshNotificationSummary(); } } }
+        public bool QuietHoursEnabled { get => _quietHoursEnabled; set { if (SetProperty(ref _quietHoursEnabled, value)) { MarkChanged(); RefreshNotificationSummary(); } } }
+        public string QuietHoursStart { get => _quietHoursStart; set { if (SetProperty(ref _quietHoursStart, value)) { MarkChanged(); RefreshNotificationSummary(); } } }
+        public string QuietHoursEnd { get => _quietHoursEnd; set { if (SetProperty(ref _quietHoursEnd, value)) { MarkChanged(); RefreshNotificationSummary(); } } }
+
+        public int StoredNotificationCount => _notificationService.Notifications.Count;
+        public string MostRecentNotificationTime => _notificationService.Notifications.FirstOrDefault()?.Timestamp.ToLocalTime().ToString("dd MMM yyyy HH:mm") ?? RouterPilotStatusPresentation.NotAvailable;
+        public string ActiveDeliveryChannels => !NotificationsEnabled
+            ? "Neither"
+            : NotificationCentreEnabled && WindowsToastsEnabled
+                ? "Windows notifications and Notification Centre"
+                : NotificationCentreEnabled
+                    ? "Notification Centre"
+                    : WindowsToastsEnabled ? "Windows notifications" : "Neither";
+        public string QuietHoursStatus => IsQuietHoursActive() ? "Active" : "Disabled";
 
         public IRelayCommand SaveCommand { get; }
 
@@ -162,12 +174,15 @@ namespace RouterPilot.ViewModels
             SettingsService settingsService,
             IRouterManagerProvider routerManagerProvider,
             AdGuardAvailabilityService adGuardAvailability,
-            IToastNotificationService toastNotificationService)
+            IToastNotificationService toastNotificationService,
+            NotificationService notificationService)
         {
             _settingsService = settingsService;
             _routerManagerProvider = routerManagerProvider;
             AdGuardAvailability = adGuardAvailability;
             _toastNotificationService = toastNotificationService;
+            _notificationService = notificationService;
+            _notificationService.PropertyChanged += (_, _) => RefreshNotificationSummary();
 
             SaveCommand =
                 new RelayCommand(Save);
@@ -326,6 +341,22 @@ namespace RouterPilot.ViewModels
                     ex.Message;
             }
         }
+
+        private void RefreshNotificationSummary()
+        {
+            OnPropertyChanged(nameof(StoredNotificationCount));
+            OnPropertyChanged(nameof(MostRecentNotificationTime));
+            OnPropertyChanged(nameof(ActiveDeliveryChannels));
+            OnPropertyChanged(nameof(QuietHoursStatus));
+        }
+
+        private bool IsQuietHoursActive() =>
+            new NotificationPreferences
+            {
+                QuietHoursEnabled = QuietHoursEnabled,
+                QuietHoursStart = TimeOnly.TryParse(QuietHoursStart, out TimeOnly start) ? start : new TimeOnly(22, 0),
+                QuietHoursEnd = TimeOnly.TryParse(QuietHoursEnd, out TimeOnly end) ? end : new TimeOnly(7, 0)
+            }.IsQuietHours(DateTimeOffset.Now);
 
         private async System.Threading.Tasks.Task TestWindowsNotificationAsync()
         {

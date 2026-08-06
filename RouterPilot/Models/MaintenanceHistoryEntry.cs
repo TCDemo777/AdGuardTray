@@ -9,7 +9,9 @@ public enum MaintenanceAction
     RebootRouter,
     ReconnectWan,
     RefreshAll,
-    RunDiagnostics
+    RunDiagnostics,
+    CreateBackup,
+    RestoreBackup
 }
 
 public enum MaintenanceOutcome
@@ -28,6 +30,8 @@ public sealed class MaintenanceHistoryEntry
     public string? Source { get; init; }
     public MaintenanceOutcome Outcome { get; init; }
     public string Message { get; init; } = string.Empty;
+    public string? OutputPath { get; init; }
+    public long? OutputSizeBytes { get; init; }
 
     public string TimestampDisplay => Timestamp.ToLocalTime().ToString("dd MMM yyyy HH:mm");
     public string ActionDisplay => string.IsNullOrWhiteSpace(Source)
@@ -39,6 +43,13 @@ public sealed class MaintenanceHistoryEntry
         MaintenanceOutcome.Error => "Error",
         _ => "Cancelled"
     };
+
+    public string OutcomeColour => RouterPilotStatusPresentation.Colour(Outcome switch
+    {
+        MaintenanceOutcome.Success => RouterPilotStatus.Active,
+        MaintenanceOutcome.Error => RouterPilotStatus.Error,
+        _ => RouterPilotStatus.Pending
+    });
 }
 
 public static class MaintenanceActionPresentation
@@ -51,6 +62,8 @@ public static class MaintenanceActionPresentation
         MaintenanceAction.ReconnectWan => "Reconnect WAN",
         MaintenanceAction.RefreshAll => "Refresh All",
         MaintenanceAction.RunDiagnostics => "Run Diagnostics",
+        MaintenanceAction.CreateBackup => "Create Backup",
+        MaintenanceAction.RestoreBackup => "Restore Backup",
         _ => action.ToString()
     };
 }

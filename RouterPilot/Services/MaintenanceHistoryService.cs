@@ -27,6 +27,7 @@ public sealed class MaintenanceHistoryService
     }
 
     public ReadOnlyObservableCollection<MaintenanceHistoryEntry> Entries { get; }
+    public event EventHandler? Changed;
 
     public async Task InitializeAsync()
     {
@@ -54,6 +55,7 @@ public sealed class MaintenanceHistoryService
             {
                 _entries.Add(entry);
             }
+            Changed?.Invoke(this, EventArgs.Empty);
         });
     }
 
@@ -65,6 +67,7 @@ public sealed class MaintenanceHistoryService
             _entries.Insert(0, entry);
             while (_entries.Count > MaximumEntries)
                 _entries.RemoveAt(_entries.Count - 1);
+            Changed?.Invoke(this, EventArgs.Empty);
         });
 
         await FlushAsync();

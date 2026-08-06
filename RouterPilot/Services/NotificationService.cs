@@ -80,11 +80,30 @@ public sealed class NotificationService : INotifyPropertyChanged, IAsyncDisposab
 
     public async Task InitializeAsync()
     {
+        int loadedCount = await ReloadAsync().ConfigureAwait(false);
+
+        if (loadedCount == 0)
+        {
+            await AddAsync(new AppNotification
+            {
+                Title = "Welcome to RouterPilot",
+                Message = "Important router and network events will appear here.",
+                Severity = NotificationSeverity.Information,
+                Category = NotificationCategory.System,
+                DeduplicationKey = WelcomeDeduplicationKey
+            });
+        }
+    }
+
+    /// <summary>Reloads persisted history after an explicit data restore without creating a welcome item.</summary>
+    public async Task<int> ReloadAsync()
+    {
         List<AppNotification> loaded = await LoadAsync().ConfigureAwait(false);
 
         await _dispatcher.InvokeAsync(() =>
         {
             _notifications.Clear();
+            _deduplicationTimes.Clear();
             foreach (AppNotification notification in loaded
                          .OrderByDescending(item => item.Timestamp)
                          .Take(MaximumNotifications))
@@ -96,17 +115,7 @@ public sealed class NotificationService : INotifyPropertyChanged, IAsyncDisposab
             OnPropertyChanged(nameof(UnreadCount));
         });
 
-        if (loaded.Count == 0)
-        {
-            await AddAsync(new AppNotification
-            {
-                Title = "Welcome to RouterPilot",
-                Message = "Important router and network events will appear here.",
-                Severity = NotificationSeverity.Information,
-                Category = NotificationCategory.System,
-                DeduplicationKey = WelcomeDeduplicationKey
-            });
-        }
+        return loaded.Count;
     }
 
     public async Task<bool> AddAsync(AppNotification notification)

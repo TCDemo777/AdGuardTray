@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using RouterPilot.Models;
@@ -12,6 +13,7 @@ public sealed class MaintenanceOperationService
     private readonly MaintenanceHistoryService _historyService;
     private readonly DiagnosticsExecutionService _diagnosticsExecutionService;
     private readonly AdGuardMaintenanceStateService _adGuardMaintenanceStateService;
+    private readonly IBackupRestoreService _backupRestoreService;
     private readonly SemaphoreSlim _operationGate = new(1, 1);
 
     public MaintenanceOperationService(
@@ -19,13 +21,70 @@ public sealed class MaintenanceOperationService
         NotificationService notificationService,
         MaintenanceHistoryService historyService,
         DiagnosticsExecutionService diagnosticsExecutionService,
-        AdGuardMaintenanceStateService adGuardMaintenanceStateService)
+        AdGuardMaintenanceStateService adGuardMaintenanceStateService,
+        IBackupRestoreService backupRestoreService)
     {
         _routerManagerProvider = routerManagerProvider;
         _notificationService = notificationService;
         _historyService = historyService;
         _diagnosticsExecutionService = diagnosticsExecutionService;
         _adGuardMaintenanceStateService = adGuardMaintenanceStateService;
+        _backupRestoreService = backupRestoreService;
+    }
+
+    public Task<MaintenanceOperationResult> CreateBackupAsync(
+        string destinationPath,
+        CancellationToken cancellationToken = default) =>
+        ExecuteLocalAsync(
+            MaintenanceAction.CreateBackup,
+            token => _backupRestoreService.CreateBackupAsync(destinationPath, token),
+            cancellationToken);
+
+    public Task<MaintenanceOperationResult> RestoreBackupAsync(
+        BackupInspection inspection,
+        IReadOnlyCollection<string> selectedFiles,
+        CancellationToken cancellationToken = default) =>
+        ExecuteLocalAsync(
+            MaintenanceAction.RestoreBackup,
+            token => _backupRestoreService.RestoreAsync(inspection, selectedFiles, token),
+            cancellationToken);
+
+    private async Task<MaintenanceOperationResult> ExecuteLocalAsync(
+        MaintenanceAction action,
+        Func<CancellationToken, Task<BackupOperationResult>> operation,
+        CancellationToken cancellationToken)
+    {
+        if (!await _operationGate.WaitAsync(0, cancellationToken))
+            return MaintenanceOperationResult.Cancelled("Another maintenance action is already running.");
+
+        Guid executionId = Guid.NewGuid();
+        try
+        {
+            BackupOperationResult operationResult = await operation(cancellationToken);
+            MaintenanceOperationResult result = new(
+                operationResult.Succeeded ? MaintenanceOutcome.Success : MaintenanceOutcome.Error,
+                operationResult.Message,
+                operationResult.BackupPath,
+                operationResult.BackupSizeBytes);
+            await RecordAsync(action, result, executionId);
+            return result;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            MaintenanceOperationResult result = MaintenanceOperationResult.Cancelled("Maintenance action cancelled.");
+            await RecordAsync(action, result, executionId);
+            return result;
+        }
+        catch (Exception)
+        {
+            MaintenanceOperationResult result = MaintenanceOperationResult.Error("RouterPilot could not complete this maintenance action.");
+            await RecordAsync(action, result, executionId);
+            return result;
+        }
+        finally
+        {
+            _operationGate.Release();
+        }
     }
 
     public async Task<MaintenanceOperationResult> ExecuteAsync(
@@ -208,7 +267,9 @@ public sealed class MaintenanceOperationService
             Id = executionId,
             Action = action,
             Outcome = result.Outcome,
-            Message = result.Message
+            Message = result.Message,
+            OutputPath = result.OutputPath,
+            OutputSizeBytes = result.OutputSizeBytes
         });
 
         await _notificationService.AddAsync(new AppNotification
@@ -228,9 +289,12 @@ public sealed class MaintenanceOperationService
                 : result.Outcome == MaintenanceOutcome.Cancelled
                     ? NotificationSeverity.Warning
                     : NotificationSeverity.Error,
-            Category = action == MaintenanceAction.RestartAdGuard
-                ? NotificationCategory.AdGuard
-                : NotificationCategory.Router,
+            Category = action switch
+            {
+                MaintenanceAction.RestartAdGuard => NotificationCategory.AdGuard,
+                MaintenanceAction.CreateBackup or MaintenanceAction.RestoreBackup => NotificationCategory.System,
+                _ => NotificationCategory.Router
+            },
             EventType = result.Outcome == MaintenanceOutcome.Success
                 ? NotificationEventType.MaintenanceSucceeded
                 : NotificationEventType.MaintenanceFailed,
@@ -241,7 +305,11 @@ public sealed class MaintenanceOperationService
 
 file sealed class MaintenanceOperationCancelledException : Exception;
 
-public sealed record MaintenanceOperationResult(MaintenanceOutcome Outcome, string Message)
+public sealed record MaintenanceOperationResult(
+    MaintenanceOutcome Outcome,
+    string Message,
+    string? OutputPath = null,
+    long? OutputSizeBytes = null)
 {
     public static MaintenanceOperationResult Success(string message) => new(MaintenanceOutcome.Success, message);
     public static MaintenanceOperationResult Error(string message) => new(MaintenanceOutcome.Error, message);

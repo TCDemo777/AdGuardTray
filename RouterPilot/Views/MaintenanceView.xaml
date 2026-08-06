@@ -12,6 +12,18 @@
                        Style="{StaticResource Text.Secondary}"
                        Text="Safely manage supported router services and review recent maintenance activity." />
 
+            <Border Margin="0,0,0,24" Padding="16" CornerRadius="12"
+                    Background="{DynamicResource Brush.Surface}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                    <Ellipse Width="10" Height="10" Margin="0,4,12,0" VerticalAlignment="Top" Fill="{Binding HealthSummaryColour}" />
+                    <StackPanel Grid.Column="1">
+                        <TextBlock FontWeight="SemiBold" Foreground="{Binding HealthSummaryColour}" Text="{Binding HealthSummary}" />
+                        <TextBlock Margin="0,4,0,0" Style="{DynamicResource Text.Secondary}" Text="{Binding HealthSummaryDetail}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
             <TextBlock Margin="0,0,0,16" Style="{StaticResource Text.SectionTitle}" Text="Current status" />
             <WrapPanel Margin="0,0,-16,32">
                 <controls:StatisticCard Width="210" Margin="0,0,16,16" Title="ROUTER"
@@ -55,7 +67,7 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Border Width="300" MinHeight="174" Margin="0,0,16,16" Padding="18"
+                        <Border Width="300" MinHeight="190" Margin="0,0,16,16" Padding="18"
                                 Background="{DynamicResource Brush.Surface}"
                                 BorderBrush="{DynamicResource Brush.Border}"
                                 BorderThickness="1" CornerRadius="12">
@@ -73,7 +85,9 @@
                                 </Grid>
                                 <StackPanel Grid.Row="1" Margin="0,8,0,12">
                                     <TextBlock Style="{StaticResource Text.Secondary}" TextWrapping="Wrap" Text="{Binding Description}" />
-                                    <TextBlock Margin="0,7,0,0" FontSize="11" Foreground="{DynamicResource Brush.TextMuted}"
+                                    <TextBlock Margin="0,9,0,0" FontSize="11" Foreground="{DynamicResource Brush.TextMuted}"
+                                               Text="{Binding LastRun, StringFormat=Last run: {0}}" />
+                                    <TextBlock Margin="0,3,0,0" FontSize="11" Foreground="{Binding LastResultColour}"
                                                Text="{Binding LastResult, StringFormat=Last result: {0}}" />
                                 </StackPanel>
                                 <Button Grid.Row="2" MinWidth="116" Height="36" HorizontalAlignment="Left"
@@ -85,6 +99,38 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
+
+            <TextBlock Margin="0,16,0,16" Style="{StaticResource Text.SectionTitle}" Text="Backup &amp; Restore" />
+            <Border Padding="18" Margin="0,0,0,16" Background="{DynamicResource Brush.Surface}"
+                    BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="12">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource Text.SectionTitle}" Text="RouterPilot data" />
+                        <TextBlock Margin="0,6,0,0" Style="{StaticResource Text.Secondary}" TextWrapping="Wrap"
+                                   Text="Back up settings, notification history, client profiles and service schedules in one portable .rpb package." />
+                        <TextBlock Margin="0,12,0,0" Style="{StaticResource Text.Secondary}"
+                                   Text="{Binding LastBackupDate, StringFormat=Last backup: {0}}" />
+                        <TextBlock Margin="0,4,0,0" Style="{StaticResource Text.Secondary}"
+                                   Text="{Binding LastBackupResult, StringFormat=Last result: {0}}" />
+                        <TextBlock Margin="0,4,0,0" Style="{StaticResource Text.Muted}" TextWrapping="Wrap"
+                                   Text="{Binding LastBackupDestination, StringFormat=Last destination: {0}}" />
+                        <TextBlock Margin="0,4,0,0" Style="{StaticResource Text.Muted}"
+                                   Text="{Binding LastBackupSize, StringFormat=Last size: {0}}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Margin="24,0,0,0" VerticalAlignment="Top">
+                        <Button Width="156" Height="36" Margin="0,0,0,10" IsEnabled="{Binding CanManageBackups}"
+                                Style="{DynamicResource Button.Primary}" Content="Create Backup" Click="CreateBackup_Click" />
+                        <Button Width="156" Height="36" Margin="0,0,0,10" IsEnabled="{Binding CanManageBackups}"
+                                Style="{DynamicResource Button.Secondary}" Content="Restore Backup" Click="RestoreBackup_Click" />
+                        <Button Width="156" Height="36" Style="{DynamicResource Button.Secondary}"
+                                Content="Open Backup Folder" Click="OpenBackupFolder_Click" />
+                    </StackPanel>
+                </Grid>
+            </Border>
 
             <TextBlock Margin="0,16,0,16" Style="{StaticResource Text.SectionTitle}" Text="Maintenance history" />
             <Border Padding="0" Background="{DynamicResource Brush.Surface}" BorderBrush="{DynamicResource Brush.Border}"
@@ -106,7 +152,7 @@
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="150"/><ColumnDefinition Width="170"/><ColumnDefinition Width="100"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                         <TextBlock Style="{StaticResource Text.Secondary}" Text="{Binding TimestampDisplay}" />
                                         <TextBlock Grid.Column="1" Style="{StaticResource Text.Secondary}" Text="{Binding ActionDisplay}" />
-                                        <TextBlock Grid.Column="2" Style="{StaticResource Text.Secondary}" Text="{Binding OutcomeDisplay}" />
+                                        <TextBlock Grid.Column="2" Style="{StaticResource Text.Secondary}" Foreground="{Binding OutcomeColour}" Text="{Binding OutcomeDisplay}" />
                                         <TextBlock Grid.Column="3" Style="{StaticResource Text.Secondary}" TextWrapping="Wrap" Text="{Binding Message}" />
                                     </Grid>
                                 </Border>

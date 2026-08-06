@@ -70,6 +70,7 @@ namespace RouterPilot
                     sp.GetRequiredService<ApplicationDataPathProvider>()));
             serviceCollection.AddSingleton(sp => new DiagnosticsHistoryService(Dispatcher));
             serviceCollection.AddSingleton<DiagnosticsExecutionService>();
+            serviceCollection.AddSingleton<IBackupRestoreService, BackupRestoreService>();
             serviceCollection.AddSingleton<MaintenanceOperationService>();
             serviceCollection.AddSingleton<MaintenanceViewModel>();
             serviceCollection.AddSingleton<UpdateService>();
@@ -226,6 +227,13 @@ namespace RouterPilot
 
         private async void ExitApplication()
         {
+            await ExitApplicationAsync();
+        }
+
+        public Task RestartAsync() => ExitApplicationAsync(Environment.ProcessPath);
+
+        private async Task ExitApplicationAsync(string? restartPath = null)
+        {
             IsExitRequested = true;
             _trayManager?.Dispose();
             _trayManager = null;
@@ -297,6 +305,14 @@ namespace RouterPilot
             {
                 await _singleInstance.DisposeAsync();
                 _singleInstance = null;
+            }
+
+            if (!string.IsNullOrWhiteSpace(restartPath))
+            {
+                Process.Start(new ProcessStartInfo(restartPath)
+                {
+                    UseShellExecute = true
+                });
             }
 
             Shutdown();

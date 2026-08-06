@@ -766,6 +766,29 @@ namespace RouterPilot.Views
                 MessageBoxImage.Information);
         }
 
+        private void OpenThirdPartyNotices_Click(object sender, RoutedEventArgs e)
+        {
+            string[] candidatePaths =
+            {
+                Path.Combine(AppContext.BaseDirectory, "THIRD_PARTY_NOTICES.txt"),
+                Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "THIRD_PARTY_NOTICES.txt")
+            };
+
+            foreach (string path in candidatePaths)
+            {
+                string fullPath = Path.GetFullPath(path);
+                if (!File.Exists(fullPath))
+                    continue;
+
+                Process.Start(new ProcessStartInfo(fullPath) { UseShellExecute = true });
+                AppendLog("Third-party notices opened.");
+                return;
+            }
+
+            MessageBox.Show("The third-party notices file could not be found.", "Third-Party Notices",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
         private void SupportDevelopment_Click(
             object sender,
             RoutedEventArgs e)
