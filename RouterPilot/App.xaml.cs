@@ -84,6 +84,7 @@ namespace RouterPilot
             serviceCollection.AddSingleton<AdGuardServiceScheduleViewModel>();
             serviceCollection.AddSingleton<AdGuardProtectionNotificationTracker>();
             serviceCollection.AddSingleton<AdGuardAvailabilityService>();
+            serviceCollection.AddSingleton<AdGuardMaintenanceStateService>();
             serviceCollection.AddSingleton<NewDeviceNotificationTracker>();
             serviceCollection.AddSingleton<NotificationCentreViewModel>();
             serviceCollection.AddTransient<ClientsViewModel>();

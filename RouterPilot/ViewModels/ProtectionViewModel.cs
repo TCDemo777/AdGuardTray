@@ -24,6 +24,7 @@ namespace RouterPilot.ViewModels
         private readonly AdGuardServiceScheduleService _scheduleService;
         private readonly IAdGuardServiceCatalogueProvider _serviceCatalogue;
         private readonly AdGuardAvailabilityService _adGuardAvailabilityService;
+        private readonly AdGuardMaintenanceStateService _adGuardMaintenanceStateService;
         private readonly DispatcherTimer _timer;
         private readonly SemaphoreSlim _protectionStateGate = new(1, 1);
         private readonly CancellationTokenSource _disposalCancellation = new();
@@ -71,7 +72,8 @@ namespace RouterPilot.ViewModels
             AdGuardServiceScheduleService scheduleService,
             IAdGuardServiceCatalogueProvider serviceCatalogue,
             AdGuardServiceScheduleViewModel schedules,
-            AdGuardAvailabilityService adGuardAvailabilityService)
+            AdGuardAvailabilityService adGuardAvailabilityService,
+            AdGuardMaintenanceStateService adGuardMaintenanceStateService)
         {
             _routerManagerProvider = routerManagerProvider;
             _protectionNotificationTracker = protectionNotificationTracker;
@@ -79,6 +81,12 @@ namespace RouterPilot.ViewModels
             _scheduleService = scheduleService;
             _serviceCatalogue = serviceCatalogue;
             _adGuardAvailabilityService = adGuardAvailabilityService;
+            _adGuardMaintenanceStateService = adGuardMaintenanceStateService;
+            _adGuardMaintenanceStateService.PropertyChanged += (_, _) =>
+            {
+                OnPropertyChanged(nameof(ControlsEnabled));
+                NotifyCommands();
+            };
             Schedules = schedules;
             _scheduleService.BlockedServicesChanged += ScheduleService_BlockedServicesChanged;
             _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
@@ -125,7 +133,8 @@ namespace RouterPilot.ViewModels
         public ICollectionView QueryLogView { get; }
 
         public bool IsBusy { get => _isBusy; private set { if (SetProperty(ref _isBusy, value)) { OnPropertyChanged(nameof(ControlsEnabled)); NotifyCommands(); } } }
-        public bool ControlsEnabled => !IsBusy && IsAdGuardAvailable;
+        public bool ControlsEnabled => !IsBusy && IsAdGuardAvailable &&
+            _adGuardMaintenanceStateService.State != AdGuardMaintenanceState.Restarting;
         public bool IsAdGuardAvailable
         {
             get => _isAdGuardAvailable;

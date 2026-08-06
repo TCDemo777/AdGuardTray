@@ -31,6 +31,7 @@ namespace RouterPilot.Views
         private readonly RefreshCoordinator _refreshCoordinator;
         private readonly AdGuardServiceScheduleService _scheduleService;
         private readonly AdGuardAvailabilityService _adGuardAvailabilityService;
+        private readonly AdGuardMaintenanceStateService _adGuardMaintenanceStateService;
         private readonly SemaphoreSlim _routerManagerUsageGate = new(1, 1);
         private bool _refreshInProgress;
         private bool _trafficRefreshInProgress;
@@ -83,6 +84,16 @@ namespace RouterPilot.Views
                 .GetRequiredService<AdGuardServiceScheduleService>();
             _adGuardAvailabilityService = ((App)Application.Current).Services
                 .GetRequiredService<AdGuardAvailabilityService>();
+            _adGuardMaintenanceStateService = ((App)Application.Current).Services
+                .GetRequiredService<AdGuardMaintenanceStateService>();
+            _viewModel.AdGuardMaintenanceState = _adGuardMaintenanceStateService.State;
+            _adGuardMaintenanceStateService.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(AdGuardMaintenanceStateService.State))
+                {
+                    _viewModel.AdGuardMaintenanceState = _adGuardMaintenanceStateService.State;
+                }
+            };
             NotificationButton.DataContext = _notificationService;
 
             _settingsService =
@@ -397,6 +408,10 @@ namespace RouterPilot.Views
                 {
                     _viewModel.AdGuardAvailability = AdGuardAvailabilityState.Available;
                     _adGuardAvailabilityService.SetState(AdGuardAvailabilityState.Available);
+                    if (_adGuardMaintenanceStateService.State == AdGuardMaintenanceState.Failed)
+                    {
+                        _adGuardMaintenanceStateService.CompleteRestart();
+                    }
                     return;
                 }
 

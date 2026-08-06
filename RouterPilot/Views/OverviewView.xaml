@@ -111,7 +111,7 @@
                     ValueForeground="{Binding AdGuardStatusColour}"
                     IconBackground="{DynamicResource Brush.SuccessSubtle}"
                     IconGlyph="&#xE72E;"
-                    Subtitle="DNS filtering"
+                    Subtitle="{Binding AdGuardStatusSubtitle}"
                     Title="ADGUARD"
                     Value="{Binding AdGuardStatusText}" />
 

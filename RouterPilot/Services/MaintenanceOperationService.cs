@@ -11,18 +11,21 @@ public sealed class MaintenanceOperationService
     private readonly NotificationService _notificationService;
     private readonly MaintenanceHistoryService _historyService;
     private readonly DiagnosticsExecutionService _diagnosticsExecutionService;
+    private readonly AdGuardMaintenanceStateService _adGuardMaintenanceStateService;
     private readonly SemaphoreSlim _operationGate = new(1, 1);
 
     public MaintenanceOperationService(
         IRouterManagerProvider routerManagerProvider,
         NotificationService notificationService,
         MaintenanceHistoryService historyService,
-        DiagnosticsExecutionService diagnosticsExecutionService)
+        DiagnosticsExecutionService diagnosticsExecutionService,
+        AdGuardMaintenanceStateService adGuardMaintenanceStateService)
     {
         _routerManagerProvider = routerManagerProvider;
         _notificationService = notificationService;
         _historyService = historyService;
         _diagnosticsExecutionService = diagnosticsExecutionService;
+        _adGuardMaintenanceStateService = adGuardMaintenanceStateService;
     }
 
     public async Task<MaintenanceOperationResult> ExecuteAsync(
@@ -43,7 +46,7 @@ public sealed class MaintenanceOperationService
             {
                 MaintenanceAction.RefreshAll => await RefreshAllAsync(refreshAll),
                 MaintenanceAction.RestartWifi => await RestartWifiAsync(cancellationToken),
-                MaintenanceAction.RestartAdGuard => await RestartAdGuardAsync(cancellationToken),
+                MaintenanceAction.RestartAdGuard => await RestartAdGuardAsync(refreshAll, cancellationToken),
                 MaintenanceAction.ReconnectWan => await ReconnectWanAsync(cancellationToken),
                 MaintenanceAction.RebootRouter => await RebootRouterAsync(cancellationToken),
                 MaintenanceAction.RunDiagnostics => await RunDiagnosticsAsync(cancellationToken),
@@ -73,7 +76,9 @@ public sealed class MaintenanceOperationService
         catch (Exception)
         {
             MaintenanceOperationResult result = MaintenanceOperationResult.Error(
-                "RouterPilot could not complete this maintenance action.");
+                action == MaintenanceAction.RestartAdGuard
+                    ? "AdGuard Home could not be restarted."
+                    : "RouterPilot could not complete this maintenance action.");
             if (action != MaintenanceAction.RunDiagnostics)
             {
                 await RecordAsync(action, result, executionId);
@@ -99,15 +104,58 @@ public sealed class MaintenanceOperationService
         return "Wi-Fi restarted and router interfaces are available.";
     }
 
-    private async Task<string> RestartAdGuardAsync(CancellationToken cancellationToken)
+    private async Task<string> RestartAdGuardAsync(
+        Func<Task> refreshAll,
+        CancellationToken cancellationToken)
     {
         RouterManager router = await _routerManagerProvider.GetRouterManagerAsync();
-        await router.RestartAdGuardAsync().WaitAsync(TimeSpan.FromSeconds(30), cancellationToken);
-        await Task.Delay(TimeSpan.FromSeconds(2), cancellationToken);
-        if (!(await router.GetAdGuardStatusAsync().WaitAsync(TimeSpan.FromSeconds(20), cancellationToken)).IsRunning)
-            throw new InvalidOperationException();
+        AdGuardStatus before = await router.GetAdGuardStatusAsync()
+            .WaitAsync(TimeSpan.FromSeconds(15), cancellationToken);
+        DateTimeOffset startedAt = DateTimeOffset.UtcNow;
+        _adGuardMaintenanceStateService.BeginRestart();
 
-        return "AdGuard Home restarted and is active.";
+        try
+        {
+            await router.RestartAdGuardAsync().WaitAsync(TimeSpan.FromSeconds(30), cancellationToken);
+            bool transitionObserved = false;
+            DateTimeOffset deadline = DateTimeOffset.UtcNow.AddSeconds(30);
+
+            while (DateTimeOffset.UtcNow < deadline)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                try
+                {
+                    AdGuardStatus current = await router.GetAdGuardStatusAsync()
+                        .WaitAsync(TimeSpan.FromSeconds(8), cancellationToken);
+                    transitionObserved |= !current.IsRunning ||
+                        !string.Equals(current.Process, before.Process, StringComparison.Ordinal);
+
+                    if (transitionObserved && current.IsRunning)
+                    {
+                        _ = await router.GetAdGuardProtectionStatusAsync()
+                            .WaitAsync(TimeSpan.FromSeconds(8), cancellationToken);
+                        _adGuardMaintenanceStateService.CompleteRestart();
+                        await refreshAll();
+                        return $"AdGuard Home restarted successfully (verified in {(DateTimeOffset.UtcNow - startedAt).TotalSeconds:0}s).";
+                    }
+                }
+                catch (Exception) when (!cancellationToken.IsCancellationRequested)
+                {
+                    transitionObserved = true;
+                }
+
+                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
+            }
+
+            throw new InvalidOperationException();
+        }
+        catch
+        {
+            _adGuardMaintenanceStateService.FailRestart();
+            await refreshAll();
+            throw;
+        }
+
     }
 
     private async Task<string> ReconnectWanAsync(CancellationToken cancellationToken)
@@ -165,10 +213,16 @@ public sealed class MaintenanceOperationService
 
         await _notificationService.AddAsync(new AppNotification
         {
-            Title = result.Outcome == MaintenanceOutcome.Success
-                ? "Maintenance action completed"
-                : "Maintenance action failed",
-            Message = MaintenanceActionPresentation.Title(action) + ": " + result.Message,
+            Title = action == MaintenanceAction.RestartAdGuard
+                ? result.Outcome == MaintenanceOutcome.Success
+                    ? "AdGuard Home restarted successfully"
+                    : "AdGuard Home could not be restarted"
+                : result.Outcome == MaintenanceOutcome.Success
+                    ? "Maintenance action completed"
+                    : "Maintenance action failed",
+            Message = action == MaintenanceAction.RestartAdGuard
+                ? result.Message
+                : MaintenanceActionPresentation.Title(action) + ": " + result.Message,
             Severity = result.Outcome == MaintenanceOutcome.Success
                 ? NotificationSeverity.Success
                 : result.Outcome == MaintenanceOutcome.Cancelled
