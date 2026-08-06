@@ -21,9 +21,12 @@ namespace RouterPilot.Views
         private readonly IRouterManagerProvider _routerManagerProvider;
         private readonly SettingsService _settingsService;
         private readonly UpdateService _updateService;
+        private readonly DiagnosticsExecutionService _diagnosticsExecutionService;
+        private readonly DiagnosticsHistoryService _diagnosticsHistoryService;
 
         private readonly StringBuilder _supportLog =
             new StringBuilder();
+        private bool _diagnosticsHistorySubscribed;
 
         public AboutView()
         {
@@ -34,12 +37,49 @@ namespace RouterPilot.Views
                 .GetRequiredService<SettingsService>();
             _updateService = ((App)Application.Current).Services
                 .GetRequiredService<UpdateService>();
+            _diagnosticsExecutionService = ((App)Application.Current).Services
+                .GetRequiredService<DiagnosticsExecutionService>();
+            _diagnosticsHistoryService = ((App)Application.Current).Services
+                .GetRequiredService<DiagnosticsHistoryService>();
+            Loaded += AboutView_Loaded;
+            Unloaded += AboutView_Unloaded;
             VersionTextBlock.Text = "Version " + GetApplicationVersion();
             BuildDateTextBlock.Text = "Build date: " + GetBuildDate();
             LoadChangelog();
             LoadSystemInformation();
             AppendLog("Support page opened.");
             UpdateReleaseDisplay();
+        }
+
+        private void AboutView_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (!_diagnosticsHistorySubscribed)
+            {
+                _diagnosticsHistoryService.HistoryChanged +=
+                    DiagnosticsHistory_CollectionChanged;
+                _diagnosticsHistorySubscribed = true;
+            }
+
+            RefreshSupportLog();
+        }
+
+        private void AboutView_Unloaded(object sender, RoutedEventArgs e)
+        {
+            if (!_diagnosticsHistorySubscribed)
+            {
+                return;
+            }
+
+            _diagnosticsHistoryService.HistoryChanged -=
+                DiagnosticsHistory_CollectionChanged;
+            _diagnosticsHistorySubscribed = false;
+        }
+
+        private void DiagnosticsHistory_CollectionChanged(
+            object? sender,
+            EventArgs e)
+        {
+            RefreshSupportLog();
         }
 
         private async void CheckForUpdates_Click(object sender, RoutedEventArgs e)
@@ -183,35 +223,29 @@ namespace RouterPilot.Views
             DiagnosticsTextBox.Text =
                 "Running diagnostics...";
 
-            AppendLog("Diagnostics started.");
+            DiagnosticsExecutionResult result =
+                await _diagnosticsExecutionService.RunAsync(
+                    DiagnosticExecutionSource.About);
 
-            try
+            if (result.Outcome == DiagnosticExecutionOutcome.Success)
             {
-                string report =
-                    await (await GetRouterManagerAsync())
-                        .GetClientDiagnosticsAsync();
-
                 DiagnosticsTextBox.Text =
-                    report;
+                    result.Report;
 
                 QueryLogWarningBorder.Visibility =
-                    report.Contains(
+                    result.Report!.Contains(
                         "Enabled: False",
                         StringComparison.OrdinalIgnoreCase)
                         ? Visibility.Visible
                         : Visibility.Collapsed;
-
-                AppendLog("Diagnostics completed.");
             }
-            catch (Exception ex)
+            else
             {
                 DiagnosticsTextBox.Text =
-                    ex.ToString();
-
-                AppendLog(
-                    "Diagnostics failed: " +
-                    ex.Message);
+                    result.Message;
             }
+
+            RefreshSupportLog();
         }
 
         private async void EnableQueryLog_Click(
@@ -347,7 +381,7 @@ namespace RouterPilot.Views
                     Path.Combine(
                         tempFolder,
                         "support-log.txt"),
-                    _supportLog.ToString(),
+                    GetSupportLogText(),
                     Encoding.UTF8);
 
                 File.WriteAllText(
@@ -569,12 +603,12 @@ namespace RouterPilot.Views
                 "Support log copied.");
         }
 
-        private void ClearLog_Click(
+        private async void ClearLog_Click(
             object sender,
             RoutedEventArgs e)
         {
             _supportLog.Clear();
-            SupportLogTextBox.Clear();
+            await _diagnosticsHistoryService.ClearAsync();
             AppendLog("Support log cleared.");
         }
 
@@ -600,13 +634,29 @@ namespace RouterPilot.Views
             _supportLog.AppendLine(
                 $"[{DateTime.Now:HH:mm:ss}] {message}");
 
-            if (SupportLogTextBox is not null)
-            {
-                SupportLogTextBox.Text =
-                    _supportLog.ToString();
+            RefreshSupportLog();
+        }
 
-                SupportLogTextBox.ScrollToEnd();
+        private string GetSupportLogText()
+        {
+            string diagnosticsLog = _diagnosticsHistoryService.GetLogText();
+            if (string.IsNullOrWhiteSpace(diagnosticsLog))
+            {
+                return _supportLog.ToString();
             }
+
+            return _supportLog + diagnosticsLog + Environment.NewLine;
+        }
+
+        private void RefreshSupportLog()
+        {
+            if (SupportLogTextBox is null)
+            {
+                return;
+            }
+
+            SupportLogTextBox.Text = GetSupportLogText();
+            SupportLogTextBox.ScrollToEnd();
         }
 
         private void LoadChangelog()

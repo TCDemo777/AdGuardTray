@@ -26,6 +26,7 @@ namespace RouterPilot.Views
         private readonly SettingsService _settingsService;
         private readonly NotificationService _notificationService;
         private readonly NotificationCentreViewModel _notificationCentreViewModel;
+        private readonly MaintenanceViewModel _maintenanceViewModel;
         private readonly AdGuardProtectionNotificationTracker _protectionNotificationTracker;
         private readonly RefreshCoordinator _refreshCoordinator;
         private readonly AdGuardServiceScheduleService _scheduleService;
@@ -72,6 +73,8 @@ namespace RouterPilot.Views
                 .Services.GetRequiredService<NotificationService>();
             _notificationCentreViewModel = ((App)Application.Current)
                 .Services.GetRequiredService<NotificationCentreViewModel>();
+            _maintenanceViewModel = ((App)Application.Current)
+                .Services.GetRequiredService<MaintenanceViewModel>();
             _protectionNotificationTracker = ((App)Application.Current)
                 .Services.GetRequiredService<AdGuardProtectionNotificationTracker>();
             _routerManagerProvider = ((App)Application.Current).Services
@@ -917,6 +920,18 @@ namespace RouterPilot.Views
                 NetworkButton);
         }
 
+        private void Maintenance_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            PageContent.Content = new MaintenanceView(
+                _maintenanceViewModel,
+                _viewModel,
+                RefreshNowAsync);
+
+            SelectNavigationButton(MaintenanceButton);
+        }
+
         private void Clients_Click(
             object sender,
             RoutedEventArgs e)
@@ -988,6 +1003,7 @@ namespace RouterPilot.Views
                 ProtectionButton,
                 AnalyticsButton,
                 NetworkButton,
+                MaintenanceButton,
                 ClientsButton,
                 LogsButton,
                 NotificationButton,

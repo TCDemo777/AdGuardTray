@@ -126,6 +126,12 @@
                             Content="Network"
                             Click="Network_Click"/>
 
+                    <Button x:Name="MaintenanceButton"
+                            Style="{StaticResource SidebarNavigationButton}"
+                            Background="Transparent"
+                            Content="Maintenance"
+                            Click="Maintenance_Click"/>
+
                     <Button x:Name="ClientsButton"
                             Style="{StaticResource SidebarNavigationButton}"
                             Background="Transparent"

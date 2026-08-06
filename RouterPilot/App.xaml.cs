@@ -61,6 +61,14 @@ namespace RouterPilot
                 sp => new NotificationService(
                     Dispatcher,
                     sp.GetRequiredService<ApplicationDataPathProvider>()));
+            serviceCollection.AddSingleton(
+                sp => new MaintenanceHistoryService(
+                    Dispatcher,
+                    sp.GetRequiredService<ApplicationDataPathProvider>()));
+            serviceCollection.AddSingleton(sp => new DiagnosticsHistoryService(Dispatcher));
+            serviceCollection.AddSingleton<DiagnosticsExecutionService>();
+            serviceCollection.AddSingleton<MaintenanceOperationService>();
+            serviceCollection.AddSingleton<MaintenanceViewModel>();
             serviceCollection.AddSingleton<UpdateService>();
             serviceCollection.AddSingleton<IClock, SystemClock>();
             serviceCollection.AddSingleton<BlockedServiceMutationService>();
@@ -86,6 +94,8 @@ namespace RouterPilot
             _services = serviceCollection.BuildServiceProvider();
 
             await Services.GetRequiredService<NotificationService>()
+                .InitializeAsync();
+            await Services.GetRequiredService<MaintenanceHistoryService>()
                 .InitializeAsync();
             await Services.GetRequiredService<AdGuardServiceScheduleService>()
                 .InitializeAsync();
@@ -234,6 +244,21 @@ namespace RouterPilot
                 catch (Exception ex)
                 {
                     Debug.WriteLine($"Unable to flush AdGuard service schedules during shutdown: {ex}");
+                }
+
+                try
+                {
+                    await _services
+                        .GetRequiredService<MaintenanceHistoryService>()
+                        .FlushAsync();
+                }
+                catch (OperationCanceledException)
+                {
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(
+                        $"Unable to flush maintenance history during shutdown: {ex}");
                 }
 
                 try
