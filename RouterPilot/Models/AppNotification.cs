@@ -22,6 +22,21 @@ public enum NotificationCategory
     Device
 }
 
+public enum NotificationEventType
+{
+    General,
+    RouterOffline,
+    RouterRestored,
+    NewDeviceDetected,
+    ProtectionEnabled,
+    ProtectionDisabled,
+    MaintenanceSucceeded,
+    MaintenanceFailed,
+    DiagnosticsCompleted,
+    ScheduleSucceeded,
+    ScheduleFailed
+}
+
 public partial class AppNotification : ObservableObject
 {
     public Guid Id { get; init; } = Guid.NewGuid();
@@ -35,6 +50,8 @@ public partial class AppNotification : ObservableObject
     public NotificationSeverity Severity { get; init; }
 
     public NotificationCategory Category { get; init; }
+
+    public NotificationEventType EventType { get; init; } = NotificationEventType.General;
 
     [ObservableProperty]
     private bool isRead;

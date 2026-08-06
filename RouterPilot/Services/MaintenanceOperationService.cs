@@ -231,6 +231,9 @@ public sealed class MaintenanceOperationService
             Category = action == MaintenanceAction.RestartAdGuard
                 ? NotificationCategory.AdGuard
                 : NotificationCategory.Router,
+            EventType = result.Outcome == MaintenanceOutcome.Success
+                ? NotificationEventType.MaintenanceSucceeded
+                : NotificationEventType.MaintenanceFailed,
             DeduplicationKey = "Maintenance-" + action + "-" + executionId
         });
     }

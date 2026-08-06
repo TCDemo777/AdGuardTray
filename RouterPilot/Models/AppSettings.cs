@@ -23,6 +23,7 @@ public sealed class AppSettings
     public DateTimeOffset? LastSuccessfulUpdateCheckUtc { get; set; }
     public string LatestVersionSeen { get; set; } = string.Empty;
     public string LastNotifiedUpdateVersion { get; set; } = string.Empty;
+    public NotificationPreferences NotificationPreferences { get; set; } = new();
 
     public bool IsConfigured =>
         !string.IsNullOrWhiteSpace(RouterHost);

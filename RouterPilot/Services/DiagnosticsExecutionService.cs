@@ -162,6 +162,7 @@ public sealed class DiagnosticsExecutionService
                     ? NotificationSeverity.Success
                     : NotificationSeverity.Error,
                 Category = NotificationCategory.System,
+                EventType = NotificationEventType.DiagnosticsCompleted,
                 DeduplicationKey = "Diagnostics-" + source + "-" + Guid.NewGuid()
             });
         }

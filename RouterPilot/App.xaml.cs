@@ -55,12 +55,15 @@ namespace RouterPilot
             var serviceCollection = new ServiceCollection();
             serviceCollection.AddSingleton(applicationDataPaths);
             serviceCollection.AddSingleton<SettingsService>();
+            serviceCollection.AddSingleton<IToastNotificationService, WindowsToastNotificationService>();
             serviceCollection.AddSingleton<IRouterManagerProvider,
                 RouterManagerProvider>();
             serviceCollection.AddSingleton(
                 sp => new NotificationService(
                     Dispatcher,
-                    sp.GetRequiredService<ApplicationDataPathProvider>()));
+                    sp.GetRequiredService<ApplicationDataPathProvider>(),
+                    settingsService: sp.GetRequiredService<SettingsService>(),
+                    toastNotificationService: sp.GetRequiredService<IToastNotificationService>()));
             serviceCollection.AddSingleton(
                 sp => new MaintenanceHistoryService(
                     Dispatcher,
